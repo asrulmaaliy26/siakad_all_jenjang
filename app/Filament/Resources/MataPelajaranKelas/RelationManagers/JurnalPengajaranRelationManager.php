@@ -196,7 +196,7 @@ class JurnalPengajaranRelationManager extends RelationManager
                             $ljkField = "ljk_tugas_{$taskIndex}";
                             $cttField = "ctt_tugas_{$taskIndex}";
 
-                            $components[] = Section::make('Pengumpulan Tugas Mahasiswa')
+                            $components[] = Section::make("Pengumpulan Tugas Mahasiswa (Tugas Ke-{$taskIndex})")
                                 ->description('Pilih mahasiswa untuk melihat atau mengunggah tugas.')
                                 ->icon('heroicon-o-clipboard-document-check')
                                 ->schema([
@@ -250,12 +250,13 @@ class JurnalPengajaranRelationManager extends RelationManager
                                         }),
                                     Grid::make(1)->schema([
                                         Forms\Components\FileUpload::make($ljkField)
-                                            ->label('File Tugas')
+                                            ->label("File Tugas (Ke-{$taskIndex})")
                                             ->disk('public')
-                                            ->directory(function ($get) {
+                                            ->directory(function ($get) use ($taskIndex) {
                                                 $ljkId = $get('student_id');
                                                 $ljkRecord = $ljkId ? \App\Models\SiswaDataLJK::find($ljkId) : null;
-                                                return \App\Helpers\UploadPathHelper::uploadUjianPath($get, $ljkRecord, 'tugas');
+                                                // Use explicit task index string
+                                                return \App\Helpers\UploadPathHelper::uploadTugasPath($get, $ljkRecord, (string)$taskIndex);
                                             })
                                             ->downloadable()
                                             ->openable()
@@ -272,7 +273,7 @@ class JurnalPengajaranRelationManager extends RelationManager
                                             })
                                             ->visible(fn($get) => filled($get('student_id'))),
                                         Forms\Components\RichEditor::make($cttField)
-                                            ->label('Catatan Tugas')
+                                            ->label("Catatan Tugas (Ke-{$taskIndex})")
                                             ->columnSpan(1)
                                             ->default(function () use ($record, $cttField) {
                                                 $user = auth()->user();

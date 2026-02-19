@@ -144,6 +144,30 @@ class UploadPathHelper
             . Str::slug($table);
     }
 
+    public static function uploadTugasPath($get, $record = null, string $taskIndex = '1')
+    {
+        // 1. Tahun Akademik
+        $tahun = self::getYear($record, $get);
+
+        // 2. Jenjang Pendidikan
+        $jenjangData = self::getJenjangData($record, $get);
+        $jenjangNama = $jenjangData['nama'] ?? 'Umum';
+
+        // 3. Tentukan type berdasarkan jenjang
+        $jenjangType = strtolower($jenjangData['type'] ?? 'sekolah');
+        $typeFolder = ($jenjangType === 'kampus') ? 'mahasiswa' : 'siswa';
+
+        // 4. Nama Siswa
+        $namaSiswa = self::getNamaSiswa($record, $get);
+
+        // Format: uploads/{Tahun}/{Jenjang}/{siswa/mahasiswa}/{Nama Siswa}/tugas_{index}
+        return "uploads/"
+            . Str::slug($tahun) . "/"
+            . Str::slug($jenjangNama) . "/"
+            . Str::slug($typeFolder) . "/"
+            . Str::slug($namaSiswa) . "/tugas_" . $taskIndex;
+    }
+
 
 
     public static function uploadSiswaDataPath($get, $record = null, string $table = 'foto_profil')

@@ -12,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use App\Helpers\UploadPathHelper;
 
 class SiswaDataLJKForm
 {
@@ -32,7 +33,7 @@ class SiswaDataLJKForm
                         Select::make('id_mata_pelajaran_kelas')
                             ->label('Mata Kuliah')
                             ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function ($query) {
-                                $user = auth()->user();
+                                $user = \Illuminate\Support\Facades\Auth::user();
                                 if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin'])) {
                                     $query->whereHas('dosenData', function ($q) use ($user) {
                                         $q->where('user_id', $user->id);
@@ -60,7 +61,9 @@ class SiswaDataLJKForm
                     ->schema([
                         TextInput::make('Nilai_UTS')->numeric()->maxValue(100)->label('Nilai UTS'),
                         TextInput::make('Nilai_UAS')->numeric()->maxValue(100)->label('Nilai UAS'),
-                        TextInput::make('Nilai_TGS')->numeric()->maxValue(100)->label('Nilai Tugas'),
+                        TextInput::make('Nilai_TGS_1')->numeric()->maxValue(100)->label('Nilai TGS 1'),
+                        TextInput::make('Nilai_TGS_2')->numeric()->maxValue(100)->label('Nilai TGS 2'),
+                        TextInput::make('Nilai_TGS_3')->numeric()->maxValue(100)->label('Nilai TGS 3'),
                         TextInput::make('Nilai_Performance')->numeric()->maxValue(100)->label('Nilai Performance'),
                         TextInput::make('Nilai_Akhir')->numeric()->label('Nilai Akhir')->readOnly(), // Biasanya calculated
                         TextInput::make('Nilai_Huruf')->label('Nilai Huruf'),
@@ -108,15 +111,45 @@ class SiswaDataLJKForm
                         RichEditor::make('ctt_uas')->label('Catatan UAS'),
                     ]),
 
-                Section::make('Tugas')
+                Section::make('Tugas 1')
                     ->collapsed()
                     ->schema([
-                        FileUpload::make('tugas')
-                            ->label('File Tugas')
+                        FileUpload::make('ljk_tugas_1')
+                            ->label('File Tugas 1')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'tugas'))
-                            ->visibility('public'),
-                        DatePicker::make('tgl_upload_tugas')->label('Tgl Upload Tugas'),
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '1'))
+                            ->visibility('public')
+                            ->downloadable()
+                            ->openable(),
+                        RichEditor::make('ctt_tugas_1')
+                            ->label('Catatan Tugas 1'),
+                        // DatePicker::make('tgl_upload_tugas')->label('Tgl Upload Tugas 1'), // Assuming generic date or specific column needed
+                    ]),
+                Section::make('Tugas 2')
+                    ->collapsed()
+                    ->schema([
+                        FileUpload::make('ljk_tugas_2')
+                            ->label('File Tugas 2')
+                            ->disk('public')
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '2'))
+                            ->visibility('public')
+                            ->downloadable()
+                            ->openable(),
+                        RichEditor::make('ctt_tugas_2')
+                            ->label('Catatan Tugas 2'),
+                    ]),
+                Section::make('Tugas 3')
+                    ->collapsed()
+                    ->schema([
+                        FileUpload::make('ljk_tugas_3')
+                            ->label('File Tugas 3')
+                            ->disk('public')
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '3'))
+                            ->visibility('public')
+                            ->downloadable()
+                            ->openable(),
+                        RichEditor::make('ctt_tugas_3')
+                            ->label('Catatan Tugas 3'),
                     ]),
             ]);
     }
