@@ -14,6 +14,7 @@ use App\Models\RefOption\JabatanFungsional;
 use App\Models\RefOption\StatusDosen;
 use App\Models\RefOption\Agama;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\Facades\Storage;
 
 class DosenDataForm
 {
@@ -28,7 +29,21 @@ class DosenDataForm
                     ->disk('public')
                     ->visibility('public')
                     ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadDosenPath($record, 'foto_profil', $get))
-                    ->deleteUploadedFileUsing(fn($file) => true),
+                    ->deleteUploadedFileUsing(fn($file) => true)
+                    // Hapus file saat klik ❌
+                    ->afterStateUpdated(function ($state, $record) {
+                        if (blank($state) && $record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                    })
+
+                    // Hapus file lama saat upload baru
+                    ->deleteUploadedFileUsing(function ($file, $record) {
+                        if ($record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                        return true;
+                    }), // full width,,
                 // IDENTITAS
                 TextInput::make('nama')
                     ->label('Nama Lengkap')

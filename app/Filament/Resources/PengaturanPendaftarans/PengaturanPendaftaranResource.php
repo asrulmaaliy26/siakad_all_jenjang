@@ -23,6 +23,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use UnitEnum;
+use Illuminate\Support\Facades\Storage;
 
 class PengaturanPendaftaranResource extends Resource
 {
@@ -82,7 +83,21 @@ class PengaturanPendaftaranResource extends Resource
                                             ->visibility('public')
                                             ->directory('pendaftaran/header')
                                             ->maxSize(2048)
-                                            ->helperText('Foto header untuk halaman pendaftaran (max 2MB)'),
+                                            ->helperText('Foto header untuk halaman pendaftaran (max 2MB)')
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
 
                                         FileUpload::make('foto_banner')
                                             ->label('Foto Banner')
@@ -91,7 +106,21 @@ class PengaturanPendaftaranResource extends Resource
                                             ->visibility('public')
                                             ->directory('pendaftaran/banner')
                                             ->maxSize(2048)
-                                            ->helperText('Foto banner untuk halaman pendaftaran (max 2MB)'),
+                                            ->helperText('Foto banner untuk halaman pendaftaran (max 2MB)')
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
 
                                         Textarea::make('deskripsi_pendaftaran')
                                             ->label('Deskripsi Pendaftaran')

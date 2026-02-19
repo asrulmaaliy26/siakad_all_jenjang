@@ -17,6 +17,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
+use Illuminate\Support\Facades\Storage;
 
 class JurnalPengajaranRelationManager extends RelationManager
 {
@@ -271,7 +272,21 @@ class JurnalPengajaranRelationManager extends RelationManager
                                                 }
                                                 return null;
                                             })
-                                            ->visible(fn($get) => filled($get('student_id'))),
+                                            ->visible(fn($get) => filled($get('student_id')))
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
                                         Forms\Components\RichEditor::make($cttField)
                                             ->label("Catatan Tugas (Ke-{$taskIndex})")
                                             ->columnSpan(1)

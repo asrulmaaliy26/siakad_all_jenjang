@@ -10,6 +10,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class SiswaDataPendaftarForm
 {
@@ -167,7 +168,21 @@ class SiswaDataPendaftarForm
                                             ->preserveFilenames()
                                             ->maxSize(10240)
                                             ->downloadable()
-                                            ->openable(),
+                                            ->openable()
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
 
                                         FileUpload::make('Legalisir_SKHU')
                                             ->label('Legalisir SKHU')
@@ -177,7 +192,21 @@ class SiswaDataPendaftarForm
                                             ->preserveFilenames()
                                             ->maxSize(10240)
                                             ->downloadable()
-                                            ->openable(),
+                                            ->openable()
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
 
                                         FileUpload::make('Copy_KTP')
                                             ->label('Copy KTP')
@@ -187,7 +216,21 @@ class SiswaDataPendaftarForm
                                             ->preserveFilenames()
                                             ->maxSize(10240)
                                             ->downloadable()
-                                            ->openable(),
+                                            ->openable()
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
 
                                         FileUpload::make('File_Foto_Berwarna')
                                             ->label('Pas Foto Berwarna')
@@ -198,7 +241,21 @@ class SiswaDataPendaftarForm
                                             ->preserveFilenames()
                                             ->maxSize(10240)
                                             ->downloadable()
-                                            ->openable(),
+                                            ->openable()
+                                            // Hapus file saat klik ❌
+                                            ->afterStateUpdated(function ($state, $record) {
+                                                if (blank($state) && $record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                            })
+
+                                            // Hapus file lama saat upload baru
+                                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                                if ($record?->foto_profil) {
+                                                    Storage::disk('public')->delete($record->foto_profil);
+                                                }
+                                                return true;
+                                            }), // full width,,
                                     ])
                                     ->columns(2),
                             ]),

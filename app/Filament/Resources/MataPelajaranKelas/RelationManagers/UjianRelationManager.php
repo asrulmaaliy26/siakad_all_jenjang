@@ -16,6 +16,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Storage;
 
 class UjianRelationManager extends RelationManager
 {
@@ -36,7 +37,21 @@ class UjianRelationManager extends RelationManager
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uts'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
-                            ->openable(),
+                            ->openable()
+                            // Hapus file saat klik ❌
+                            ->afterStateUpdated(function ($state, $record) {
+                                if (blank($state) && $record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                            })
+
+                            // Hapus file lama saat upload baru
+                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                if ($record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                                return true;
+                            }), // full width,,
                         RichEditor::make('ctt_uts')
                             ->label('Catatan / Jawaban UTS')
                             ->columnSpanFull(),
@@ -51,7 +66,21 @@ class UjianRelationManager extends RelationManager
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uas'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
-                            ->openable(),
+                            ->openable()
+                            // Hapus file saat klik ❌
+                            ->afterStateUpdated(function ($state, $record) {
+                                if (blank($state) && $record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                            })
+
+                            // Hapus file lama saat upload baru
+                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                if ($record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                                return true;
+                            }), // full width,,
                         RichEditor::make('ctt_uas')
                             ->label('Catatan / Jawaban UAS')
                             ->columnSpanFull(),

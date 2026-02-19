@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\DatePicker;
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -136,7 +137,21 @@ class RiwayatPendidikanRelationManager extends RelationManager
                 ->preserveFilenames()
                 ->maxSize(10240)
                 ->downloadable()
-                ->openable(),
+                ->openable()
+                // Hapus file saat klik ❌
+                ->afterStateUpdated(function ($state, $record) {
+                    if (blank($state) && $record?->foto_profil) {
+                        Storage::disk('public')->delete($record->foto_profil);
+                    }
+                })
+
+                // Hapus file lama saat upload baru
+                ->deleteUploadedFileUsing(function ($file, $record) {
+                    if ($record?->foto_profil) {
+                        Storage::disk('public')->delete($record->foto_profil);
+                    }
+                    return true;
+                }), // full width,,
         ]);
     }
 

@@ -13,6 +13,9 @@ use Filament\Notifications\Notification;
 use App\Models\SiswaDataLJK;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\Placeholder;
+use Filament\Schemas\Components\Section;
 
 class InputLjkMinimal extends Component implements HasForms
 {
@@ -42,18 +45,40 @@ class InputLjkMinimal extends Component implements HasForms
     {
         return $form
             ->schema([
+                Section::make('Soal ' . strtoupper($this->type))
+                    ->schema([
+                        Placeholder::make('download_soal')
+                            ->label('File Soal')
+                            ->content(function () {
+                                $field = $this->type == 'uas' ? 'soal_uas' : 'soal_uts';
+                                $file = $this->record->$field;
+                                if (!$file) return 'Tidak ada file soal.';
+                                return new \Illuminate\Support\HtmlString('<a href="' . asset('storage/' . $file) . '" target="_blank" class="text-primary-600 underline font-bold">Unduh / Lihat Soal</a>');
+                            }),
+
+                        Placeholder::make('catatan_soal')
+                            ->label('Instruksi / Soal Text')
+                            ->content(function () {
+                                $field = $this->type == 'uas' ? 'ctt_soal_uas' : 'ctt_soal_uts';
+                                $text = $this->record->$field;
+                                return new \Illuminate\Support\HtmlString($text ?? '-');
+                            }),
+                    ])
+                    ->collapsible(),
+
                 // Form is dynamically loaded based on selection, but defined here
                 FileUpload::make($this->type == 'uas' ? 'ljk_uas' : 'ljk_uts')
-                    ->label('File LJK ' . strtoupper($this->type))
+                    ->label('Upload Jawaban LJK ' . strtoupper($this->type))
                     ->disk('public')
-                    ->directory(fn($record) => \App\Helpers\UploadPathHelper::uploadUjianPath($record, $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts', 'siswa'))
+                    // Fix: Pass $get and $record correctly, and ensure correct argument order for uploadUjianPath
+                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts'))
                     ->visibility('public')
                     ->acceptedFileTypes(['application/pdf', 'image/*'])
                     ->maxSize(10240)
                     ->downloadable()
                     ->openable()
                     ->columnSpanFull(),
-                RichEditor::make($this->type == 'uas' ? 'ctt_uas' : 'ctt_uts') // Note field might be different in DB?
+                RichEditor::make($this->type == 'uas' ? 'ctt_uas' : 'ctt_uts')
                     ->label('Catatan / Jawaban Text')
                     ->columnSpanFull(),
             ])

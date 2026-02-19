@@ -6,6 +6,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class AkademikKrsForm
 {
@@ -96,7 +97,21 @@ class AkademikKrsForm
                     ->preserveFilenames()
                     ->maxSize(10240)
                     ->downloadable()
-                    ->openable(),
+                    ->openable()
+                    // Hapus file saat klik ❌
+                    ->afterStateUpdated(function ($state, $record) {
+                        if (blank($state) && $record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                    })
+
+                    // Hapus file lama saat upload baru
+                    ->deleteUploadedFileUsing(function ($file, $record) {
+                        if ($record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                        return true;
+                    }), // full width,
 
                 \Filament\Forms\Components\FileUpload::make('berkas_lain')
                     ->label('Berkas Pendukung Lain')
@@ -106,7 +121,21 @@ class AkademikKrsForm
                     ->preserveFilenames()
                     ->maxSize(10240)
                     ->downloadable()
-                    ->openable(),
+                    ->openable()
+                    // Hapus file saat klik ❌
+                    ->afterStateUpdated(function ($state, $record) {
+                        if (blank($state) && $record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                    })
+
+                    // Hapus file lama saat upload baru
+                    ->deleteUploadedFileUsing(function ($file, $record) {
+                        if ($record?->foto_profil) {
+                            Storage::disk('public')->delete($record->foto_profil);
+                        }
+                        return true;
+                    }), // full width,
 
                 // Timestamps
                 DatePicker::make('created_at')

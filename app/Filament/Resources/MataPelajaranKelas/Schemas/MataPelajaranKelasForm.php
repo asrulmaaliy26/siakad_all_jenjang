@@ -12,6 +12,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Storage;
 
 
 
@@ -117,7 +118,21 @@ class MataPelajaranKelasForm
                             ->maxSize(10240)
                             ->downloadable()
                             ->openable()
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            // Hapus file saat klik ❌
+                            ->afterStateUpdated(function ($state, $record) {
+                                if (blank($state) && $record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                            })
+
+                            // Hapus file lama saat upload baru
+                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                if ($record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                                return true;
+                            }), // full width,,
                         RichEditor::make('ctt_soal_uts')
                             ->label('Soal UTS (Rich Text)')
                             ->columnSpanFull(),
@@ -153,7 +168,22 @@ class MataPelajaranKelasForm
                             ->maxSize(10240)
                             ->downloadable()
                             ->openable()
-                            ->columnSpanFull(),
+
+                            ->columnSpanFull()
+                            // Hapus file saat klik ❌
+                            ->afterStateUpdated(function ($state, $record) {
+                                if (blank($state) && $record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                            })
+
+                            // Hapus file lama saat upload baru
+                            ->deleteUploadedFileUsing(function ($file, $record) {
+                                if ($record?->foto_profil) {
+                                    Storage::disk('public')->delete($record->foto_profil);
+                                }
+                                return true;
+                            }), // full width,,
                         RichEditor::make('ctt_soal_uas')
                             ->label('Soal UAS (Rich Text)')
                             ->columnSpanFull(),
