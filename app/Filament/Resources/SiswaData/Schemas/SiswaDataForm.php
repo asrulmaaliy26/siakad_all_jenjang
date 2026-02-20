@@ -24,7 +24,6 @@ class SiswaDataForm
         return $schema
             ->components([
                 Section::make('Data Pribadi')
-                    // ->columns(2)
                     ->schema([
                         FileUpload::make('foto_profil')
                             ->label('Foto Profil')
@@ -37,69 +36,64 @@ class SiswaDataForm
                             ->downloadable()
                             ->openable()
                             ->reactive()
-
-                            // Hapus file saat klik ❌
                             ->afterStateUpdated(function ($state, $record) {
                                 if (blank($state) && $record?->foto_profil) {
                                     Storage::disk('public')->delete($record->foto_profil);
                                 }
                             })
-
-                            // Hapus file lama saat upload baru
                             ->deleteUploadedFileUsing(function ($file, $record) {
                                 if ($record?->foto_profil) {
                                     Storage::disk('public')->delete($record->foto_profil);
                                 }
                                 return true;
-                            }), // full width
+                            })
+                            ->columnSpanFull(), // Foto profil full width
                         TextInput::make('nama')
                             ->label('Nama Panggilan'),
                         TextInput::make('nama_lengkap'),
                         TextInput::make('user_id')
                             ->label('User ID (Auto-Generated)')
                             ->disabled()
-                            ->dehydrated(false), // Don't save this field, user_id is set in controller
-
-                        // Fields for creating User Account
+                            ->dehydrated(false),
                         TextInput::make('username_account')
                             ->label('Username (Login System)')
                             ->placeholder('Isi jika ingin custom username, kosongkan untuk auto-generate dari Nama'),
-
                         TextInput::make('email_account')
                             ->label('Email (Login System)')
                             ->email()
                             ->placeholder('Isi jika ingin custom email, kosongkan untuk auto-generate'),
-
                         TextInput::make('password_account')
                             ->label('Password (Login System)')
                             ->password()
                             ->revealable()
                             ->placeholder('Default: password'),
                     ])
+                    ->columns(2) // Membuat section ini 2 kolom
                     ->collapsible(),
+
+
+
                 Tabs::make('SiswaDataTabs')
                     ->tabs([
                         Tabs\Tab::make('Data Pribadi')
-                            ->columns(2)
+                            ->columns(2) // 2 kolom untuk layout yang rapi
                             ->schema([
-
                                 Select::make('jenis_kelamin')
                                     ->options(['L' => 'Laki-laki', 'P' => 'Perempuan']),
                                 Select::make('agama')
                                     ->label('Agama')
                                     ->options(Agama::pluck('nilai', 'nilai'))
                                     ->searchable(),
-
                                 TextInput::make('kota_lahir')
                                     ->label('Kota Lahir'),
-
                                 DatePicker::make('tanggal_lahir')
                                     ->label('Tanggal Lahir'),
-
                                 Textarea::make('alamat')
-                                    ->label('Alamat'),
+                                    ->label('Alamat')
+                                    ->columnSpanFull(), // Textarea full width
                             ]),
                         Tabs\Tab::make('Alamat & Domisili')
+                            ->columns(2) // 2 kolom untuk layout yang rapi
                             ->schema([
                                 TextInput::make('nomor_rumah'),
                                 TextInput::make('dusun'),
@@ -110,22 +104,26 @@ class SiswaDataForm
                                 TextInput::make('kabupaten'),
                                 TextInput::make('kode_pos'),
                                 TextInput::make('provinsi'),
-                                Textarea::make('tempat_domisili'),
+                                Textarea::make('tempat_domisili')
+                                    ->columnSpanFull(), // Textarea full width
                                 TextInput::make('jenis_domisili'),
                                 TextInput::make('no_telepon_wa'),
                             ]),
                         Tabs\Tab::make('Sekolah')
+                            ->columns(2) // 2 kolom untuk layout yang rapi
                             ->schema([
                                 TextInput::make('status_asal_sekolah'),
                                 TextInput::make('asal_slta'),
                                 TextInput::make('jenis_slta'),
                                 TextInput::make('kejuruan_slta'),
-                                Textarea::make('alamat_lengkap_sekolah_asal'),
+                                Textarea::make('alamat_lengkap_sekolah_asal')
+                                    ->columnSpanFull(), // Textarea full width
                                 TextInput::make('tahun_lulus_slta'),
                                 TextInput::make('nomor_seri_ijazah_slta'),
                                 TextInput::make('nisn'),
                             ]),
                         Tabs\Tab::make('Lainnya')
+                            ->columns(2) // 2 kolom untuk layout yang rapi
                             ->schema([
                                 TextInput::make('anak_ke'),
                                 TextInput::make('jumlah_saudara'),
@@ -140,9 +138,32 @@ class SiswaDataForm
                                 TextInput::make('transportasi'),
                                 Select::make('golongan_darah')
                                     ->options(['A' => 'A', 'B' => 'B', 'AB' => 'AB', 'O' => 'O']),
-                                TextInput::make('id_pendaftaran')->disabled(),
+                                TextInput::make('id_pendaftaran')
+                                    ->disabled()
+                                    ->columnSpanFull(), // ID pendaftaran full width
                             ]),
+                    ]),
+                Section::make('Data Pendaftaran')
+                    ->relationship('pendaftar')
+                    ->schema([
+                        Select::make('id_jurusan')
+                            ->relationship('jurusan', 'nama')
+                            ->label('Jurusan')
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        \Filament\Forms\Components\Hidden::make('Status_Pendaftaran')
+                            ->default('Y'),
+                        Select::make('ro_program_sekolah')
+                            ->options(\App\Models\RefOption\ProgramSekolah::pluck('nilai', 'id'))
+                            ->label('Program Sekolah')
+                            ->searchable()
+                            ->preload(),
+                        TextInput::make('No_Pendaftaran')
+                            ->label('No Pendaftaran (Opsional)'),
                     ])
+                    ->columns(2) // Membuat section ini 2 kolom
+                    ->collapsible(),
             ]);
     }
 }

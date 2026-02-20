@@ -18,6 +18,14 @@ class JenjangPendidikansTable
                     ->searchable(),
                 TextColumn::make('deskripsi')
                     ->searchable(),
+                TextColumn::make('type')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'sekolah' => 'info',
+                        'kampus' => 'success',
+                        default => 'gray',
+                    })
+                    ->searchable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

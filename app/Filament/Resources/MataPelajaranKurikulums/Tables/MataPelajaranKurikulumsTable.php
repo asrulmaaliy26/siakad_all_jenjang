@@ -46,6 +46,12 @@ class MataPelajaranKurikulumsTable
                 ]),
             ])
             ->headerActions([
+                \Filament\Actions\Action::make('download_template')
+                    ->label('Template Excel')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(fn() => \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MataPelajaranKurikulumTemplateExport, 'template_mapel_distribusi.xlsx')),
+                \Filament\Actions\ImportAction::make()
+                    ->importer(\App\Filament\Imports\MataPelajaranKurikulumImporter::class),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
             ]);
     }

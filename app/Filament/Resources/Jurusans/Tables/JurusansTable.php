@@ -17,7 +17,10 @@ class JurusansTable
                 TextColumn::make('nama')
                     ->searchable(),
                 TextColumn::make('fakultas.nama')
-                    ->numeric()
+                    ->label('Fakultas')
+                    ->sortable(),
+                TextColumn::make('jenjangPendidikan.nama')
+                    ->label('Jenjang')
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()

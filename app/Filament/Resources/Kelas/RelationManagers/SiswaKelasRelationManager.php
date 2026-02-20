@@ -52,6 +52,16 @@ class SiswaKelasRelationManager extends RelationManager
                 ->reactive()
                 ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
 
+            /* =========================
+             * FILTER SEMESTER
+             * ========================= */
+            Select::make('filter_semester')
+                ->label('Semester Saat Ini')
+                ->options(array_combine(range(1, 14), range(1, 14)))
+                ->searchable()
+                ->reactive()
+                ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
+
             // /* =========================
             //  * MULTISELECT MAPEL (ASYNC)
             //  * ========================= */
@@ -83,11 +93,64 @@ class SiswaKelasRelationManager extends RelationManager
                         $query->where('id_jurusan', $get('id_jurusan'));
                     }
 
-                    return $query
-                        ->limit(20)
-                        ->get()
+                    // Filter Semester logic
+                    if ($semester = $get('filter_semester')) {
+                        // Logic: (Year(Now) - Year(Start)) * 2 + (Month(Now) >= 7 ? 1 : 0) - (Month(Start) >= 7 ? 0 : 1) + 1
+                        // Simplified: Every 6 months is a semester.
+                        // Assuming Ganjil starts in July (7), Genap starts in January (1).
+
+                        // We filter using whereRaw for performance, or fetch and filter in PHP if dataset is small.
+                        // Given we need pagination/limit, SQL based is better but complex date math.
+                        // Let's use a simpler heuristic or standard calculation if possible.
+                        // "setiap tahun 2 kali dari januari ihngg dst" -> Jan-Jun = Genap/Ganjil?
+                        // Usually Academic Year starts in July.
+                        // Jan 2024 - Jun 2024: Sem Genap 2023/2024
+                        // Jul 2024 - Dec 2024: Sem Ganjil 2024/2025
+
+                        // User request: "count tanggal mulai jika setiap tahun 2 kali dari januari ihngg dst"
+                        // This implies: 
+                        // Smt 1: Starts Jan Year X  (or Jul Year X-1)
+                        // This seems to imply simple 6-month blocks from Start Date.
+
+                        // Let's implement filtering in PHP for the results found, 
+                        // filtering query where valid date exists.
+
+                        $query->whereNotNull('tanggal_mulai');
+
+                        // Since we can't easily do complex date math in all SQL dialects for semeters query-side without stored procs or complex logic:
+                        // We will filter the results after fetch if list is small, OR 
+                        // use a whereRaw approximation.
+
+                        // Let's try PHP filtering on a slightly larger result set or refine query.
+                        // Actually, for a MultiSelect with search, we need to return array [id => label].
+                        // We can fetch candidate rows and filter.
+                    }
+
+                    // Get results and filter in PHP
+                    $results = $query->limit(100)->get(); // Fetch more to allow filtering
+
+                    if ($semester = $get('filter_semester')) {
+                        $results = $results->filter(function ($item) use ($semester) {
+                            if (!$item->tanggal_mulai) return false;
+
+                            $start = \Carbon\Carbon::parse($item->tanggal_mulai);
+                            $now = \Carbon\Carbon::now();
+
+                            // Calculate diff in months
+                            $diffInMonths = $start->diffInMonths($now);
+
+                            // Calculate semester: 0-5 months = Sem 1, 6-11 = Sem 2, etc.
+                            // Formula: floor(months / 6) + 1
+                            $calculatedSemester = floor($diffInMonths / 6) + 1;
+
+                            return $calculatedSemester == $semester;
+                        });
+                    }
+
+                    return $results
+                        ->take(20)
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->siswa?->nama ?? '-'
+                            $item->id => $item->siswa?->nama . ' (Sem ' . $this->calculateSemester($item->tanggal_mulai) . ')' ?? '-'
                         ])
                         ->toArray();
                 })
@@ -115,11 +178,27 @@ class SiswaKelasRelationManager extends RelationManager
                         $query->where('id_jurusan', $get('id_jurusan'));
                     }
 
-                    return $query
-                        ->limit(20)
-                        ->get()
+                    if ($get('filter_semester')) {
+                        $query->whereNotNull('tanggal_mulai');
+                    }
+
+                    $results = $query->limit(100)->get();
+
+                    if ($semester = $get('filter_semester')) {
+                        $results = $results->filter(function ($item) use ($semester) {
+                            if (!$item->tanggal_mulai) return false;
+                            $start = \Carbon\Carbon::parse($item->tanggal_mulai);
+                            $now = \Carbon\Carbon::now();
+                            $diffInMonths = $start->diffInMonths($now);
+                            $calculatedSemester = floor($diffInMonths / 6) + 1;
+                            return $calculatedSemester == $semester;
+                        });
+                    }
+
+                    return $results
+                        ->take(20)
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->siswa?->nama ?? '-'
+                            $item->id => $item->siswa?->nama . ' (Sem ' . $this->calculateSemester($item->tanggal_mulai) . ')' ?? '-'
                         ])
                         ->toArray();
                 })
@@ -142,13 +221,11 @@ class SiswaKelasRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('riwayatPendidikan.siswa.nama')
-                    ->label('Mata Pelajaran')
+                    ->label('Nama Siswa/Mahasiswa')
                     ->searchable(),
-                // TextColumn::make('mataPelajaranKurikulum.kurikulum.nama')
-                //     ->label('Kurikulum')
-                //     ->searchable(),
-
-                // TextColumn::make('semester'),
+                TextColumn::make('riwayatPendidikan.tanggal_mulai')
+                    ->label('Semester')
+                    ->formatStateUsing(fn($state) => $this->calculateSemester($state)),
             ])
             ->headerActions([
                 CreateAction::make()
@@ -212,5 +289,14 @@ class SiswaKelasRelationManager extends RelationManager
     public function isReadOnly(): bool
     {
         return false;
+    }
+
+    protected function calculateSemester($tanggalMulai)
+    {
+        if (!$tanggalMulai) return '?';
+        $start = \Carbon\Carbon::parse($tanggalMulai);
+        $now = \Carbon\Carbon::now();
+        $diffInMonths = $start->diffInMonths($now);
+        return floor($diffInMonths / 6) + 1;
     }
 }

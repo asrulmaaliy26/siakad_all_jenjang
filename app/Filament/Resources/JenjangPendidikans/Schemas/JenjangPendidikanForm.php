@@ -13,6 +13,12 @@ class JenjangPendidikanForm
             ->components([
                 TextInput::make('nama'),
                 TextInput::make('deskripsi'),
+                \Filament\Forms\Components\Select::make('type')
+                    ->options([
+                        'sekolah' => 'Sekolah',
+                        'kampus' => 'Kampus',
+                    ])
+                    ->required(),
             ]);
     }
 }

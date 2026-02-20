@@ -45,7 +45,7 @@ class SiswaDataTable
                     ])
                     ->sortable()
                     ->searchable()
-                    ->afterStateUpdated(function ($state, $record) {
+                    ->updateStateUsing(function ($record, $state) {
                         if ($state === 'aktif') {
                             $pendaftar = $record->pendaftar;
 
@@ -55,7 +55,7 @@ class SiswaDataTable
                                     ->body('Siswa ini tidak memiliki data pendaftaran.')
                                     ->warning()
                                     ->send();
-                                return;
+                                return $record->status_siswa;
                             }
 
                             if (
@@ -67,40 +67,48 @@ class SiswaDataTable
                                     ->body('Jurusan atau Program Sekolah belum terisi di data pendaftar.')
                                     ->danger()
                                     ->send();
+                                return $record->status_siswa;
+                            }
+
+                            // Cari status siswa "Aktif" di RefOption
+                            $statusSiswaAktif = \App\Models\RefOption\StatusSiswa::where('nilai', 'Aktif')->first();
+                            $idStatusSiswa = $statusSiswaAktif ? $statusSiswaAktif->id : null;
+
+                            // Cek apakah sudah ada riwayat pendidikan yang sama
+                            $exists = \App\Models\RiwayatPendidikan::where('id_siswa_data', $record->id)
+                                ->where('id_jurusan', $pendaftar->id_jurusan)
+                                ->where('ro_program_sekolah', $pendaftar->ro_program_sekolah)
+                                ->exists();
+
+                            if (!$exists) {
+                                \App\Models\RiwayatPendidikan::create([
+                                    'id_siswa_data' => $record->id,
+                                    'id_jurusan' => $pendaftar->id_jurusan,
+                                    'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
+                                    'th_masuk' => $pendaftar->Tahun_Masuk ?? date('Y'),
+                                    'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
+                                    'tanggal_mulai' => now(),
+                                    'status' => 'Aktif',
+                                    'ro_status_siswa' => $idStatusSiswa, // Set status siswa di riwayat pendidikan
+                                ]);
+
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Riwayat Pendidikan Dibuat')
+                                    ->body('Riwayat pendidikan berhasil dibuat otomatis dan status siswa diaktifkan.')
+                                    ->success()
+                                    ->send();
                             } else {
-                                // Cek apakah sudah ada riwayat pendidikan yang sama agar tidak duplikat
-                                $exists = \App\Models\RiwayatPendidikan::where('id_siswa_data', $record->id)
-                                    // ->where('id_jenjang_pendidikan', $pendaftar->id_jenjang_pendidikan) // Removed
-                                    ->where('id_jurusan', $pendaftar->id_jurusan)
-                                    ->where('ro_program_sekolah', $pendaftar->ro_program_sekolah)
-                                    ->exists();
-
-                                if (!$exists) {
-                                    \App\Models\RiwayatPendidikan::create([
-                                        'id_siswa_data' => $record->id,
-                                        // 'id_jenjang_pendidikan' => $pendaftar->id_jenjang_pendidikan, // Removed
-                                        'id_jurusan' => $pendaftar->id_jurusan,
-                                        'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
-                                        'th_masuk' => $pendaftar->Tahun_Masuk ?? date('Y'),
-                                        'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
-                                        'tanggal_mulai' => now(),
-                                        'status' => 'Aktif', // Sesuaikan dengan tipe data kolom status di riwayat_pendidikan
-                                    ]);
-
-                                    \Filament\Notifications\Notification::make()
-                                        ->title('Riwayat Pendidikan Dibuat')
-                                        ->body('Riwayat pendidikan berhasil dibuat otomatis.')
-                                        ->success()
-                                        ->send();
-                                } else {
-                                    \Filament\Notifications\Notification::make()
-                                        ->title('Info')
-                                        ->body('Riwayat pendidikan sudah ada.')
-                                        ->info()
-                                        ->send();
-                                }
+                                // Jika sudah ada, update statusnya jika perlu (opsional based on requirement, here we keep it simple)
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Info')
+                                    ->body('Riwayat pendidikan sudah ada.')
+                                    ->info()
+                                    ->send();
                             }
                         }
+
+                        $record->update(['status_siswa' => $state]);
+                        return $state;
                     })
                     ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
                 TextColumn::make('created_at')

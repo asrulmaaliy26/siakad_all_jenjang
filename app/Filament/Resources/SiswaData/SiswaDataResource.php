@@ -56,6 +56,8 @@ class SiswaDataResource extends Resource
             //
             RiwayatPendidikanRelationManager::class,
             AkademikKRSRelationManager::class,
+            RelationManagers\SiswaDataPendaftarRelationManager::class,
+            RelationManagers\SiswaDataOrangTuaRelationManager::class,
         ];
     }
 

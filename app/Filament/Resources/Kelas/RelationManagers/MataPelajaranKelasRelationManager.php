@@ -19,6 +19,7 @@ use App\Models\MataPelajaranMaster;
 use App\Models\Jurusan;
 use App\Models\Kurikulum;
 use App\Models\MataPelajaranKurikulum;
+use Illuminate\Database\Eloquent\Builder;
 
 class MataPelajaranKelasRelationManager extends RelationManager
 {
@@ -63,7 +64,7 @@ class MataPelajaranKelasRelationManager extends RelationManager
                         ->limit(20)
                         ->get()
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->mataPelajaranMaster->nama
+                            $item->id => $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester
                         ])
                         ->toArray();
                 })
@@ -85,15 +86,17 @@ class MataPelajaranKelasRelationManager extends RelationManager
                         ->limit(20)
                         ->get()
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->mataPelajaranMaster->nama
+                            $item->id => $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester
                         ])
                         ->toArray();
                 })
 
 
                 ->getOptionLabelUsing(
-                    fn($value) =>
-                    MataPelajaranKurikulum::find($value)?->nama
+                    function ($value) {
+                        $item = MataPelajaranKurikulum::with('mataPelajaranMaster')->find($value);
+                        return $item ? $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester : null;
+                    }
                 ),
 
             // TextInput::make('semester')
@@ -122,7 +125,8 @@ class MataPelajaranKelasRelationManager extends RelationManager
                     ->label('Kurikulum')
                     ->searchable(),
 
-                // TextColumn::make('semester'),
+                TextColumn::make('mataPelajaranKurikulum.semester')
+                    ->label('Semester'),
             ])
             ->headerActions([
                 CreateAction::make()
@@ -152,10 +156,10 @@ class MataPelajaranKelasRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                // DeleteAction::make(),
-                DeleteAction::make()
-                    ->disabled(fn($record) => $record->pertemuanKelas()->exists())
-                    ->tooltip('Masih memiliki data pertemuan')
+                DeleteAction::make(),
+                // DeleteAction::make()
+                //     ->disabled(fn($record) => $record->pertemuanKelas()->exists())
+                //     ->tooltip('Masih memiliki data pertemuan')
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

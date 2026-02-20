@@ -12,8 +12,12 @@ class JurusanForm
         return $schema
             ->components([
                 TextInput::make('nama'),
-                TextInput::make('id_fakultas')
-                    ->numeric(),
+                \Filament\Forms\Components\Select::make('id_fakultas')
+                    ->relationship('fakultas', 'nama')
+                    ->required(),
+                \Filament\Forms\Components\Select::make('id_jenjang_pendidikan')
+                    ->relationship('jenjangPendidikan', 'nama')
+                    ->required(),
             ]);
     }
 }
