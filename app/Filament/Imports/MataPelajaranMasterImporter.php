@@ -19,12 +19,12 @@ class MataPelajaranMasterImporter extends Importer
                 ->rules(['required', 'max:255']),
             ImportColumn::make('nama')
                 ->requiredMapping()
-                ->rules(['required', 'max:255']),
+                ->rules(['required', 'max:255'])
+                ->castStateUsing(fn($state) => trim($state)),
             ImportColumn::make('jurusan')
-                ->relationship(resolveUsing: 'nama')
+                ->relationship(resolveUsing: 'id')
                 ->requiredMapping()
-                ->rules(['required'])
-                ->example(\App\Models\Jurusan::pluck('nama', 'id')->map(fn($nama, $id) => "{$nama} (ID: {$id})")->implode(', ')),
+                ->rules(['required', 'integer']),
             ImportColumn::make('bobot')
                 ->numeric()
                 ->rules(['integer']),

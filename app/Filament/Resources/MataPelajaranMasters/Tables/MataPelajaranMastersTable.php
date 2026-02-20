@@ -130,10 +130,11 @@ class MataPelajaranMastersTable
                 \Filament\Actions\Action::make('download_template')
                     ->label('Template Excel')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->action(fn() => \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MataPelajaranMasterTemplateExport, 'template_mapel_master.xlsx')),
+                    ->action(fn() => \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MataPelajaranMasterTemplateExport, 'template_mapel_master.csv', \Maatwebsite\Excel\Excel::CSV)),
                 \Filament\Actions\ImportAction::make()
                     ->importer(\App\Filament\Imports\MataPelajaranMasterImporter::class)
-                    ->label('Import'),
+                    ->label('Import')
+                    ->chunkSize(100),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
             ]);
     }
