@@ -16,35 +16,51 @@ class MataPelajaranMasterImporter extends Importer
         return [
             ImportColumn::make('kode_feeder')
                 ->requiredMapping()
-                ->rules(['required', 'max:255']),
+                ->rules(['required', 'max:255'])
+                ->example('KODE-001'),
             ImportColumn::make('nama')
                 ->requiredMapping()
                 ->rules(['required', 'max:255'])
-                ->castStateUsing(fn($state) => trim($state)),
+                ->castStateUsing(fn($state) => trim($state))
+                ->example('Matematika'),
             ImportColumn::make('jurusan')
                 ->relationship(resolveUsing: 'id')
                 ->requiredMapping()
-                ->rules(['required', 'integer']),
+                ->rules(['required', 'integer'])
+                ->label('Jurusan (Isi dengan ID)')
+                ->example('1'),
             ImportColumn::make('bobot')
                 ->numeric()
-                ->rules(['integer']),
+                ->rules(['integer'])
+                ->example('3'),
             ImportColumn::make('jenis')
-                ->label('Jenis (Wajib/Pilihan/Muatan Lokal)')
+                ->label('Jenis (Ketik: wajib / peminatan)')
+                ->guess(['jenis'])
+                ->example('wajib')
                 ->castStateUsing(fn($state) => match (strtolower($state)) {
-                    'wajib' => '1', // Adjust ID mapping if needed, assuming RefOption ID or similar
-                    'pilihan' => '2',
-                    'muatan lokal' => '3',
-                    default => null,
-                })
-            // Alternatively, if ro_jenis is just a string, remove mapUsing.
-            // But considering it's 'ro_', it likely refers to ReferenceOption.
-            // Without knowing IDs, I'll assume text or try to find by name if possible.
-            // Let's use a simpler mapping or just text if unsure.
-            // Given table filter options: 'Wajib' => 'Wajib', maybe it's stored as string or mapped?
-            // Let's try to lookup ReferenceOption if possible.
-            ,
+                    'peminatan', 'pilihan' => 'peminatan',
+                    default => 'wajib',
+                }),
+
+            // === Dummy Columns for Example CSV References ===
+            ImportColumn::make('referensi_jurusan')
+                ->label('Referensi Jurusan (ID - Nama)')
+                ->fillRecordUsing(fn() => null) // Ignore when saving
+                ->examples(fn() => \App\Models\Jurusan::with('jenjangPendidikan')->get()->map(function ($item) {
+                    $jenjang = $item->jenjangPendidikan ? ' - ' . $item->jenjangPendidikan->nama : '';
+                    return $item->id . ' - ' . $item->nama . $jenjang;
+                })->toArray()),
+
+            ImportColumn::make('referensi_jenis')
+                ->label('Referensi Jenis (Ketik Salah Satu)')
+                ->fillRecordUsing(fn() => null) // Ignore when saving
+                ->examples([
+                    'wajib',
+                    'peminatan',
+                ]),
         ];
     }
+
 
     public function resolveRecord(): ?MataPelajaranMaster
     {

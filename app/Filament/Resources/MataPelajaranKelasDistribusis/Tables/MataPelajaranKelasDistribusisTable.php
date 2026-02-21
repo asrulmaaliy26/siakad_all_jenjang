@@ -77,15 +77,15 @@ class MataPelajaranKelasDistribusisTable
                     ->sortable()
                     ->toggleable(),
 
-                TextColumn::make('tgl_uts')
+                TextColumn::make('uts')
                     ->label('Jadwal UTS')
-                    ->date()
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(),
 
-                TextColumn::make('tgl_uas')
+                TextColumn::make('uas')
                     ->label('Jadwal UAS')
-                    ->date()
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(),
 
@@ -137,6 +137,10 @@ class MataPelajaranKelasDistribusisTable
             ])
             // ->toolbarActions([])
             ->headerActions([
+                \Filament\Actions\ImportAction::make()
+                    ->importer(\App\Filament\Imports\MataPelajaranKelasDistribusiImporter::class)
+                    ->label('Import / Perbarui')
+                    ->chunkSize(100),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
             ]);
     }

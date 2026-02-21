@@ -18,7 +18,7 @@ class MataPelajaranMaster extends Model
             $q->where('id_jenjang_pendidikan', $jenjangId);
         });
     }
-    protected $fillable = ['nama', 'kode_feeder', 'id_jurusan', 'bobot', 'ro_jenis'];
+    protected $fillable = ['nama', 'kode_feeder', 'id_jurusan', 'bobot', 'jenis'];
 
     public function jurusan()
     {
