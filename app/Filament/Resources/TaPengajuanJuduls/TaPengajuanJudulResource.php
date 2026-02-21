@@ -51,6 +51,37 @@ class TaPengajuanJudulResource extends Resource
         return [];
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user  = \Filament\Facades\Filament::auth()->user();
+
+        // Dosen (pengajar) hanya melihat pengajuan yang ia menjadi pembimbing
+        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+            $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
+
+            if ($dosenId) {
+                $query->where(function ($q) use ($dosenId) {
+                    $q->where('id_dosen_pembimbing_1', $dosenId)
+                        ->orWhere('id_dosen_pembimbing_2', $dosenId)
+                        ->orWhere('id_dosen_pembimbing_3', $dosenId);
+                });
+            } else {
+                // Dosen tidak ditemukan di tabel dosen_data → tidak tampilkan apa-apa
+                $query->whereRaw('1 = 0');
+            }
+        }
+
+        // Murid hanya melihat pengajuan miliknya sendiri (via riwayat_pendidikan)
+        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+            $query->whereHas('riwayatPendidikan.siswa', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
+        return $query;
+    }
+
     public static function getPages(): array
     {
         return [

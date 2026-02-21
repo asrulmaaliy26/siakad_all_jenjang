@@ -34,12 +34,12 @@ class TaPengajuanJudulInfolist
                         TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
                     ]),
 
-                Section::make('Reviewer & Jadwal')
+                Section::make('Jadwal Ujian')
                     ->columns(2)
                     ->schema([
-                        TextEntry::make('dosenReview.nama')->label('Dosen Reviewer'),
                         TextEntry::make('tgl_ujian')->label('Tanggal Ujian')->date('d M Y'),
                         TextEntry::make('ruangan_ujian')->label('Ruangan'),
+                        TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
                         TextEntry::make('file')->label('File Proposal')
                             ->formatStateUsing(fn($state) => $state ? '✅ Ada' : '—'),
                     ]),
@@ -50,11 +50,12 @@ class TaPengajuanJudulInfolist
                         TextEntry::make('dosenPembimbing1.nama')->label('Pembimbing 1'),
                         TextEntry::make('dosenPembimbing2.nama')->label('Pembimbing 2'),
                         TextEntry::make('dosenPembimbing3.nama')->label('Pembimbing 3'),
+                        TextEntry::make('nilai_rata_rata')->label('Rata-rata Nilai'),
                     ]),
 
                 Section::make('Penilaian')
                     ->columns(3)
-                    ->collapsed()
+                    // ->collapsed()
                     ->schema([
                         TextEntry::make('status_dosen_1')->label('Status Dosen 1')->badge(),
                         TextEntry::make('status_dosen_2')->label('Status Dosen 2')->badge(),
@@ -62,7 +63,6 @@ class TaPengajuanJudulInfolist
                         TextEntry::make('nilai_dosen_1')->label('Nilai Dosen 1'),
                         TextEntry::make('nilai_dosen_2')->label('Nilai Dosen 2'),
                         TextEntry::make('nilai_dosen_3')->label('Nilai Dosen 3'),
-                        TextEntry::make('nilai_rata_rata')->label('Rata-rata Nilai'),
                         TextEntry::make('ctt_revisi_dosen_1')->label('Catatan Dosen 1'),
                         TextEntry::make('ctt_revisi_dosen_2')->label('Catatan Dosen 2'),
                         TextEntry::make('ctt_revisi_dosen_3')->label('Catatan Dosen 3'),

@@ -16,7 +16,6 @@ class TaPengajuanJudul extends Model
         'id_riwayat_pendidikan',
         'judul',
         'abstrak',
-        'id_dosen_review',
         'tgl_pengajuan',
         'tgl_ujian',
         'ruangan_ujian',

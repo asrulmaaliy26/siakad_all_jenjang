@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\TaPengajuanJuduls\Tables;
 
+use App\Models\DosenData;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -15,6 +17,14 @@ class TaPengajuanJudulsTable
 {
     public static function configure(Table $table): Table
     {
+        $user    = Filament::auth()->user();
+        $isPengajar = $user
+            && $user->hasRole('pengajar')
+            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
+        $dosenId = $isPengajar
+            ? DosenData::where('user_id', $user->id)->value('id')
+            : null;
+
         return $table
             ->columns([
                 TextColumn::make('riwayatPendidikan.siswa.nama')
@@ -36,10 +46,30 @@ class TaPengajuanJudulsTable
                     ->label('Tahun Akademik')
                     ->sortable(),
 
-                TextColumn::make('dosenReview.nama')
-                    ->label('Reviewer')
-                    ->sortable()
-                    ->toggleable(),
+                // Kolom posisi pembimbing — hanya tampil untuk dosen pengajar
+                TextColumn::make('posisi_pembimbing')
+                    ->label('Posisi Anda')
+                    ->state(function ($record) use ($dosenId) {
+                        if (!$dosenId) return null;
+                        if ($record->id_dosen_pembimbing_1 == $dosenId) return 'Pembimbing 1';
+                        if ($record->id_dosen_pembimbing_2 == $dosenId) return 'Pembimbing 2';
+                        if ($record->id_dosen_pembimbing_3 == $dosenId) return 'Pembimbing 3';
+                        return null;
+                    })
+                    ->badge()
+                    ->color('info')
+                    ->visible($isPengajar),
+
+                // Pembimbing 1/2/3 — hanya tampil untuk admin
+                TextColumn::make('dosenPembimbing1.nama')
+                    ->label('Pembimbing 1')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(!$isPengajar),
+
+                TextColumn::make('dosenPembimbing2.nama')
+                    ->label('Pembimbing 2')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(!$isPengajar),
 
                 TextColumn::make('tgl_pengajuan')
                     ->label('Tgl Pengajuan')
@@ -82,20 +112,17 @@ class TaPengajuanJudulsTable
                     ->relationship('tahunAkademik', 'nama')
                     ->searchable()
                     ->preload(),
-
-                SelectFilter::make('id_dosen_review')
-                    ->label('Reviewer')
-                    ->relationship('dosenReview', 'nama')
-                    ->searchable()
-                    ->preload(),
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    // Dosen pengajar tidak bisa edit — hanya admin
+                    ->visible(!$isPengajar),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(!$isPengajar),
                 ]),
             ]);
     }
