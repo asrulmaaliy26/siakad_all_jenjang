@@ -114,4 +114,20 @@ class RiwayatPendidikan extends Model
     {
         return $this->belongsTo(JenisKeluar::class, 'ro_jns_keluar');
     }
+
+    // ── Relasi ke Tugas Akhir ─────────────────────────────────────────────
+    public function pengajuanJudul()
+    {
+        return $this->hasMany(TaPengajuanJudul::class, 'id_riwayat_pendidikan');
+    }
+
+    public function seminarProposal()
+    {
+        return $this->hasMany(TaSeminarProposal::class, 'id_riwayat_pendidikan');
+    }
+
+    public function skripsi()
+    {
+        return $this->hasMany(TaSkripsi::class, 'id_riwayat_pendidikan');
+    }
 }

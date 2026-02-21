@@ -7,6 +7,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -111,7 +112,7 @@ class ExportMataPelajaranKelasAction
      */
     public static function makeBulk(string $name = 'export_selected_mapel_kelas'): Action
     {
-        $allColumns = MataPelajaranKelasExport::allColumns();
+        $allColumns      = MataPelajaranKelasExport::allColumns();
         $defaultSelected = array_keys($allColumns);
 
         return Action::make($name)
@@ -119,8 +120,9 @@ class ExportMataPelajaranKelasAction
             ->icon('heroicon-o-document-arrow-down')
             ->color('success')
             ->bulk()
+            ->accessSelectedRecords()  // ← WAJIB di Filament v4 agar bisa akses selected records
             ->modalHeading('Export Baris yang Dipilih')
-            ->modalDescription('Kolom "ID" dan "Kode Feeder" disarankan selalu disertakan.')
+            ->modalDescription('Kolom "ID" dan "Kode Feeder" disarankan selalu disertakan agar bisa diimport kembali.')
             ->modalSubmitActionLabel('Download')
             ->form([
                 CheckboxList::make('columns_to_export')
@@ -142,7 +144,7 @@ class ExportMataPelajaranKelasAction
                     ->default('xlsx')
                     ->required(),
             ])
-            ->action(function (array $data, $livewire) {
+            ->action(function (array $data, Action $action) {
                 $selectedColumns = $data['columns_to_export'] ?? [];
                 $fileFormat      = $data['file_format'] ?? 'xlsx';
 
@@ -154,36 +156,31 @@ class ExportMataPelajaranKelasAction
                     return;
                 }
 
-                // Urutkan: kolom kunci di depan
-                $keyColumns   = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));
-                $otherColumns = array_filter($selectedColumns, fn($k) => !in_array($k, ['id', 'kode_feeder']));
-                $orderedColumns = array_values(array_merge($keyColumns, $otherColumns));
+                // Ambil selected records lewat action (sudah ada accessSelectedRecords())
+                $records = $action->getSelectedRecords();
 
-                // Ambil baris yang diseleksi
-                $records = null;
-                try {
-                    $selected = $livewire->getSelectedTableRecords();
-                    if ($selected && $selected->isNotEmpty()) {
-                        $records = $selected->load([
-                            'mataPelajaranKurikulum.mataPelajaranMaster',
-                            'kelas.programKelas',
-                            'dosen',
-                            'ruangKelas',
-                            'pelaksanaanKelas',
-                        ]);
-                    }
-                } catch (\Throwable) {
-                    // Fallback ke semua data jika seleksi tidak tersedia
-                }
-
-                if (! $records || $records->isEmpty()) {
+                if ($records->isEmpty()) {
                     Notification::make()
                         ->title('Tidak ada baris yang dipilih')
-                        ->body('Silakan pilih setidaknya satu baris sebelum export.')
+                        ->body('Pilih setidaknya satu baris di tabel terlebih dahulu.')
                         ->warning()
                         ->send();
                     return;
                 }
+
+                // Urutkan: kolom kunci di depan
+                $keyColumns     = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));
+                $otherColumns   = array_filter($selectedColumns, fn($k) => !in_array($k, ['id', 'kode_feeder']));
+                $orderedColumns = array_values(array_merge($keyColumns, $otherColumns));
+
+                // Eager load relasi yang dibutuhkan
+                $records->load([
+                    'mataPelajaranKurikulum.mataPelajaranMaster',
+                    'kelas.programKelas',
+                    'dosen',
+                    'ruangKelas',
+                    'pelaksanaanKelas',
+                ]);
 
                 $writerType = $fileFormat === 'csv'
                     ? \Maatwebsite\Excel\Excel::CSV

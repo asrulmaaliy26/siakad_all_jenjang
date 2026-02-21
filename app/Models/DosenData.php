@@ -82,4 +82,32 @@ class DosenData extends Model
     {
         return $this->hasMany(DosenDokumen::class, 'id_dosen');
     }
+
+    // ── Relasi ke Tugas Akhir ─────────────────────────────────────────────
+    public function pengajuanJudulDireview()
+    {
+        return $this->hasMany(TaPengajuanJudul::class, 'id_dosen_review');
+    }
+
+    public function pengajuanJudulDibimbing()
+    {
+        // Semua pengajuan yang dosen ini menjadi pembimbing (1, 2, atau 3)
+        return TaPengajuanJudul::where('id_dosen_pembimbing_1', $this->id)
+            ->orWhere('id_dosen_pembimbing_2', $this->id)
+            ->orWhere('id_dosen_pembimbing_3', $this->id);
+    }
+
+    public function seminarProposalDibimbing()
+    {
+        return TaSeminarProposal::where('id_dosen_pembimbing_1', $this->id)
+            ->orWhere('id_dosen_pembimbing_2', $this->id)
+            ->orWhere('id_dosen_pembimbing_3', $this->id);
+    }
+
+    public function skripsiDibimbing()
+    {
+        return TaSkripsi::where('id_dosen_pembimbing_1', $this->id)
+            ->orWhere('id_dosen_pembimbing_2', $this->id)
+            ->orWhere('id_dosen_pembimbing_3', $this->id);
+    }
 }

@@ -15,4 +15,19 @@ class TahunAkademik extends Model
     {
         return $this->hasMany(PengaturanPendaftaran::class, 'id_tahun_akademik');
     }
+
+    public function pengajuanJudul()
+    {
+        return $this->hasMany(TaPengajuanJudul::class, 'id_tahun_akademik');
+    }
+
+    public function seminarProposal()
+    {
+        return $this->hasMany(TaSeminarProposal::class, 'id_tahun_akademik');
+    }
+
+    public function skripsi()
+    {
+        return $this->hasMany(TaSkripsi::class, 'id_tahun_akademik');
+    }
 }

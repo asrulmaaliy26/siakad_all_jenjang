@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Filament\Resources\TaSeminarProposals\Pages;
+
+use App\Filament\Resources\TaSeminarProposals\TaSeminarProposalResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditTaSeminarProposal extends EditRecord
+{
+    protected static string $resource = TaSeminarProposalResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ViewAction::make(),
+            DeleteAction::make(),
+        ];
+    }
+}
