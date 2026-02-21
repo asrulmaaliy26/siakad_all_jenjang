@@ -3,18 +3,10 @@
 namespace App\Filament\Imports;
 
 use App\Models\MataPelajaranKelasDistribusi;
-use App\Models\MataPelajaranKurikulum;
-use App\Models\Kelas;
-use App\Models\DosenData;
-use App\Models\ProgramKelas;
-use App\Models\TahunAkademik;
-use App\Models\Jurusan;
-use App\Models\Semester;
-use App\Models\MataPelajaranMaster;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Support\Number;
+use Carbon\Carbon;
 
 class MataPelajaranKelasDistribusiImporter extends Importer
 {
@@ -23,167 +15,236 @@ class MataPelajaranKelasDistribusiImporter extends Importer
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('mataPelajaranKurikulum')
-                ->relationship(resolveUsing: 'id')
-                ->requiredMapping()
-                ->rules(['required', 'integer'])
-                ->label('ID Mapel Kurikulum')
+            // ═══════════════════════════════════════════════════════════════
+            // KUNCI IDENTIFIKASI — salah satu wajib di-map agar bisa update
+            // ═══════════════════════════════════════════════════════════════
+            ImportColumn::make('id')
+                ->label('ID Mata Pelajaran Kelas')
+                ->numeric()
+                ->integer()
+                ->rules(['nullable', 'integer'])
+                ->fillRecordUsing(fn() => null)  // tidak di-set ke model, hanya dipakai resolveRecord
+                ->guess(['id', 'id mata pelajaran kelas', 'ID', 'ID Mata Pelajaran Kelas'])
                 ->example('1'),
-            ImportColumn::make('kelas')
-                ->relationship(resolveUsing: 'id')
-                ->requiredMapping()
-                ->rules(['required', 'integer'])
-                ->label('ID Kelas')
-                ->example('1'),
-            ImportColumn::make('dosen')
-                ->relationship(resolveUsing: 'id')
-                ->rules(['integer', 'nullable'])
+
+            ImportColumn::make('kode_feeder')
+                ->label('Kode Feeder (Kunci Import)')
+                ->rules(['nullable', 'string', 'max:255'])
+                ->fillRecordUsing(fn() => null)  // tidak di-set ke model, hanya dipakai resolveRecord
+                ->guess(['kode_feeder', 'kode feeder', 'kode feeder (kunci import)', 'kodefeeder'])
+                ->example('MPK-001'),
+
+            // ═══════════════════════════════════════════════════════════════
+            // KOLOM DATA — semua bisa diupdate secara independent
+            // ═══════════════════════════════════════════════════════════════
+            ImportColumn::make('id_dosen_data')
                 ->label('ID Dosen')
+                ->numeric()
+                ->integer()
+                ->rules(['nullable', 'integer'])
+                ->ignoreBlankState()  // jika kosong, tidak menimpa data existing
+                ->guess(['id_dosen_data', 'id dosen', 'id dosen (untuk update dosen)'])
                 ->example('1'),
-            ImportColumn::make('uts')
-                ->rules(['datetime', 'nullable'])
-                ->example('2025-10-10 08:00:00')
-                ->label('Waktu UTS (YYYY-MM-DD HH:MM:SS)'),
-            ImportColumn::make('uas')
-                ->rules(['datetime', 'nullable'])
-                ->example('2025-12-10 08:00:00')
-                ->label('Waktu UAS (YYYY-MM-DD HH:MM:SS)'),
-            ImportColumn::make('ro_ruang_kelas')
-                ->numeric()
-                ->rules(['integer', 'nullable'])
-                ->label('ID Ruang Kelas'),
-            ImportColumn::make('ro_pelaksanaan_kelas')
-                ->numeric()
-                ->rules(['integer', 'nullable'])
-                ->label('ID Pelaksanaan Kelas'),
-            ImportColumn::make('id_pengawas')
-                ->numeric()
-                ->rules(['integer', 'nullable']),
+
             ImportColumn::make('jumlah')
+                ->label('Jumlah')
                 ->numeric()
-                ->rules(['integer', 'nullable']),
+                ->integer()
+                ->rules(['nullable', 'integer'])
+                ->ignoreBlankState()
+                ->guess(['jumlah'])
+                ->example('30'),
+
             ImportColumn::make('hari')
-                ->rules(['max:50', 'nullable'])
+                ->label('Hari')
+                ->rules(['nullable', 'string', 'max:50'])
+                ->ignoreBlankState()  // jika kosong, tidak menimpa data existing
+                ->guess(['hari'])
                 ->example('Senin'),
+
             ImportColumn::make('tanggal')
-                ->rules(['date', 'nullable'])
-                ->example('2025-01-01'),
+                ->label('Tanggal (YYYY-MM-DD)')
+                ->rules(['nullable', 'date'])
+                ->ignoreBlankState()
+                ->castStateUsing(function ($state) {
+                    if (blank($state)) {
+                        return null;
+                    }
+                    try {
+                        return Carbon::parse($state)->format('Y-m-d');
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                })
+                ->guess(['tanggal', 'tanggal (yyyy-mm-dd)'])
+                ->example('2025-08-25'),
+
             ImportColumn::make('jam')
-                ->rules(['max:50', 'nullable'])
+                ->label('Jam')
+                ->rules(['nullable', 'string', 'max:50'])
+                ->ignoreBlankState()
+                ->guess(['jam'])
                 ->example('08:00-10:00'),
+
+            ImportColumn::make('uts')
+                ->label('Jadwal UTS (YYYY-MM-DD HH:MM:SS)')
+                ->rules(['nullable', 'date'])
+                ->ignoreBlankState()
+                ->castStateUsing(function ($state) {
+                    if (blank($state)) {
+                        return null;
+                    }
+                    try {
+                        return Carbon::parse($state)->format('Y-m-d H:i:s');
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                })
+                ->guess(['uts', 'jadwal uts', 'jadwal uts (yyyy-mm-dd hh:mm:ss)'])
+                ->example('2025-10-10 08:00:00'),
+
+            ImportColumn::make('uas')
+                ->label('Jadwal UAS (YYYY-MM-DD HH:MM:SS)')
+                ->rules(['nullable', 'date'])
+                ->ignoreBlankState()
+                ->castStateUsing(function ($state) {
+                    if (blank($state)) {
+                        return null;
+                    }
+                    try {
+                        return Carbon::parse($state)->format('Y-m-d H:i:s');
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                })
+                ->guess(['uas', 'jadwal uas', 'jadwal uas (yyyy-mm-dd hh:mm:ss)'])
+                ->example('2025-12-10 08:00:00'),
+
             ImportColumn::make('status_uts')
-                ->label('Status UTS (Y/N)')
-                ->rules(['nullable', 'in:Y,N'])
-                ->example('Y')
-                ->castStateUsing(fn($state) => strtoupper(trim($state)) === 'Y' ? 'Y' : 'N'),
+                ->label('Status UTS (Y / N)')
+                ->rules(['nullable', 'in:Y,N,y,n'])
+                ->ignoreBlankState()
+                ->castStateUsing(fn($state) => filled($state) ? strtoupper(trim($state)) : null)
+                ->guess(['status_uts', 'status uts', 'status uts (y / n)'])
+                ->example('Y'),
+
             ImportColumn::make('status_uas')
-                ->label('Status UAS (Y/N)')
-                ->rules(['nullable', 'in:Y,N'])
-                ->example('N')
-                ->castStateUsing(fn($state) => strtoupper(trim($state)) === 'Y' ? 'Y' : 'N'),
+                ->label('Status UAS (Y / N)')
+                ->rules(['nullable', 'in:Y,N,y,n'])
+                ->ignoreBlankState()
+                ->castStateUsing(fn($state) => filled($state) ? strtoupper(trim($state)) : null)
+                ->guess(['status_uas', 'status uas', 'status uas (y / n)'])
+                ->example('N'),
+
             ImportColumn::make('ruang_uts')
-                ->rules(['max:100', 'nullable']),
+                ->label('Ruang UTS')
+                ->rules(['nullable', 'string', 'max:100'])
+                ->ignoreBlankState()
+                ->guess(['ruang_uts', 'ruang uts'])
+                ->example('Aula A'),
+
             ImportColumn::make('ruang_uas')
-                ->rules(['max:100', 'nullable']),
+                ->label('Ruang UAS')
+                ->rules(['nullable', 'string', 'max:100'])
+                ->ignoreBlankState()
+                ->guess(['ruang_uas', 'ruang uas'])
+                ->example('Aula B'),
+
             ImportColumn::make('link_kelas')
-                ->rules(['nullable']),
+                ->label('Link Kelas')
+                ->rules(['nullable', 'string', 'max:500'])
+                ->ignoreBlankState()
+                ->guess(['link_kelas', 'link kelas'])
+                ->example('https://meet.google.com/xxx'),
+
             ImportColumn::make('passcode')
-                ->rules(['max:100', 'nullable']),
+                ->label('Passcode')
+                ->rules(['nullable', 'string', 'max:100'])
+                ->ignoreBlankState()
+                ->guess(['passcode'])
+                ->example('abc123'),
 
-            // === REFERENCE COLUMNS FOR CSV EXAMPLES ===
-
-            // REF: Mapel Kurikulum dengan informasi lengkap (Nama Kurikulum & Semester)
-            ImportColumn::make('ref_mapel_kurikulum')
-                ->label('REF: Mapel Kurikulum (ID - Nama Mapel | Nama Kurikulum | Semester)')
+            // ═══════════════════════════════════════════════════════════════
+            // KOLOM REFERENSI — hanya untuk informasi, tidak disimpan
+            // ═══════════════════════════════════════════════════════════════
+            ImportColumn::make('mata_pelajaran')
+                ->label('Nama Mata Pelajaran [REF - tidak diimport]')
                 ->fillRecordUsing(fn() => null)
-                ->examples(
-                    fn() => MataPelajaranKurikulum::with(['mataPelajaranMaster', 'kurikulum'])
-                        ->get()
-                        ->map(function ($item) {
-                            $namaMapel = $item->mataPelajaranMaster ? $item->mataPelajaranMaster->nama : 'Unknown';
-                            $namaKurikulum = $item->kurikulum ? $item->kurikulum->nama : 'Unknown';
-                            $semester = $item->semester ?? 'Unknown';
+                ->guess(['mata_pelajaran', 'nama mata pelajaran'])
+                ->example('Matematika Dasar'),
 
-                            return sprintf(
-                                '%d - %s | %s | Smt %s',
-                                $item->id,
-                                $namaMapel,
-                                $namaKurikulum,
-                                $semester
-                            );
-                        })
-                        ->toArray()
-                ),
-
-            // REF: Kelas dengan informasi lengkap (Semester | Jurusan | Tahun Akademik | Status)
-            ImportColumn::make('ref_kelas')
-                ->label('REF: Kelas (ID - Semester | Jurusan | Tahun Akademik | Status)')
+            ImportColumn::make('program_kelas')
+                ->label('Program Kelas [REF - tidak diimport]')
                 ->fillRecordUsing(fn() => null)
-                ->examples(
-                    fn() => Kelas::with(['jurusan', 'tahunAkademik', 'programKelas'])
-                        ->get()
-                        ->map(function ($item) {
-                            $semester = $item->semester ?? 'Unknown';
-                            $namaJurusan = $item->jurusan ? $item->jurusan->nama : 'Unknown';
-                            $tahunAkademik = $item->tahunAkademik ? $item->tahunAkademik->tahun : 'Unknown';
-                            $status = $item->status_aktif ?? 'Aktif';
-                            $nama = $item->programKelas ? $item->programKelas->nilai : 'Unknown';
+                ->guess(['program_kelas', 'program kelas'])
+                ->example('Reguler Pagi'),
 
-                            return sprintf(
-                                '%d - %s | Smt %s | %s | %s | %s',
-                                $item->id,
-                                $nama,
-                                $semester,
-                                $namaJurusan,
-                                $tahunAkademik,
-                                $status,
-                            );
-                        })
-                        ->toArray()
-                ),
-
-            // REF: Dosen dengan informasi Jurusan
-            ImportColumn::make('ref_dosen')
-                ->label('REF: Dosen (ID - Nama | Jurusan)')
+            ImportColumn::make('dosen_nama')
+                ->label('Nama Dosen [REF - tidak diimport]')
                 ->fillRecordUsing(fn() => null)
-                ->examples(
-                    fn() => DosenData::with('jurusan')
-                        ->select('id', 'nama', 'id_jurusan')
-                        ->get()
-                        ->map(function ($dosen) {
-                            $namaJurusan = $dosen->jurusan ? $dosen->jurusan->nama : 'Tanpa Jurusan';
+                ->guess(['dosen_nama', 'nama dosen'])
+                ->example('Dr. Budi'),
 
-                            return sprintf(
-                                '%d - %s | %s',
-                                $dosen->id,
-                                $dosen->nama,
-                                $namaJurusan
-                            );
-                        })
-                        ->toArray()
-                ),
+            ImportColumn::make('ruang')
+                ->label('Ruang Kelas [REF - tidak diimport]')
+                ->fillRecordUsing(fn() => null)
+                ->guess(['ruang', 'ruang kelas'])
+                ->example('Kelas A101'),
+
+            ImportColumn::make('pelaksanaan')
+                ->label('Pelaksanaan [REF - tidak diimport]')
+                ->fillRecordUsing(fn() => null)
+                ->guess(['pelaksanaan'])
+                ->example('Online'),
         ];
     }
 
+    /**
+     * Resolve record untuk di-update.
+     *
+     * Prioritas lookup:
+     *   1. ID langsung   → paling akurat
+     *   2. kode_feeder   → lewat relasi mataPelajaranKurikulum.mataPelajaranMaster
+     *
+     * Mengembalikan null jika tidak ditemukan (baris diabaikan, tidak membuat record baru).
+     */
     public function resolveRecord(): ?MataPelajaranKelasDistribusi
     {
-        // Avoid undefined array key errors by checking existence
-        if (isset($this->data['mataPelajaranKurikulum']) && isset($this->data['kelas'])) {
-            return MataPelajaranKelasDistribusi::firstOrNew([
-                'id_mata_pelajaran_kurikulum' => $this->data['mataPelajaranKurikulum'],
-                'id_kelas' => $this->data['kelas'],
-            ]);
+        $id         = $this->data['id'] ?? null;
+        $kodeFeeder = $this->data['kode_feeder'] ?? null;
+
+        // ── Prioritas 1: cari by primary key ──
+        if (filled($id) && (int) $id > 0) {
+            $record = MataPelajaranKelasDistribusi::find((int) $id);
+            if ($record) {
+                return $record;
+            }
         }
 
-        return new MataPelajaranKelasDistribusi();
+        // ── Prioritas 2: cari by kode_feeder ──
+        if (filled($kodeFeeder)) {
+            $record = MataPelajaranKelasDistribusi::whereHas(
+                'mataPelajaranKurikulum.mataPelajaranMaster',
+                fn($q) => $q->where('kode_feeder', trim($kodeFeeder))
+            )->first();
+
+            if ($record) {
+                return $record;
+            }
+        }
+
+        // Tidak ditemukan → skip baris ini (jangan buat record baru)
+        return null;
     }
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Import distribusi mata pelajaran kelas selesai. ' . Number::format($import->successful_rows) . ' baris berhasil diimpor.';
+        $body = 'Import / Update Mata Pelajaran Kelas selesai. '
+            . number_format($import->successful_rows)
+            . ' baris berhasil diperbarui.';
 
         if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . Number::format($failedRowsCount) . ' baris gagal diimpor.';
+            $body .= ' ' . number_format($failedRowsCount) . ' baris gagal (cek file detail).';
         }
 
         return $body;
