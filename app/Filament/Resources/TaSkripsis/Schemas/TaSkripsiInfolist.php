@@ -28,21 +28,20 @@ class TaSkripsiInfolist
                                 'selesai'   => 'info',
                                 default     => 'gray',
                             }),
-                        TextEntry::make('judul')->label('Judul Skripsi')->columnSpanFull(),
+                        TextEntry::make('judul')->label('Judul')->columnSpanFull(),
                         TextEntry::make('abstrak')->label('Abstrak')->columnSpanFull(),
                         TextEntry::make('tgl_pengajuan')->label('Tanggal Pengajuan')->date('d M Y'),
-                        TextEntry::make('tgl_acc_skripsi')->label('Tanggal ACC Skripsi')->date('d M Y'),
+                        TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
                     ]),
 
-                Section::make('Sidang & Nilai')
+                Section::make('Jadwal Ujian')
                     ->columns(2)
                     ->schema([
-                        TextEntry::make('tgl_ujian')->label('Tanggal Sidang')->date('d M Y'),
-                        TextEntry::make('ruangan_ujian')->label('Ruangan Sidang'),
-                        TextEntry::make('status_ujian')->label('Hasil Sidang')->badge(),
-                        TextEntry::make('nilai_rata_rata')->label('Nilai Rata-rata'),
-                        TextEntry::make('nilai_akhir')->label('Nilai Akhir'),
-                        TextEntry::make('grade')->label('Grade')->badge(),
+                        TextEntry::make('tgl_ujian')->label('Tanggal Ujian')->date('d M Y'),
+                        TextEntry::make('ruangan_ujian')->label('Ruangan'),
+                        TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
+                        TextEntry::make('file')->label('File Proposal')
+                            ->formatStateUsing(fn($state) => $state ? '✅ Ada' : '—'),
                     ]),
 
                 Section::make('Pembimbing')
@@ -51,11 +50,12 @@ class TaSkripsiInfolist
                         TextEntry::make('dosenPembimbing1.nama')->label('Pembimbing 1'),
                         TextEntry::make('dosenPembimbing2.nama')->label('Pembimbing 2'),
                         TextEntry::make('dosenPembimbing3.nama')->label('Pembimbing 3'),
+                        TextEntry::make('nilai_rata_rata')->label('Rata-rata Nilai'),
                     ]),
 
-                Section::make('Penilaian per Dosen')
+                Section::make('Penilaian')
                     ->columns(3)
-                    ->collapsed()
+                    // ->collapsed()
                     ->schema([
                         TextEntry::make('status_dosen_1')->label('Status Dosen 1')->badge(),
                         TextEntry::make('status_dosen_2')->label('Status Dosen 2')->badge(),

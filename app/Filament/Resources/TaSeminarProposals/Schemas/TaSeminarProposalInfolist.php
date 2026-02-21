@@ -12,7 +12,7 @@ class TaSeminarProposalInfolist
     {
         return $schema
             ->components([
-                Section::make('Informasi Seminar')
+                Section::make('Informasi Seminar Proposal')
                     ->columns(2)
                     ->schema([
                         TextEntry::make('tahunAkademik.nama')->label('Tahun Akademik'),
@@ -34,13 +34,14 @@ class TaSeminarProposalInfolist
                         TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
                     ]),
 
-                Section::make('Jadwal & Hasil')
+                Section::make('Jadwal Ujian')
                     ->columns(2)
                     ->schema([
-                        TextEntry::make('tgl_ujian')->label('Tanggal Seminar')->date('d M Y'),
+                        TextEntry::make('tgl_ujian')->label('Tanggal Ujian')->date('d M Y'),
                         TextEntry::make('ruangan_ujian')->label('Ruangan'),
-                        TextEntry::make('status_ujian')->label('Hasil Keseluruhan')->badge(),
-                        TextEntry::make('nilai_rata_rata')->label('Nilai Rata-rata'),
+                        TextEntry::make('tgl_acc_judul')->label('Tanggal ACC')->date('d M Y'),
+                        TextEntry::make('file')->label('File Proposal')
+                            ->formatStateUsing(fn($state) => $state ? '✅ Ada' : '—'),
                     ]),
 
                 Section::make('Pembimbing')
@@ -49,11 +50,12 @@ class TaSeminarProposalInfolist
                         TextEntry::make('dosenPembimbing1.nama')->label('Pembimbing 1'),
                         TextEntry::make('dosenPembimbing2.nama')->label('Pembimbing 2'),
                         TextEntry::make('dosenPembimbing3.nama')->label('Pembimbing 3'),
+                        TextEntry::make('nilai_rata_rata')->label('Rata-rata Nilai'),
                     ]),
 
-                Section::make('Penilaian per Dosen')
+                Section::make('Penilaian')
                     ->columns(3)
-                    ->collapsed()
+                    // ->collapsed()
                     ->schema([
                         TextEntry::make('status_dosen_1')->label('Status Dosen 1')->badge(),
                         TextEntry::make('status_dosen_2')->label('Status Dosen 2')->badge(),

@@ -27,7 +27,7 @@ class TaPengajuanJudulForm
                     ->schema([
                         Select::make('id_tahun_akademik')
                             ->label('Tahun Akademik')
-                            ->options(TahunAkademik::pluck('nama', 'id'))
+                            ->options(TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
                             ->searchable()
                             // ->required()
                             ->disabled(fn() => self::isPengajar() || self::isMurid()),
@@ -103,7 +103,7 @@ class TaPengajuanJudulForm
                                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                             ])
                             ->columnSpanFull()
-                            ->disabled(fn() => self::isPengajar()),
+                            ->disabled(fn($record) => self::isPengajar() || (self::isMurid() && $record !== null)),
                     ]),
 
                 // ── PEMBIMBING ───────────────────────────────────────────────

@@ -44,6 +44,7 @@ class TaPengajuanJudulsTable
 
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? $record->tahunAkademik->nama . ' - ' . $record->tahunAkademik->periode : '-')
                     ->sortable(),
 
                 // Kolom posisi pembimbing — hanya tampil untuk dosen pengajar
@@ -109,7 +110,7 @@ class TaPengajuanJudulsTable
 
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->relationship('tahunAkademik', 'nama')
+                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
                     ->searchable()
                     ->preload(),
             ])

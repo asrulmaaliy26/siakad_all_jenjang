@@ -10,11 +10,21 @@ use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use App\Models\DosenData;
+use Filament\Facades\Filament;
 
 class TaSeminarProposalsTable
 {
     public static function configure(Table $table): Table
     {
+        $user    = Filament::auth()->user();
+        $isPengajar = $user
+            && $user->hasRole('pengajar')
+            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
+        $dosenId = $isPengajar
+            ? DosenData::where('user_id', $user->id)->value('id')
+            : null;
+
         return $table
             ->columns([
                 TextColumn::make('riwayatPendidikan.siswa.nama')
@@ -34,12 +44,44 @@ class TaSeminarProposalsTable
 
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? $record->tahunAkademik->nama . ' - ' . $record->tahunAkademik->periode : '-')
+                    ->sortable(),
+
+                // Kolom posisi pembimbing — hanya tampil untuk dosen pengajar
+                TextColumn::make('posisi_pembimbing')
+                    ->label('Posisi Anda')
+                    ->state(function ($record) use ($dosenId) {
+                        if (!$dosenId) return null;
+                        if ($record->id_dosen_pembimbing_1 == $dosenId) return 'Pembimbing 1';
+                        if ($record->id_dosen_pembimbing_2 == $dosenId) return 'Pembimbing 2';
+                        if ($record->id_dosen_pembimbing_3 == $dosenId) return 'Pembimbing 3';
+                        return null;
+                    })
+                    ->badge()
+                    ->color('info')
+                    ->visible($isPengajar),
+
+                // Pembimbing 1/2/3 — hanya tampil untuk admin
+                TextColumn::make('dosenPembimbing1.nama')
+                    ->label('Pembimbing 1')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(!$isPengajar),
+
+                TextColumn::make('dosenPembimbing2.nama')
+                    ->label('Pembimbing 2')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(!$isPengajar),
+
+                TextColumn::make('tgl_pengajuan')
+                    ->label('Tgl Pengajuan')
+                    ->date('d/m/Y')
                     ->sortable(),
 
                 TextColumn::make('tgl_ujian')
-                    ->label('Tgl Seminar')
+                    ->label('Tgl Ujian')
                     ->date('d/m/Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 BadgeColumn::make('status')
                     ->label('Status')
@@ -68,17 +110,20 @@ class TaSeminarProposalsTable
 
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->relationship('tahunAkademik', 'nama')
+                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
                     ->searchable()
                     ->preload(),
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    // Dosen pengajar tidak bisa edit — hanya admin
+                    ->visible(!$isPengajar),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(!$isPengajar),
                 ]),
             ]);
     }
