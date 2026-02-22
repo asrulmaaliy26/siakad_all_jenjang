@@ -58,7 +58,13 @@ class RiwayatPendidikan extends Model
         'keterangan',
         'pembiayaan',
         'status',
+        'id_wali_dosen',
     ];
+
+    public function waliDosen()
+    {
+        return $this->belongsTo(DosenData::class, 'id_wali_dosen');
+    }
 
     public function siswa()
     {

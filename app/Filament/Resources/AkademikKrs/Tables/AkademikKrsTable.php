@@ -42,6 +42,13 @@ class AkademikKrsTable
                     ->icon('heroicon-o-clipboard')
                     ->iconPosition('after'),
 
+                TextColumn::make('riwayatPendidikan.waliDosen.nama')
+                    ->label('Wali Dosen')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable()
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
+
                 // Data KRS
                 TextColumn::make('semester')
                     ->label('Semester')
@@ -70,7 +77,7 @@ class AkademikKrsTable
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
-                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -87,7 +94,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -104,7 +111,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -121,7 +128,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',

@@ -37,8 +37,13 @@ class RiwayatPendidikanForm
                 TextInput::make('nomor_induk'),
                 DatePicker::make('tanggal_mulai'),
                 DatePicker::make('tanggal_selesai'),
+                Select::make('id_wali_dosen')
+                    ->label('Wali Dosen')
+                    ->relationship('waliDosen', 'nama')
+                    ->searchable()
+                    ->preload(),
                 Select::make('status_aktif')
-                    ->options(['Y' => 'Y', 'N' => 'N']),
+                    ->options(['Y' => 'Aktif', 'N' => 'Tidak Aktif']),
             ]);
     }
 }

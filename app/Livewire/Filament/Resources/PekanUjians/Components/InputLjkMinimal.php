@@ -18,9 +18,31 @@ use Illuminate\Support\Facades\Log;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\Section;
 
-class InputLjkMinimal extends Component implements HasForms
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+
+class InputLjkMinimal extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
+    use InteractsWithActions;
+
+    public function boot()
+    {
+        Log::info("Booting InputLjkMinimal", [
+            'id' => $this->getId(),
+            'user' => auth()->id(),
+            'type' => $this->type ?? 'not set',
+            'has_record' => isset($this->record),
+        ]);
+    }
+
+    public function hydrate()
+    {
+        Log::info("Hydrating InputLjkMinimal", [
+            'id' => $this->getId(),
+            'selectedStudentId' => $this->selectedStudentId
+        ]);
+    }
 
     public ?Model $record = null; // MataPelajaranKelas
     public string $type = 'uts'; // 'uts' or 'uas'
@@ -67,13 +89,13 @@ class InputLjkMinimal extends Component implements HasForms
                                 return new \Illuminate\Support\HtmlString('<a href="' . asset('storage/' . $file) . '" target="_blank" class="text-primary-600 underline font-bold">Unduh / Lihat Soal</a>');
                             }),
 
-                        Placeholder::make('catatan_soal')
-                            ->label('Instruksi / Soal Text')
-                            ->content(function () {
-                                $field = $this->type == 'uas' ? 'ctt_soal_uas' : 'ctt_soal_uts';
-                                $text = $this->record?->$field;
-                                return new \Illuminate\Support\HtmlString($text ?? '-');
-                            }),
+                        // Placeholder::make('catatan_soal')
+                        //     ->label('Instruksi / Soal Text')
+                        //     ->content(function () {
+                        //         $field = $this->type == 'uas' ? 'ctt_soal_uas' : 'ctt_soal_uts';
+                        //         $text = $this->record?->$field;
+                        //         return new \Illuminate\Support\HtmlString($text ?? '-');
+                        //     }),
                     ])
                     ->collapsible(),
 
@@ -166,73 +188,81 @@ class InputLjkMinimal extends Component implements HasForms
         }
     }
 
-    public function save()
+    public function submitForm()
     {
+        $userId = auth()->id();
+        Log::info("submitForm execution started for user: {$userId}");
+
         try {
+            Log::info("Fetching LJK record for student: {$this->selectedStudentId}");
             $ljk = $this->getSelectedLjkRecord();
+
             if (!$ljk) {
+                Log::error("Save failed: LJK record not found for student {$this->selectedStudentId}");
                 Notification::make()
-                    ->title('Gagal Menyimpan')
-                    ->body('Data LJK tidak ditemukan untuk mata pelajaran ini.')
+                    ->title('Gagal')
+                    ->body('Data LJK tidak ditemukan.')
                     ->danger()
                     ->send();
                 return;
             }
 
-            // Validasi data form
+            Log::info("Getting form state...");
             $state = $this->form->getState();
+            Log::info("State retrieved successfully", [
+                'keys' => array_keys($state)
+            ]);
 
-            if (empty($state)) {
-                Notification::make()
-                    ->title('Peringatan')
-                    ->body('Tidak ada data yang diubah atau data form tidak valid.')
-                    ->warning()
-                    ->send();
-                return;
-            }
+            // Determine fields
+            $fileField = $this->type === 'uas' ? 'ljk_uas' : 'ljk_uts';
+            $tglField = $this->type === 'uas' ? 'tgl_upload_ljk_uas' : 'tgl_upload_ljk_uts';
 
-            // Update timestamp upload jika ada file baru
-            $fileField = $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts';
-            $tglField = $this->type == 'uas' ? 'tgl_upload_ljk_uas' : 'tgl_upload_ljk_uts';
-
-            // Khusus pengecekan jika file benar-benar berubah
+            // Prepare update data
+            $updateData = $state;
             if (isset($state[$fileField]) && $state[$fileField] !== $ljk->$fileField) {
-                $state[$tglField] = now();
+                $updateData[$tglField] = now();
             }
 
-            // Lakukan update (menggunakan withoutGlobalScopes untuk keamanan simpan lintas jenjang)
+            // Perform Update using Model Instance to trigger any observer/events
+            // and use withoutGlobalScopes effectively
+            // Perform Update using the model instance
+            Log::info("Updating LJK record via model instance", [
+                'id' => $ljk->id,
+                'data' => $updateData
+            ]);
+
+            $ljk->fill($updateData);
+            // $ljk->save(); // We use the instance fetched withoutGlobalScopes
+
+            // To be absolutely sure we bypass scopes during save
             $success = SiswaDataLJK::query()
                 ->withoutGlobalScopes()
                 ->where('id', $ljk->id)
-                ->update($state);
+                ->update($updateData);
 
-            if ($success) {
+            if ($success !== false) { // update() returns number of rows, but can be 0 if nothing changed
+                Log::info("Database record updated successfully", ['id' => $ljk->id, 'rows' => $success]);
+
                 Notification::make()
                     ->title('Berhasil Disimpan')
-                    ->body('Data Jawaban LJK ' . strtoupper($this->type) . ' telah berhasil diperbarui.')
+                    ->body('Jawaban Anda telah berhasil diperbarui.')
                     ->success()
                     ->send();
 
-                $this->updatedSelectedStudentId(); // Refresh form state
+                $this->updatedSelectedStudentId(); // Sync data back
             } else {
-                throw new \Exception('Update gagal dilakukan ke database.');
+                Log::error("Update failed for LJK ID: {$ljk->id}");
+                throw new \Exception('Gagal memperbarui data ke database.');
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Notification::make()
-                ->title('Kesalahan Validasi')
-                ->body('Pastikan semua input sudah benar: ' . implode(', ', $e->errors()))
-                ->danger()
-                ->send();
         } catch (\Exception $e) {
-            Log::error('Error saving LJK: ' . $e->getMessage(), [
-                'student_id' => $this->selectedStudentId,
-                'mk_id' => $this->record?->id,
-                'trace' => $e->getTraceAsString()
+            Log::error('LJK Save Exception: ' . $e->getMessage(), [
+                'student' => $this->selectedStudentId,
+                'error' => $e->getMessage()
             ]);
 
             Notification::make()
-                ->title('Terjadi Kesalahan')
-                ->body('Gagal menyimpan data: ' . $e->getMessage())
+                ->title('Gagal Menyimpan')
+                ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
@@ -240,6 +270,11 @@ class InputLjkMinimal extends Component implements HasForms
 
     public function render()
     {
+        Log::info("Rendering InputLjkMinimal", [
+            'student' => $this->selectedStudentId,
+            'mk_record' => $this->record?->id,
+            'has_form_data' => !empty($this->data)
+        ]);
         return view('livewire.filament.resources.pekan-ujians.components.input-ljk-minimal');
     }
 }

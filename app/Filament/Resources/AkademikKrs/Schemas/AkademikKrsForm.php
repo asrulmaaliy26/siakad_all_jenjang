@@ -21,7 +21,7 @@ class AkademikKrsForm
                     ->searchable()
                     ->preload()
                     ->required()
-                    ->visible(fn() => ! auth()->user()?->isMurid()),
+                    ->visible(fn() => ! auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
 
                 // Select::make('id_kelas')
                 //     ->relationship('kelas.programKelas', 'nilai')
@@ -55,7 +55,7 @@ class AkademikKrsForm
                         'N' => 'Belum Lunas',
                     ])
                     ->default('N')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
 
                 Select::make('syarat_uts')
                     ->label('Syarat UTS')
@@ -64,7 +64,7 @@ class AkademikKrsForm
                         'N' => 'Belum',
                     ])
                     ->default('N')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
 
                 Select::make('syarat_uas')
                     ->label('Syarat UAS')
@@ -73,7 +73,7 @@ class AkademikKrsForm
                         'N' => 'Belum',
                     ])
                     ->default('N')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
 
                 Select::make('syarat_krs')
                     ->label('Syarat KRS')
@@ -82,7 +82,7 @@ class AkademikKrsForm
                         'N' => 'Belum',
                     ])
                     ->default('N')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
 
                 // TextInput::make('syarat_lain')
                 //     ->label('Syarat Lain'),
@@ -90,8 +90,8 @@ class AkademikKrsForm
                 Select::make('status_aktif')
                     ->label('Status Aktif')
                     ->options([
-                        'Y' => 'Aktif',
-                        'N' => 'Tidak Aktif',
+                        'Y' => 'Disetujui',
+                        'N' => 'Belum Disetujui',
                     ])
                     ->default('Y')
                     ->disabled(fn() => auth()->user()?->isMurid()),

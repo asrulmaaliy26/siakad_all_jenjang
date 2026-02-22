@@ -57,6 +57,7 @@ class AkademikKrsResource extends Resource
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = parent::getEloquentQuery();
+        /** @var \App\Models\User $user */
         $user  = \Filament\Facades\Filament::auth()->user();
 
         // Murid hanya melihat KRS milik dirinya
@@ -64,6 +65,19 @@ class AkademikKrsResource extends Resource
             $query->whereHas('riwayatPendidikan.siswaData', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
+        }
+
+        // Pengajar hanya melihat KRS dari mahasiswa bimbingannya (wali dosen)
+        if ($user && $user->isPengajar()) {
+            $dosenId = $user->getDosenId();
+            if ($dosenId) {
+                $query->whereHas('riwayatPendidikan', function ($q) use ($dosenId) {
+                    $q->where('id_wali_dosen', $dosenId);
+                });
+            } else {
+                // Jika tidak ada data dosen, jangan tampilkan apa-apa atau batasi
+                $query->whereRaw('1 = 0');
+            }
         }
 
         return $query;

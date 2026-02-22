@@ -91,25 +91,34 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->closeModalByClickingAway(false)
                     ->disabled(function () {
                         $krs  = $this->getOwnerRecord();
-                        // $user = auth()->user();
+                        $user = auth()->user();
 
-                        // Murid tidak boleh tambah mata pelajaran
-                        // if ($user && $user->isMurid()) {
-                        //     return true;
-                        // }
+                        // Cek role user
+                        $isMurid = $user && $user->isMurid();
 
-                        // Jika syarat_krs sudah 'Y' (KRS terkunci), disable tombol
-                        return ($krs->syarat_krs ?? 'N') === 'Y';
+                        // Untuk role murid: tombol disabled hanya jika syarat_krs = 'Y' (terkunci)
+                        if ($isMurid) {
+                            return ($krs->syarat_aktif ?? 'N') === 'Y';
+                        }
+
+                        // Untuk role selain murid (admin/guru): tombol selalu enabled
+                        return false;
                     })
                     ->tooltip(function () {
                         $krs = $this->getOwnerRecord();
-                        if (($krs->syarat_krs ?? 'N') === 'Y') {
+                        $user = auth()->user();
+
+                        // Tooltip hanya untuk murid jika KRS terkunci
+                        if ($user && $user->isMurid() && ($krs->syarat_krs ?? 'N') === 'Y') {
                             return 'KRS sudah dikunci – syarat KRS telah terpenuhi';
                         }
+
                         return null;
                     })
                     ->before(function ($record, \Filament\Actions\Action $action) {
                         $user = auth()->user();
+
+                        // Validasi pembayaran hanya untuk role murid
                         if ($user?->isMurid() && ($record->status_bayar ?? 'N') === 'N') {
                             \Filament\Notifications\Notification::make()
                                 ->title('Pembayaran Belum Selesai')

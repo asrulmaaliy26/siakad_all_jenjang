@@ -29,6 +29,11 @@ class RiwayatPendidikansTable
                 TextColumn::make('jurusan.nama')
                     // ->numeric()
                     ->sortable(),
+                TextColumn::make('waliDosen.nama')
+                    ->label('Wali Dosen')
+                    ->searchable()
+                    ->toggleable()
+                    ->sortable(),
                 TextColumn::make('statusSiswa.nilai')
                     ->label('Status Siswa')
                     ->toggleable(false)

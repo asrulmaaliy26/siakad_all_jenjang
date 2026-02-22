@@ -59,24 +59,25 @@
         <!-- Form Input LJK -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
             wire:key="student-form-{{ $selectedStudentId ?? 'none' }}">
-            <form wire:submit="save">
+            <div class="space-y-6">
                 {{ $this->form }}
 
                 <div class="mt-6 flex justify-end">
-                    <button type="submit"
+                    <button type="button"
+                        wire:click.prevent="submitForm"
                         wire:loading.attr="disabled"
-                        wire:target="save"
+                        wire:target="submitForm"
                         class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
-                        <x-heroicon-o-check wire:loading.remove wire:target="save" class="w-5 h-5 mr-2" />
-                        <svg wire:loading wire:target="save" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <x-heroicon-o-check wire:loading.remove wire:target="submitForm" class="w-5 h-5 mr-2" />
+                        <svg wire:loading wire:target="submitForm" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span wire:loading.remove wire:target="save">Simpan Data LJK</span>
-                        <span wire:loading wire:target="save">Menyimpan...</span>
+                        <span wire:loading.remove wire:target="submitForm">Simpan Data LJK</span>
+                        <span wire:loading wire:target="submitForm">Menyimpan...</span>
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
         @elseif(!$isMurid)
         <!-- Empty State for Admin -->
