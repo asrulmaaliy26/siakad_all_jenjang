@@ -217,6 +217,14 @@ class AbsensiSiswaRelationManager extends RelationManager
                     }),
             ])
             ->headerActions([
+                Action::make('cetak_absensi_kosong')
+                    ->label('Cetak Absen Kosong')
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->url(fn(): string => route('cetak.absensi.kosong', ['id_mata_pelajaran_kelas' => $this->getOwnerRecord()->id]))
+                    ->openUrlInNewTab()
+                    ->disabled(fn() => auth()->user()->isMurid()),
+
                 Action::make('rekap_absensi')
                     ->label('Rekap Absensi')
                     ->icon('heroicon-o-document-chart-bar')
@@ -258,6 +266,7 @@ class AbsensiSiswaRelationManager extends RelationManager
 
                         return view('filament.resources.mata-pelajaran-kelas.rekap-absensi', [
                             'records' => $data,
+                            'id_mata_pelajaran_kelas' => $record->id,
                         ]);
                     })
                     ->modalWidth('7xl')

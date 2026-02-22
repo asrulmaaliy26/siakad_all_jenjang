@@ -1,3 +1,12 @@
+<div style="margin-bottom: 1rem; text-align: right;">
+    <a href="{{ route('cetak.absensi.terisi', ['id_mata_pelajaran_kelas' => $id_mata_pelajaran_kelas]) }}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: white; background-color: #2563eb; border-radius: 0.375rem; text-decoration: none; transition: background-color 0.2s;">
+        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        Cetak Data Absensi (Terisi)
+    </a>
+</div>
+
 <div style="overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 0.75rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
     <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; color: #6b7280;">
         <thead style="background-color: #f9fafb; color: #374151; text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;">

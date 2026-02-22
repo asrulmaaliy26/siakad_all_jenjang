@@ -163,7 +163,30 @@ class SiswaDataLJKSTable
             ])
             // ->toolbarActions([])
             ->headerActions([
+                \Filament\Actions\Action::make('cetak_pdf')
+                    ->label('Cetak PDF')
+                    ->icon('heroicon-o-printer')
+                    ->color('danger')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()
+                            ->with([
+                                'akademikKrs.riwayatPendidikan.siswa',
+                                'mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
+                                'mataPelajaranKelas.dosenData'
+                            ])
+                            ->get();
+
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.nilai-ljk', ['records' => $records])
+                            ->setPaper('A4', 'landscape');
+
+                        return response()->streamDownload(
+                            fn() => print($pdf->output()),
+                            'Cetak_Data_Nilai_' . now()->format('Ymd_His') . '.pdf'
+                        );
+                    }),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
+                    ->label('Export Excel')
+                    ->color('success')
             ])
             ->defaultSort('created_at', 'desc');
     }
