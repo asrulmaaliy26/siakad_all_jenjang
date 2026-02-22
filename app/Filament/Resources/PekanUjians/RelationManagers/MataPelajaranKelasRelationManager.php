@@ -263,14 +263,15 @@ class MataPelajaranKelasRelationManager extends RelationManager
                             });
 
                             Notification::make()
-                                ->title('Status updated successfully')
+                                ->title('Berhasil Diperbarui')
+                                ->body('Status ujian untuk ' . $records->count() . ' mata pelajaran telah diubah menjadi ' . ($data['status'] === 'Y' ? 'Aktif' : 'Tidak Aktif') . '.')
                                 ->success()
                                 ->send();
                         } else {
                             Notification::make()
                                 ->title('Gagal Update Status')
-                                ->body('Jenis ujian pada Pekan Ujian tidak terdeteksi sebagai UTS atau UAS. Jenis: ' . $pekanUjian->jenis_ujian)
-                                ->danger()
+                                ->body('Jenis ujian pada Pekan Ujian tidak terdeteksi sebagai UTS atau UAS. (Jenis: ' . ($pekanUjian->jenis_ujian ?? 'Kosong') . ')')
+                                ->warning()
                                 ->send();
                         }
                     })
