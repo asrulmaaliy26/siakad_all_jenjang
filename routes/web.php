@@ -47,3 +47,34 @@ Route::get('/cetak-absensi-terisi/{id_mata_pelajaran_kelas}', function ($id) {
 
     return view('cetak.absensi-terisi', compact('kelas', 'krsList', 'sesiAbsensi', 'absensiData'));
 })->name('cetak.absensi.terisi');
+
+// ── Cetak KRS PDF ─────────────────────────────────────────────────────────
+Route::get('/cetak-krs/{id}', function ($id) {
+    if (! \Illuminate\Support\Facades\Auth::check()) {
+        return redirect('/');
+    }
+
+    $krs = \App\Models\AkademikKrs::with([
+        'riwayatPendidikan.siswa',
+        'riwayatPendidikan.jurusan.jenjangPendidikan',
+        'kelas.tahunAkademik',
+        'kelas.programKelas',
+    ])->findOrFail($id);
+
+    // Proteksi: murid hanya bisa cetak KRS miliknya sendiri
+    $user = \Illuminate\Support\Facades\Auth::user();
+    if ($user->isMurid()) {
+        $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+        if (! $siswa || $krs->riwayatPendidikan?->id_siswa_data !== $siswa->id) {
+            abort(403, 'Anda tidak berhak mencetak KRS ini.');
+        }
+    }
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.krs', compact('krs'))
+        ->setPaper('a4', 'portrait');
+
+    $namaSiswa = \Illuminate\Support\Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'krs');
+    $semester  = $krs->semester ?? 'x';
+
+    return $pdf->stream("KRS-{$namaSiswa}-smt{$semester}.pdf");
+})->name('cetak.krs');

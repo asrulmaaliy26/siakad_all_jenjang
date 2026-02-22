@@ -34,10 +34,14 @@
                 <div>
                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
                     <div class="mt-1">
+                        @php
+                        $statusKey = $type == 'uas' ? 'status_uas' : 'status_uts';
+                        $statusValue = $record->$statusKey;
+                        @endphp
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 
-                            {{ $record->status_uas == 'Y' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
-                            <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $record->status_uas == 'Y' ? 'bg-green-600' : 'bg-red-600' }}"></span>
-                            {{ $record->status_uas == 'Y' ? 'Aktif' : 'Tidak Aktif' }}
+                            {{ ($statusValue == 'Y' || $statusValue === true) ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
+                            <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ ($statusValue == 'Y' || $statusValue === true) ? 'bg-green-600' : 'bg-red-600' }}"></span>
+                            {{ ($statusValue == 'Y' || $statusValue === true) ? 'Aktif' : 'Tidak Aktif' }}
                         </span>
                     </div>
                 </div>
@@ -173,7 +177,7 @@
 
     <!-- Input LJK Mahasiswa (Livewire Component) -->
     <div class="mt-6">
-        @livewire('filament.resources.pekan-ujians.components.input-ljk-minimal', ['record' => $record, 'type' => $type], key('input-ljk-' . $record->id))
+        @livewire('filament.resources.pekan-ujians.components.input-ljk-minimal', ['record' => $record, 'type' => $type], 'input-ljk-' . $record->id)
     </div>
 </div>
 

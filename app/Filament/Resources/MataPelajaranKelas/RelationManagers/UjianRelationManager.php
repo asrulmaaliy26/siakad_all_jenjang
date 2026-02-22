@@ -167,10 +167,31 @@ class UjianRelationManager extends RelationManager
                     ),
             ])
             ->filters([])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+
+                if ($user && $user->isMurid()) {
+                    // Murid hanya melihat data LJK miliknya
+                    $query->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
+                }
+            })
             ->headerActions([])
             ->actions([
                 EditAction::make()
-                    ->label('Upload'),
+                    ->label('Upload')
+                    ->visible(function (SiswaDataLJK $record) {
+                        $user = auth()->user();
+
+                        // Admin/pengajar bisa edit semua
+                        if (! $user || ! $user->isMurid()) {
+                            return true;
+                        }
+
+                        // Murid hanya bisa upload miliknya sendiri
+                        return $record->akademikKrs?->riwayatPendidikan?->siswaData?->user_id === $user->id;
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([]),

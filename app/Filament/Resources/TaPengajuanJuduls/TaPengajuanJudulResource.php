@@ -27,7 +27,7 @@ class TaPengajuanJudulResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Tugas Akhir';
 
-    protected static ?int $navigationSort = 51;
+    protected static ?int $navigationSort = 41;
 
     protected static ?string $recordTitleAttribute = 'judul';
 

@@ -49,12 +49,14 @@ class MataPelajaranKelasTable
             ])
             ->actions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->disabled(fn() => auth()->user()?->isMurid()),
                 ]),
             ])
             ->headerActions([

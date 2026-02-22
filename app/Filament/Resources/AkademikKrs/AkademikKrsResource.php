@@ -24,7 +24,7 @@ class AkademikKrsResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 43;
+    protected static ?int $navigationSort = 23;
     protected static ?string $navigationLabel = 'KRS';
 
     public static function form(Schema $schema): Schema
@@ -52,5 +52,20 @@ class AkademikKrsResource extends Resource
             'edit' => EditAkademikKrs::route('/{record}/edit'),
             'view' => ViewAkademikKrs::route('/{record}'),
         ];
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user  = \Filament\Facades\Filament::auth()->user();
+
+        // Murid hanya melihat KRS milik dirinya
+        if ($user && $user->isMurid()) {
+            $query->whereHas('riwayatPendidikan.siswaData', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
+        return $query;
     }
 }

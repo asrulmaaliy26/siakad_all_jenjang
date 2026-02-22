@@ -88,11 +88,52 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->modalContent(fn() => view('filament.resources.akademik-krs.actions.view-subjects', ['record' => $this->getOwnerRecord(), 'excludeTaken' => true]))
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false)
-                    ->closeModalByClickingAway(false),
+                    ->closeModalByClickingAway(false)
+                    ->disabled(function () {
+                        $krs  = $this->getOwnerRecord();
+                        // $user = auth()->user();
+
+                        // Murid tidak boleh tambah mata pelajaran
+                        // if ($user && $user->isMurid()) {
+                        //     return true;
+                        // }
+
+                        // Jika syarat_krs sudah 'Y' (KRS terkunci), disable tombol
+                        return ($krs->syarat_krs ?? 'N') === 'Y';
+                    })
+                    ->tooltip(function () {
+                        $krs = $this->getOwnerRecord();
+                        if (($krs->syarat_krs ?? 'N') === 'Y') {
+                            return 'KRS sudah dikunci – syarat KRS telah terpenuhi';
+                        }
+                        return null;
+                    })
+                    ->before(function ($record, \Filament\Actions\Action $action) {
+                        $user = auth()->user();
+                        if ($user?->isMurid() && ($record->status_bayar ?? 'N') === 'N') {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Pembayaran Belum Selesai')
+                                ->body('Anda belum melunasi pembayaran. Silakan selesaikan pembayaran terlebih dahulu untuk mengakses fitur ini.')
+                                ->warning()
+                                ->persistent()
+                                ->send();
+                            $action->halt();
+                        }
+                    }),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->disabled(function () {
+                        $krs = $this->getOwnerRecord();
+                        return auth()->user()?->isMurid()
+                            || ($krs->syarat_krs ?? 'N') === 'Y';
+                    }),
+                DeleteAction::make()
+                    ->disabled(function () {
+                        $krs = $this->getOwnerRecord();
+                        return auth()->user()?->isMurid()
+                            || ($krs->syarat_krs ?? 'N') === 'Y';
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

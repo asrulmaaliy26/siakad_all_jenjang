@@ -70,6 +70,7 @@ class AkademikKrsTable
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -86,6 +87,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -102,6 +104,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -118,6 +121,7 @@ class AkademikKrsTable
                         'N' => 'Belum',
                     ])
                     ->selectablePlaceholder(false)
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -134,6 +138,7 @@ class AkademikKrsTable
                         'N' => 'Tidak Aktif',
                     ])
                     ->selectablePlaceholder(false)
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-active',
@@ -204,6 +209,13 @@ class AkademikKrsTable
             ])
             ->headerActions([])
             ->actions([
+                Action::make('cetak_krs')
+                    ->label('Cetak KRS')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->url(fn($record) => route('cetak.krs', $record->id))
+                    ->openUrlInNewTab(),
+
                 ViewAction::make()
                     ->label('Lihat')
                     ->icon('heroicon-o-eye')
@@ -220,7 +232,8 @@ class AkademikKrsTable
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false)
                     ->closeModalByClickingAway(false)
-                    ->modalWidth('7xl'),
+                    ->modalWidth('7xl')
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
 
                 EditAction::make()
                     ->label('Edit')
@@ -237,7 +250,8 @@ class AkademikKrsTable
                     ->modalHeading('Hapus KRS')
                     ->modalDescription('Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.')
                     ->modalSubmitActionLabel('Ya, Hapus')
-                    ->modalCancelActionLabel('Batal'),
+                    ->modalCancelActionLabel('Batal')
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
             ])
             ->bulkActions([
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
@@ -249,7 +263,8 @@ class AkademikKrsTable
                     ->modalHeading('Hapus Data Terpilih')
                     ->modalDescription('Apakah Anda yakin ingin menghapus data yang dipilih? Tindakan ini tidak dapat dibatalkan.')
                     ->modalSubmitActionLabel('Ya, Hapus')
-                    ->modalCancelActionLabel('Batal'),
+                    ->modalCancelActionLabel('Batal')
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
             ])
             ->striped()
             ->defaultSort('created_at', 'desc')

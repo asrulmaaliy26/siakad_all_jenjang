@@ -35,52 +35,63 @@ class SiswaDataLjkRelationManager extends RelationManager
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nama')
                     ->label('Nama Mahasiswa')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn() => auth()->user()?->isMurid()),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')
                     ->label('NIM')
                     ->searchable()
-                    ->sortable(),
-                TextInputColumn::make('nilai'),
+                    ->sortable()
+                    ->hidden(fn() => auth()->user()?->isMurid()),
+                TextInputColumn::make('nilai')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_UTS')
                     ->label('Nilai UTS')
                     ->type('number')
                     ->step(0.01)
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_TGS_1')
                     ->label('Nilai TGS 1')
                     ->type('number')
                     ->step(0.01)
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_TGS_2')
                     ->label('Nilai TGS 2')
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_TGS_3')
                     ->label('Nilai TGS 3')
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_UAS')
                     ->label('Nilai UAS')
                     ->type('number')
                     ->step(0.01)
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_Performance')
                     ->label('Nilai Performance')
                     ->type('number')
                     ->step(0.01)
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_Akhir')
                     ->label('Nilai Akhir')
                     ->type('number')
                     ->step(0.01)
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_Huruf')
                     ->label('Nilai Huruf')
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextColumn::make('ljk_tugas_1')
                     ->label('File Tugas 1')
                     ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
@@ -127,36 +138,36 @@ class SiswaDataLjkRelationManager extends RelationManager
                         'TL' => 'Tidak Lulus',
                     ])
                     ->selectablePlaceholder(false)
-                    // ->extraAttributes(function ($state) {
-                    //     $bg = match ($state) {
-                    //         'L' => 'bg-success-100 text-success-800',
-                    //         'TL' => 'bg-danger-100 text-danger-800',
-                    //         default => 'bg-gray-100 text-gray-800',
-                    //     };
-                    //
-                    //     return [
-                    //         'class' => "$bg px-3 py-1.5 rounded-lg font-medium text-center inline-block w-full",
-                    //     ];
-                    // })
-                    ->sortable(),
+                    ->sortable()
+                    ->disabled(fn() => auth()->user() && auth()->user()->isMurid()),
             ])
             ->filters([
                 //
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+
+                if ($user && $user->isMurid()) {
+                    // Murid hanya melihat data LJK/nilai miliknya sendiri
+                    $query->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
+                }
+            })
             ->headerActions([
                 Action::make('sync_students')
                     ->label('Sync Mahasiswa')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
+                    ->visible(fn() => ! auth()->user()?->isMurid())
                     ->action(function () {
                         $record = $this->getOwnerRecord();
-                        // Get all students enrolled in this class via KRS
                         $krsList = AkademikKRS::where('id_kelas', $record->id_kelas)->get();
 
                         foreach ($krsList as $krs) {
                             SiswaDataLJK::firstOrCreate([
                                 'id_mata_pelajaran_kelas' => $record->id,
-                                'id_akademik_krs' => $krs->id,
+                                'id_akademik_krs'         => $krs->id,
                             ], [
                                 'nilai' => 0,
                             ]);
@@ -169,11 +180,13 @@ class SiswaDataLjkRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
                 ]),
             ]);
     }

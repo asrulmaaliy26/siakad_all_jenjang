@@ -20,7 +20,7 @@ class SiswaDataOrangTuaResource extends Resource
     protected static ?string $model = SiswaDataOrangTua::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
-    protected static string | UnitEnum | null $navigationGroup = 'Temp';
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Schema $schema): Schema
     {

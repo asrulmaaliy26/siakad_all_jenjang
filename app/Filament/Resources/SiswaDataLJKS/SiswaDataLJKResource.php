@@ -22,7 +22,7 @@ class SiswaDataLJKResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-check';
 
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 45;
+    protected static ?int $navigationSort = 25;
     protected static ?string $navigationLabel = 'Nilai';
 
     public static function form(Schema $schema): Schema

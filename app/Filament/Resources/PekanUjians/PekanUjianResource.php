@@ -26,7 +26,7 @@ class PekanUjianResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 44;
+    protected static ?int $navigationSort = 24;
     protected static ?string $navigationLabel = 'Ujian';
 
     public static function form(Schema $schema): Schema

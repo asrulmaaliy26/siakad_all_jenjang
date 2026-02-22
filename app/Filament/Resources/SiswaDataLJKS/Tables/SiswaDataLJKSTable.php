@@ -158,7 +158,8 @@ class SiswaDataLJKSTable
             ->bulkActions([
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->disabled(fn() => auth()->user()?->isMurid()),
                 ]),
             ])
             // ->toolbarActions([])

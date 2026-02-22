@@ -34,6 +34,8 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
     public array $takenSubjectIds = [];
     public ?int $studentJurusanId = null;
     public bool $excludeTaken = false;
+    public bool $isKrsLocked = false;
+    public bool $isBayarLunas = true;
 
     public function mount(int $recordId, bool $excludeTaken = false)
     {
@@ -45,6 +47,12 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
         if ($krs && $krs->riwayatPendidikan) {
             $this->studentJurusanId = $krs->riwayatPendidikan->id_jurusan;
         }
+
+        // Kunci jika syarat_krs = 'Y'
+        $this->isKrsLocked = ($krs?->syarat_krs ?? 'N') === 'Y';
+
+        // Status pembayaran
+        $this->isBayarLunas = ($krs?->status_bayar ?? 'N') === 'Y';
     }
 
     public function refreshTakenSubjects()
@@ -155,19 +163,35 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                     ->button()
                     ->color('primary')
                     ->action(function (MataPelajaranKelas $record) {
+                        // Cek pembayaran untuk murid
+                        $user = auth()->user();
+                        if ($user && $user->isMurid() && ! $this->isBayarLunas) {
+                            Notification::make()
+                                ->title('Pembayaran Belum Lunas')
+                                ->body('Anda belum dapat mengambil mata kuliah. Harap selesaikan pembayaran KRS terlebih dahulu.')
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                            return;
+                        }
+
                         SiswaDataLJK::create([
-                            'id_akademik_krs' => $this->recordId,
+                            'id_akademik_krs'         => $this->recordId,
                             'id_mata_pelajaran_kelas' => $record->id,
                         ]);
 
-                        $this->refreshTakenSubjects(); // Update local state
+                        $this->refreshTakenSubjects();
 
                         Notification::make()
                             ->title('Mata kuliah berhasil ditambahkan')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn(MataPelajaranKelas $record) => !in_array($record->id, $this->takenSubjectIds)),
+                    ->visible(
+                        fn(MataPelajaranKelas $record) =>
+                        ! $this->isKrsLocked
+                            && ! in_array($record->id, $this->takenSubjectIds)
+                    ),
 
                 Action::make('remove')
                     ->label('Batal')
@@ -180,14 +204,27 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                             ->where('id_mata_pelajaran_kelas', $record->id)
                             ->delete();
 
-                        $this->refreshTakenSubjects(); // Update local state
+                        $this->refreshTakenSubjects();
 
                         Notification::make()
                             ->title('Mata kuliah dibatalkan')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn(MataPelajaranKelas $record) => in_array($record->id, $this->takenSubjectIds)),
+                    ->visible(
+                        fn(MataPelajaranKelas $record) =>
+                        ! $this->isKrsLocked
+                            && in_array($record->id, $this->takenSubjectIds)
+                    ),
+
+                // Info saat KRS dikunci
+                Action::make('locked_info')
+                    ->label('KRS Dikunci')
+                    ->icon('heroicon-m-lock-closed')
+                    ->button()
+                    ->color('gray')
+                    ->disabled()
+                    ->visible(fn() => $this->isKrsLocked),
             ])
             ->striped();
     }

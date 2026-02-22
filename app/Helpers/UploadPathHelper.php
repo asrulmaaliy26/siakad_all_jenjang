@@ -12,6 +12,9 @@ use App\Models\AkademikKrs;
 use App\Models\MataPelajaranKelas;
 use App\Models\Kelas;
 use App\Models\SiswaDataPendaftar;
+use App\Models\TaPengajuanJudul;
+use App\Models\TaSeminarProposal;
+use App\Models\TaSkripsi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -166,6 +169,90 @@ class UploadPathHelper
             . Str::slug($jenjangNama) . "/"
             . Str::slug($typeFolder) . "/"
             . Str::slug($namaSiswa) . "/tugas_" . $taskIndex;
+    }
+
+    /**
+     * Path upload untuk TA (Pengajuan Judul, Seminar Proposal, Skripsi).
+     *
+     * Format: uploads/{tahun_akademik-periode}/{jenjang}/{mahasiswa jika kampus}/{nama siswa}/{table}
+     *
+     * @param  callable|null  $get     Filament $get callback (dipakai saat create, record belum ada)
+     * @param  Model|null     $record  Eloquent record (TaPengajuanJudul | TaSeminarProposal | TaSkripsi)
+     * @param  string         $table   Nama folder tabel, contoh: 'ta-pengajuan-judul'
+     */
+    public static function uploadTaPath($get, $record = null, string $table = 'ta'): string
+    {
+        // ── 1. Tahun Akademik ──────────────────────────────────────────────
+        $tahunAkademik = null;
+
+        if ($record instanceof TaPengajuanJudul || $record instanceof TaSeminarProposal || $record instanceof TaSkripsi) {
+            $tahunAkademik = $record->tahunAkademik;
+        }
+
+        if (!$tahunAkademik && $get) {
+            $tahunId = $get('id_tahun_akademik');
+            if ($tahunId) {
+                $tahunAkademik = TahunAkademik::find($tahunId);
+            }
+        }
+
+        if (!$tahunAkademik) {
+            $tahunAkademik = self::fetchActiveYear();
+        }
+
+        $tahun = self::formatTahunAkademik($tahunAkademik);
+
+        // ── 2. Jenjang Pendidikan (via riwayatPendidikan → jurusan → jenjangPendidikan) ──
+        $jenjang = null;
+
+        if ($record instanceof TaPengajuanJudul || $record instanceof TaSeminarProposal || $record instanceof TaSkripsi) {
+            $jenjang = $record->riwayatPendidikan?->jurusan?->jenjangPendidikan;
+        }
+
+        if (!$jenjang && $get) {
+            $riwayatId = $get('id_riwayat_pendidikan');
+            if ($riwayatId) {
+                $riwayat = RiwayatPendidikan::find($riwayatId);
+                $jenjang = $riwayat?->jurusan?->jenjangPendidikan;
+            }
+        }
+
+        $jenjangNama = $jenjang?->nama ?? 'Umum';
+        $jenjangType = strtolower($jenjang?->type ?? 'sekolah');
+
+        // ── 3. Folder mahasiswa/siswa (hanya jika jenjang kampus) ─────────
+        $typeFolder = ($jenjangType === 'kampus') ? 'mahasiswa' : null;
+
+        // ── 4. Nama Siswa ──────────────────────────────────────────────────
+        $namaSiswa = 'tanpa-nama';
+
+        if ($record instanceof TaPengajuanJudul || $record instanceof TaSeminarProposal || $record instanceof TaSkripsi) {
+            $namaSiswa = $record->riwayatPendidikan?->siswa?->nama ?? 'tanpa-nama';
+        }
+
+        if (($namaSiswa === 'tanpa-nama') && $get) {
+            $riwayatId = $get('id_riwayat_pendidikan');
+            if ($riwayatId) {
+                $riwayat = RiwayatPendidikan::find($riwayatId);
+                $namaSiswa = $riwayat?->siswa?->nama ?? 'tanpa-nama';
+            }
+        }
+
+        // ── 5. Susun path ──────────────────────────────────────────────────
+        $parts = [
+            'uploads',
+            Str::slug($tahun),
+            Str::slug($jenjangNama),
+        ];
+
+        if ($typeFolder) {
+            $parts[] = Str::slug($typeFolder);
+        }
+
+        $parts[] = Str::slug($namaSiswa);
+        $parts[] = Str::slug($table);
+
+        return implode('/', $parts);
     }
 
 

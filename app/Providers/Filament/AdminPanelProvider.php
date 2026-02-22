@@ -69,7 +69,10 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Master Data'),
                 NavigationGroup::make('Perkuliahan'),
-                NavigationGroup::make('Master Data Siswa'),
+                NavigationGroup::make('Pendaftaran'),
+                NavigationGroup::make('Tugas Akhir'),
+                NavigationGroup::make('Pengaturan User'),
+                NavigationGroup::make('Temp'),
             ])
             ->authMiddleware([
                 Authenticate::class,

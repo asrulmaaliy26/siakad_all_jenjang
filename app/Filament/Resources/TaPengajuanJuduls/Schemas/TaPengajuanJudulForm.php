@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TaPengajuanJuduls\Schemas;
 
+use App\Helpers\UploadPathHelper;
 use App\Models\DosenData;
 use App\Models\RiwayatPendidikan;
 use App\Models\TahunAkademik;
@@ -105,13 +106,14 @@ class TaPengajuanJudulForm
                         FileUpload::make('file')
                             ->label('File Proposal')
                             ->disk('public')
-                            ->directory('ta/pengajuan-judul')
+                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul'))
                             ->acceptedFileTypes([
                                 'application/pdf',
                                 'application/msword',
                                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                             ])
                             ->columnSpanFull()
+                            ->openable()
                             ->required()
                             ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
                     ]),
@@ -167,7 +169,8 @@ class TaPengajuanJudulForm
 
                         FileUpload::make('file_revisi_dosen_1')
                             ->label('File Revisi Dosen 1')
-                            ->disk('public')->directory('ta/revisi')
+                            ->disk('public')
+                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
                             ->disabled(
                                 fn($record) =>
@@ -197,7 +200,8 @@ class TaPengajuanJudulForm
 
                         FileUpload::make('file_revisi_dosen_2')
                             ->label('File Revisi Dosen 2')
-                            ->disk('public')->directory('ta/revisi')
+                            ->disk('public')
+                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
                             ->disabled(
                                 fn($record) =>
@@ -227,7 +231,8 @@ class TaPengajuanJudulForm
 
                         FileUpload::make('file_revisi_dosen_3')
                             ->label('File Revisi Dosen 3')
-                            ->disk('public')->directory('ta/revisi')
+                            ->disk('public')
+                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
                             ->disabled(
                                 fn($record) =>

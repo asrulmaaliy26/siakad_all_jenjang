@@ -22,7 +22,8 @@ class AbsensiSiswaResource extends Resource
     protected static ?string $model = AbsensiSiswa::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
-    protected static string | UnitEnum | null $navigationGroup = 'Temp';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $recordTitleAttribute = 'nama';
 

@@ -27,7 +27,7 @@ class MataPelajaranKelasResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 42;
+    protected static ?int $navigationSort = 22;
     // protected static ?string $navigationLabel = 'Perkuliahan';
 
     public static function getNavigationLabel(): string

@@ -31,6 +31,7 @@ class InputLjkMinimal extends Component implements HasForms
         $this->record = $record;
         $this->type = $type;
 
+        /** @var \App\Models\User $user */
         $user = \Filament\Facades\Filament::auth()->user();
         if ($user && $user->isMurid()) {
             $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
@@ -38,6 +39,8 @@ class InputLjkMinimal extends Component implements HasForms
                 $this->selectedStudentId = $siswa->id;
                 $this->updatedSelectedStudentId();
             }
+        } elseif ($this->selectedStudentId) {
+            $this->updatedSelectedStudentId();
         }
     }
 
@@ -70,17 +73,18 @@ class InputLjkMinimal extends Component implements HasForms
                 FileUpload::make($this->type == 'uas' ? 'ljk_uas' : 'ljk_uts')
                     ->label('Upload Jawaban LJK ' . strtoupper($this->type))
                     ->disk('public')
-                    // Fix: Pass $get and $record correctly, and ensure correct argument order for uploadUjianPath
                     ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts'))
                     ->visibility('public')
                     ->acceptedFileTypes(['application/pdf', 'image/*'])
                     ->maxSize(10240)
                     ->downloadable()
                     ->openable()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->disabled(false),
                 RichEditor::make($this->type == 'uas' ? 'ctt_uas' : 'ctt_uts')
                     ->label('Catatan / Jawaban Text')
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->disabled(false),
             ])
             ->statePath('data')
             ->model($this->getSelectedLjkRecord() ?? SiswaDataLJK::class);
@@ -88,13 +92,11 @@ class InputLjkMinimal extends Component implements HasForms
 
     public function getSelectedLjkRecord()
     {
-        if (!$this->selectedStudentId) return null;
-
-        // Find SiswaDataLJK for this student (via AkademikKrs logic)
-        // We iterate record->siswaDataLjk to find the one matching the student ID
-        return $this->record->siswaDataLjk->first(function ($ljk) {
-            return $ljk->akademikKrs?->riwayatPendidikan?->siswaData?->id == $this->selectedStudentId;
-        });
+        return SiswaDataLJK::where('id_mata_pelajaran_kelas', $this->record->id)
+            ->whereHas('akademikKrs.riwayatPendidikan', function ($q) {
+                $q->where('id_siswa_data', $this->selectedStudentId);
+            })
+            ->first();
     }
 
     public function updatedSelectedStudentId()
@@ -110,15 +112,32 @@ class InputLjkMinimal extends Component implements HasForms
     public function save()
     {
         $ljk = $this->getSelectedLjkRecord();
-        if (!$ljk) return;
+        if (!$ljk) {
+            Notification::make()
+                ->title('Gagal Menyimpan: Data LJK tidak ditemukan.')
+                ->danger()
+                ->send();
+            return;
+        }
 
         $state = $this->form->getState();
+
+        // Update timestamp upload jika ada file baru
+        $fileField = $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts';
+        $tglField = $this->type == 'uas' ? 'tgl_upload_ljk_uas' : 'tgl_upload_ljk_uts';
+
+        if (isset($state[$fileField]) && $state[$fileField] !== $ljk->$fileField) {
+            $state[$tglField] = now();
+        }
+
         $ljk->update($state);
 
         Notification::make()
             ->title('Data LJK Berhasil Disimpan')
             ->success()
             ->send();
+
+        $this->updatedSelectedStudentId(); // Refresh form state
     }
 
     public function render()

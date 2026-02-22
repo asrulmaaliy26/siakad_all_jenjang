@@ -203,7 +203,6 @@ class SiswaKelasRelationManager extends RelationManager
                         ->toArray();
                 })
 
-
                 ->getOptionLabelUsing(
                     fn($value) =>
                     RiwayatPendidikan::find($value)?->nama

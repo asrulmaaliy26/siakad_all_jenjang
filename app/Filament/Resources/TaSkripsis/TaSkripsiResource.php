@@ -27,7 +27,7 @@ class TaSkripsiResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Tugas Akhir';
 
-    protected static ?int $navigationSort = 53;
+    protected static ?int $navigationSort = 43;
 
     protected static ?string $recordTitleAttribute = 'judul';
 

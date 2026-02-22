@@ -20,7 +20,7 @@ class SiswaDataPendaftarResource extends Resource
     protected static ?string $model = SiswaDataPendaftar::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
-    protected static string|UnitEnum|null $navigationGroup = 'Pengaturan User';
+    protected static string|UnitEnum|null $navigationGroup = 'Pendaftaran';
     protected static ?string $navigationLabel = 'Data Pendaftar';
     protected static ?string $modelLabel = 'Data Pendaftar';
     protected static ?string $pluralModelLabel = 'Data Pendaftar';

@@ -119,7 +119,8 @@ class TaSkripsisTable
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->visible(!$isPengajar),
+                        ->visible(!$isPengajar)
+                        ->disabled(fn() => auth()->user() && auth()->user()->isMurid()),
                 ]),
             ]);
     }

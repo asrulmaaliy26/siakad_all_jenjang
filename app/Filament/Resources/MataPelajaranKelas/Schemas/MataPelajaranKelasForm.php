@@ -104,7 +104,8 @@ class MataPelajaranKelasForm
                             ->offColor('danger')
                             ->inline(false),
                         DateTimePicker::make('uts')
-                            ->label('Waktu Pelaksanaan UTS'),
+                            ->label('Waktu Pelaksanaan UTS')
+                            ->visible(fn() => !auth()->user()?->isMurid()),
 
                         TextInput::make('ruang_uts')
                             ->label('Ruang UTS'),
@@ -149,7 +150,8 @@ class MataPelajaranKelasForm
                             ->offColor('danger')
                             ->inline(false),
                         DateTimePicker::make('uas')
-                            ->label('Waktu Pelaksanaan UAS'),
+                            ->label('Waktu Pelaksanaan UAS')
+                            ->visible(fn() => !auth()->user()?->isMurid()),
 
                         TextInput::make('ruang_uas')
                             ->label('Ruang UAS'),

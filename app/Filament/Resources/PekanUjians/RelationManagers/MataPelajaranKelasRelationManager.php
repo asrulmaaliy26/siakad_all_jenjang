@@ -163,12 +163,53 @@ class MataPelajaranKelasRelationManager extends RelationManager
                 // Tidak perlu tambah data karena ini hanya menampilkan
             ])
             ->actions([
-                ViewAction::make()
+                Action::make('lihat_soal')
                     ->label('Lihat Soal')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
                     ->visible(function ($record) {
-                        $jenisUjian = strtolower($this->getOwnerRecord()->jenis_ujian ?? '');
-                        $column = str_contains($jenisUjian, 'uas') ? 'status_uas' : 'status_uts';
-                        return $record->{$column};
+                        $pekanUjian  = $this->getOwnerRecord();
+                        $jenisUjian  = strtolower($pekanUjian->jenis_ujian ?? '');
+                        $isUas       = str_contains($jenisUjian, 'uas');
+                        $statusCol   = $isUas ? 'status_uas' : 'status_uts';
+                        $syaratCol   = $isUas ? 'syarat_uas' : 'syarat_uts';
+
+                        // Sembunyikan jika status ujian di MataPelajaranKelas belum aktif
+                        if (! $record->{$statusCol}) {
+                            return false;
+                        }
+
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        // Untuk murid: cek syarat_uts/uas di AkademikKrs yang terhubung
+                        if ($user && $user->isMurid()) {
+                            $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+                            if (! $siswa) {
+                                return false;
+                            }
+
+                            // Ambil AkademikKrs murid ini yang terhubung ke MataPelajaranKelas ini
+                            $krs = \App\Models\AkademikKrs::whereHas(
+                                'siswaDataLjk',
+                                fn($q) => $q->where('id_mata_pelajaran_kelas', $record->id)
+                            )
+                                ->whereHas(
+                                    'riwayatPendidikan',
+                                    fn($q) => $q->where('id_siswa_data', $siswa->id)
+                                )
+                                ->first();
+
+                            if (! $krs) {
+                                return false;
+                            }
+
+                            // Cek syarat ujian (harus 'Y')
+                            if (($krs->{$syaratCol} ?? 'N') !== 'Y') {
+                                return false;
+                            }
+                        }
+
+                        return true;
                     })
                     ->modalHeading(fn($record) => 'Detail Soal - ' . $record->mataPelajaranKurikulum->mataPelajaranMaster->nama)
                     ->modalContent(function ($record, $livewire) {
@@ -233,7 +274,8 @@ class MataPelajaranKelasRelationManager extends RelationManager
                                 ->send();
                         }
                     })
-                    ->deselectRecordsAfterCompletion(),
+                    ->deselectRecordsAfterCompletion()
+                    ->disabled(fn() => auth()->user() && auth()->user()->isMurid()),
             ]);
     }
 

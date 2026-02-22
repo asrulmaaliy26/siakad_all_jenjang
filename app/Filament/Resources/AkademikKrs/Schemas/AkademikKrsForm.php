@@ -20,7 +20,8 @@ class AkademikKrsForm
                     ->label('Mahasiswa')
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
 
                 // Select::make('id_kelas')
                 //     ->relationship('kelas.programKelas', 'nilai')
@@ -35,13 +36,16 @@ class AkademikKrsForm
 
                 TextInput::make('jumlah_sks')
                     ->label('Jumlah SKS')
-                    ->numeric(),
+                    ->numeric()
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 DatePicker::make('tgl_krs')
-                    ->label('Tanggal KRS'),
+                    ->label('Tanggal KRS')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 TextInput::make('kode_tahun')
-                    ->label('Kode Tahun'),
+                    ->label('Kode Tahun')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 // ENUM fields
                 Select::make('status_bayar')
@@ -50,7 +54,8 @@ class AkademikKrsForm
                         'Y' => 'Lunas',
                         'N' => 'Belum Lunas',
                     ])
-                    ->default('N'),
+                    ->default('N')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 Select::make('syarat_uts')
                     ->label('Syarat UTS')
@@ -58,7 +63,8 @@ class AkademikKrsForm
                         'Y' => 'Terpenuhi',
                         'N' => 'Belum',
                     ])
-                    ->default('N'),
+                    ->default('N')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 Select::make('syarat_uas')
                     ->label('Syarat UAS')
@@ -66,7 +72,8 @@ class AkademikKrsForm
                         'Y' => 'Terpenuhi',
                         'N' => 'Belum',
                     ])
-                    ->default('N'),
+                    ->default('N')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 Select::make('syarat_krs')
                     ->label('Syarat KRS')
@@ -74,7 +81,8 @@ class AkademikKrsForm
                         'Y' => 'Terpenuhi',
                         'N' => 'Belum',
                     ])
-                    ->default('N'),
+                    ->default('N')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 // TextInput::make('syarat_lain')
                 //     ->label('Syarat Lain'),
@@ -85,7 +93,8 @@ class AkademikKrsForm
                         'Y' => 'Aktif',
                         'N' => 'Tidak Aktif',
                     ])
-                    ->default('Y'),
+                    ->default('Y')
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 // Uploads
                 \Filament\Forms\Components\FileUpload::make('kwitansi_krs')
