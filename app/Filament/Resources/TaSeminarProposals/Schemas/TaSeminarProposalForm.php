@@ -287,21 +287,19 @@ class TaSeminarProposalForm
      */
     protected static function isVisibleForSlot($record, int $slot): bool
     {
-        $user = \Filament\Facades\Filament::auth()->user();
-
         // Murid selalu lihat semua slot (agar bisa upload file revisi)
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if (auth()->user()->isMurid()) {
             return true;
         }
 
         // Admin / super_admin selalu lihat semua slot
-        if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if (auth()->user()->isAdmin()) {
             return true;
         }
 
         if (!$record) return false;
 
-        $dosenId  = \App\Models\DosenData::where('user_id', $user->id)->value('id');
+        $dosenId  = \App\Models\DosenData::where('user_id', auth()->user()->id)->value('id');
         $fieldMap = [
             1 => $record->id_dosen_pembimbing_1,
             2 => $record->id_dosen_pembimbing_2,
@@ -309,31 +307,5 @@ class TaSeminarProposalForm
         ];
 
         return $dosenId && ($fieldMap[$slot] ?? null) == $dosenId;
-    }
-
-    /**
-     * True jika user yang login adalah dosen pengajar (bukan admin/super_admin).
-     * Dipakai untuk ->disabled() pada field yang tidak boleh diubah oleh pengajar.
-     */
-    protected static function isPengajar(): bool
-    {
-        $user = \Filament\Facades\Filament::auth()->user();
-
-        return $user
-            && $user->hasRole('pengajar')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-    }
-
-    /**
-     * True jika user yang login adalah mahasiswa/murid (bukan admin/super_admin).
-     * Murid hanya boleh upload file_revisi_dosen_* — field lain read-only.
-     */
-    protected static function isMurid(): bool
-    {
-        $user = \Filament\Facades\Filament::auth()->user();
-
-        return $user
-            && $user->hasRole('murid')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
     }
 }

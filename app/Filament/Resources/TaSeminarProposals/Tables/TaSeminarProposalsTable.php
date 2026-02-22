@@ -18,12 +18,8 @@ class TaSeminarProposalsTable
     public static function configure(Table $table): Table
     {
         $user    = Filament::auth()->user();
-        $isPengajar = $user
-            && $user->hasRole('pengajar')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-        $dosenId = $isPengajar
-            ? DosenData::where('user_id', $user->id)->value('id')
-            : null;
+        $isPengajar = $user && $user->isPengajar();
+        $dosenId = $isPengajar ? $user->getDosenId() : null;
 
         return $table
             ->columns([

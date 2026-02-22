@@ -20,7 +20,7 @@ class TaPengajuanJudulsTable
         $user    = Filament::auth()->user();
         $isPengajar = $user
             && $user->hasRole('pengajar')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
+            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
         $dosenId = $isPengajar
             ? DosenData::where('user_id', $user->id)->value('id')
             : null;

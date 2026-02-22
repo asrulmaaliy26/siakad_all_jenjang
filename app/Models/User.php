@@ -110,4 +110,35 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasOne(DosenData::class, 'user_id');
     }
+
+    public function isMurid(): bool
+    {
+        return $this->hasRole('murid')
+            && !$this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+    }
+
+    /**
+     * Cek apakah user adalah pengajar murni (tanpa role lain)
+     */
+    public function isPengajar(): bool
+    {
+        return $this->hasRole('pengajar')
+            && !$this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+    }
+
+    /**
+     * Cek apakah user adalah admin (memiliki role admin)
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+    }
+
+    /**
+     * Get ID dosen berdasarkan user_id
+     */
+    public function getDosenId()
+    {
+        return DosenData::where('user_id', $this->id)->value('id');
+    }
 }

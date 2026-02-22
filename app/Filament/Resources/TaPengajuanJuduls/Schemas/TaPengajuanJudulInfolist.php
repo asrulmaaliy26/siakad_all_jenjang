@@ -63,9 +63,9 @@ class TaPengajuanJudulInfolist
                         TextEntry::make('nilai_dosen_1')->label('Nilai Dosen 1'),
                         TextEntry::make('nilai_dosen_2')->label('Nilai Dosen 2'),
                         TextEntry::make('nilai_dosen_3')->label('Nilai Dosen 3'),
-                        TextEntry::make('ctt_revisi_dosen_1')->label('Catatan Dosen 1'),
-                        TextEntry::make('ctt_revisi_dosen_2')->label('Catatan Dosen 2'),
-                        TextEntry::make('ctt_revisi_dosen_3')->label('Catatan Dosen 3'),
+                        TextEntry::make('ctt_revisi_dosen_1')->label('Catatan Dosen 1')->html(),
+                        TextEntry::make('ctt_revisi_dosen_2')->label('Catatan Dosen 2')->html(),
+                        TextEntry::make('ctt_revisi_dosen_3')->label('Catatan Dosen 3')->html(),
                     ]),
             ]);
     }

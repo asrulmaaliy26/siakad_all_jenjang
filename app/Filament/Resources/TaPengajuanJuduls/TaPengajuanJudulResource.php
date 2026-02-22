@@ -57,7 +57,7 @@ class TaPengajuanJudulResource extends Resource
         $user  = \Filament\Facades\Filament::auth()->user();
 
         // Dosen (pengajar) hanya melihat pengajuan yang ia menjadi pembimbing
-        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi'])) {
             $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
 
             if ($dosenId) {
@@ -73,7 +73,7 @@ class TaPengajuanJudulResource extends Resource
         }
 
         // Murid hanya melihat pengajuan miliknya sendiri (via riwayat_pendidikan)
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi'])) {
             $query->whereHas('riwayatPendidikan.siswa', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
