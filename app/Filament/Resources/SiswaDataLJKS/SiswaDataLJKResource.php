@@ -19,10 +19,10 @@ class SiswaDataLJKResource extends Resource
 {
     protected static ?string $model = SiswaDataLJK::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-check';
 
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 45;
     protected static ?string $navigationLabel = 'Nilai';
 
     public static function form(Schema $schema): Schema
@@ -57,7 +57,7 @@ class SiswaDataLJKResource extends Resource
         $user = auth()->user();
 
         // Jika user memiliki role 'pengajar' dan bukan super_admin/admin
-        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isPengajar()) {
             $query->whereHas('mataPelajaranKelas', function ($q) use ($user) {
                 $q->whereHas('dosenData', function ($dq) use ($user) {
                     $dq->where('user_id', $user->id);
@@ -66,7 +66,7 @@ class SiswaDataLJKResource extends Resource
         }
 
         // Jika user memiliki role 'murid' dan bukan super_admin/admin
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isMurid()) {
             $query->whereHas('akademikKrs.riwayatPendidikan.siswa', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });

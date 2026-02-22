@@ -27,6 +27,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Data User';
 
+    protected static ?int $navigationSort = 31;
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder

@@ -22,7 +22,7 @@ class RiwayatPendidikanResource extends Resource
 {
     protected static ?string $model = RiwayatPendidikan::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
     protected static string | UnitEnum | null $navigationGroup = 'Temp';
 
     // protected static ?string $navigationLabel = 'Siswa/Mahasiswa';

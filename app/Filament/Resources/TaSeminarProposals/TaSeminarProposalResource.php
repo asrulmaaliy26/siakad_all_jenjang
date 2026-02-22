@@ -27,7 +27,7 @@ class TaSeminarProposalResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Tugas Akhir';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 52;
 
     protected static ?string $recordTitleAttribute = 'judul';
 

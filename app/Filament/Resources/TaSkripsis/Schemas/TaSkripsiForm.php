@@ -12,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Forms\Components\RichEditor;
 
 class TaSkripsiForm
 {
@@ -28,8 +29,9 @@ class TaSkripsiForm
                             ->label('Tahun Akademik')
                             ->options(TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
                             ->searchable()
+                            ->default(fn() => \App\Models\TahunAkademik::latest('id')->value('id'))
                             // ->required()
-                            ->disabled(fn() => self::isPengajar() || self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         Select::make('id_riwayat_pendidikan')
                             ->label('Mahasiswa')
@@ -41,25 +43,34 @@ class TaSkripsiForm
                                     ])
                             )
                             ->searchable()
+                            ->default(function () {
+                                $user = auth()->user();
+                                if ($user && $user->isMurid()) {
+                                    $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+                                    return $siswa?->riwayatPendidikanAktif?->id ?? \App\Models\RiwayatPendidikan::where('id_siswa', $siswa?->id)->latest('id')->value('id');
+                                }
+                                return null;
+                            })
                             // ->required()
-                            ->disabled(fn() => self::isPengajar() || self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         TextInput::make('judul')
                             ->label('Judul Penelitian')
                             ->columnSpanFull()
                             ->maxLength(500)
                             // ->required()
-                            ->disabled(fn($record) => self::isPengajar() || (self::isMurid() && $record !== null)),
+                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
 
                         Textarea::make('abstrak')
                             ->label('Abstrak')
                             ->columnSpanFull()
                             ->rows(4)
-                            ->disabled(fn($record) => self::isPengajar() || (self::isMurid() && $record !== null)),
+                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
 
                         DatePicker::make('tgl_pengajuan')
                             ->label('Tanggal Pengajuan')
-                            ->disabled(fn() => self::isPengajar() || self::isMurid()),
+                            ->default(now())
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         Select::make('status')
                             ->label('Status')
@@ -72,7 +83,7 @@ class TaSkripsiForm
                             ])
                             ->default('pending')
                             ->required()
-                            ->disabled(fn() => self::isPengajar() || self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
                     ]),
 
                 // ── JADWAL UJIAN ───────────────────────────────────────────
@@ -81,16 +92,17 @@ class TaSkripsiForm
                     ->schema([
                         DatePicker::make('tgl_ujian')
                             ->label('Tanggal Sidang/Ujian')
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
-                        TextInput::make('ruangan_ujian')
+                        Select::make('ruangan_ujian')
                             ->label('Ruangan Ujian')
-                            ->maxLength(50)
-                            ->disabled(fn() => self::isPengajar() || self::isMurid()),
+                            ->options(\App\Models\RefOption\RuangKelas::pluck('nilai', 'nilai'))
+                            ->searchable()
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         DatePicker::make('tgl_acc_judul')
                             ->label('Tanggal ACC Judul')
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         FileUpload::make('file')
                             ->label('File Proposal')
@@ -102,7 +114,8 @@ class TaSkripsiForm
                                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                             ])
                             ->columnSpanFull()
-                            ->disabled(fn($record) => self::isPengajar() || (self::isMurid() && $record !== null)),
+                            ->required()
+                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
                     ]),
 
                 // ── PEMBIMBING ───────────────────────────────────────────────
@@ -114,78 +127,31 @@ class TaSkripsiForm
                             ->label('Pembimbing 1')
                             ->options(DosenData::pluck('nama', 'id'))
                             ->searchable()
-                            ->visible(function ($record) {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
-                                    return true; // admin selalu lihat semua
-                                }
-                                // dosen hanya lihat jika dia adalah pembimbing 1
-                                $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
-                                return $record && $record->id_dosen_pembimbing_1 == $dosenId;
-                            })
-                            ->disabled(fn() => (function () {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                return $user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-                            })())
-                            ->disabled(fn() => self::isMurid()),
+                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         // Pembimbing 2
                         Select::make('id_dosen_pembimbing_2')
                             ->label('Pembimbing 2')
                             ->options(DosenData::pluck('nama', 'id'))
                             ->searchable()
-                            ->visible(function ($record) {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
-                                    return true;
-                                }
-                                $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
-                                return $record && $record->id_dosen_pembimbing_2 == $dosenId;
-                            })
-                            ->disabled(fn() => (function () {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                return $user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-                            })())
-                            ->disabled(fn() => self::isMurid()),
+                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
 
                         // Pembimbing 3
                         Select::make('id_dosen_pembimbing_3')
                             ->label('Pembimbing 3')
                             ->options(DosenData::pluck('nama', 'id'))
                             ->searchable()
-                            ->visible(function ($record) {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
-                                    return true;
-                                }
-                                $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
-                                return $record && $record->id_dosen_pembimbing_3 == $dosenId;
-                            })
-                            ->disabled(fn() => (function () {
-                                $user = \Filament\Facades\Filament::auth()->user();
-                                return $user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-                            })())
-                            ->disabled(fn() => self::isMurid()),
+                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
+                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
                     ]),
 
                 // ── PENILAIAN DOSEN ──────────────────────────────────────────
                 Section::make('Penilaian Dosen Pembimbing')
                     ->columns(3)
                     // ->collapsed()
-                    ->visible(function ($record) {
-                        // Sembunyikan section ini jika dosen tidak ada di slot manapun
-                        $user = \Filament\Facades\Filament::auth()->user();
-                        if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
-                            return true; // admin selalu lihat
-                        }
-                        if (!$record) return false;
-                        $dosenId = \App\Models\DosenData::where('user_id', $user->id)->value('id');
-                        return $dosenId && (
-                            $record->id_dosen_pembimbing_1 == $dosenId ||
-                            $record->id_dosen_pembimbing_2 == $dosenId ||
-                            $record->id_dosen_pembimbing_3 == $dosenId
-                        );
-                    })
+                    ->visible(fn($record) => self::isVisibleForSlot($record, 1) || self::isVisibleForSlot($record, 2) || self::isVisibleForSlot($record, 3))
                     ->schema([
                         // ── SLOT DOSEN 1 ─────────────────────────────────────
                         Select::make('status_dosen_1')
@@ -193,13 +159,13 @@ class TaSkripsiForm
                             ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
                             ->default('pending')
                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         TextInput::make('nilai_dosen_1')
                             ->label('Nilai Dosen 1')
                             ->numeric()->minValue(0)->maxValue(100)
                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         FileUpload::make('file_revisi_dosen_1')
                             ->label('File Revisi Dosen 1')
@@ -215,7 +181,7 @@ class TaSkripsiForm
                             ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
                             ->columnSpanFull()
                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         // ── SLOT DOSEN 2 ─────────────────────────────────────
                         Select::make('status_dosen_2')
@@ -223,13 +189,13 @@ class TaSkripsiForm
                             ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
                             ->default('pending')
                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         TextInput::make('nilai_dosen_2')
                             ->label('Nilai Dosen 2')
                             ->numeric()->minValue(0)->maxValue(100)
                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         FileUpload::make('file_revisi_dosen_2')
                             ->label('File Revisi Dosen 2')
@@ -245,7 +211,7 @@ class TaSkripsiForm
                             ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
                             ->columnSpanFull()
                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         // ── SLOT DOSEN 3 ─────────────────────────────────────
                         Select::make('status_dosen_3')
@@ -253,13 +219,13 @@ class TaSkripsiForm
                             ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
                             ->default('pending')
                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         TextInput::make('nilai_dosen_3')
                             ->label('Nilai Dosen 3')
                             ->numeric()->minValue(0)->maxValue(100)
                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
 
                         FileUpload::make('file_revisi_dosen_3')
                             ->label('File Revisi Dosen 3')
@@ -275,7 +241,7 @@ class TaSkripsiForm
                             ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
                             ->columnSpanFull()
                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => self::isMurid()),
+                            ->disabled(fn() => auth()->user()?->isMurid()),
                     ]),
             ]);
     }
@@ -289,12 +255,12 @@ class TaSkripsiForm
         $user = \Filament\Facades\Filament::auth()->user();
 
         // Murid selalu lihat semua slot (agar bisa upload file revisi)
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if ($user && $user->isMurid()) {
             return true;
         }
 
         // Admin / super_admin selalu lihat semua slot
-        if (!$user || !$user->hasRole('pengajar') || $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang'])) {
+        if (!$user || !$user->isPengajar()) {
             return true;
         }
 
@@ -308,31 +274,5 @@ class TaSkripsiForm
         ];
 
         return $dosenId && ($fieldMap[$slot] ?? null) == $dosenId;
-    }
-
-    /**
-     * True jika user yang login adalah dosen pengajar (bukan admin/super_admin).
-     * Dipakai untuk ->disabled() pada field yang tidak boleh diubah oleh pengajar.
-     */
-    protected static function isPengajar(): bool
-    {
-        $user = \Filament\Facades\Filament::auth()->user();
-
-        return $user
-            && $user->hasRole('pengajar')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
-    }
-
-    /**
-     * True jika user yang login adalah mahasiswa/murid (bukan admin/super_admin).
-     * Murid hanya boleh upload file_revisi_dosen_* — field lain read-only.
-     */
-    protected static function isMurid(): bool
-    {
-        $user = \Filament\Facades\Filament::auth()->user();
-
-        return $user
-            && $user->hasRole('murid')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang']);
     }
 }

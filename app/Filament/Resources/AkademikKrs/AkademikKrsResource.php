@@ -20,11 +20,11 @@ class AkademikKrsResource extends Resource
 {
     protected static ?string $model = AkademikKrs::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 13;
+    protected static ?int $navigationSort = 43;
     protected static ?string $navigationLabel = 'KRS';
 
     public static function form(Schema $schema): Schema

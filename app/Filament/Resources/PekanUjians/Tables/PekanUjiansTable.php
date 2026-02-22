@@ -32,25 +32,25 @@ class PekanUjiansTable
                     ])
                     ->sortable()
                     ->searchable()
-                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()->isMurid()),
 
                 ToggleColumn::make('status_akses')
                     ->label('Status Akses')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn() => \Filament\Facades\Filament::auth()->user()?->hasRole('murid') && !\Filament\Facades\Filament::auth()->user()?->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 ToggleColumn::make('status_bayar')
                     ->label('Syarat Pembayaran')
                     ->onColor('success')
                     ->offColor('warning')
-                    ->disabled(fn() => \Filament\Facades\Filament::auth()->user()?->hasRole('murid') && !\Filament\Facades\Filament::auth()->user()?->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 ToggleColumn::make('status_ujian')
                     ->label('Status Aktif')
                     ->onColor('success')
                     ->offColor('gray')
-                    ->disabled(fn() => \Filament\Facades\Filament::auth()->user()?->hasRole('murid') && !\Filament\Facades\Filament::auth()->user()?->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()?->isMurid()),
 
                 TextColumn::make('informasi')
                     ->label('Informasi')

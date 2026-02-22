@@ -37,11 +37,11 @@ class MataPelajaranKelasRelationManager extends RelationManager
                         $query->where('id_tahun_akademik', $this->getOwnerRecord()->id_tahun_akademik);
                     })
                     ->when(
-                        $user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin']),
+                        $user && $user->isPengajar(),
                         fn(Builder $query) => $query->whereHas('dosenData', fn(Builder $q) => $q->where('user_id', $user->id))
                     )
                     ->when(
-                        $user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin']),
+                        $user && $user->isMurid(),
                         fn(Builder $query) => $query->whereHas('siswaDataLjk.akademikKrs.riwayatPendidikan.siswa', function ($q) use ($user) {
                             $q->where('user_id', $user->id);
                         })
@@ -88,7 +88,7 @@ class MataPelajaranKelasRelationManager extends RelationManager
                     ->label('Status Ujian')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn() => \Filament\Facades\Filament::auth()->user()?->hasRole('murid') && !\Filament\Facades\Filament::auth()->user()?->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()?->isMurid()),
                 Tables\Columns\TextColumn::make('soal_check')
                     ->label('Soal')
                     ->badge()

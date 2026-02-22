@@ -20,11 +20,11 @@ class SiswaDataPendaftarResource extends Resource
     protected static ?string $model = SiswaDataPendaftar::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
-    protected static string | UnitEnum | null $navigationGroup = 'Pendaftaran';
+    protected static string|UnitEnum|null $navigationGroup = 'Pengaturan User';
     protected static ?string $navigationLabel = 'Data Pendaftar';
     protected static ?string $modelLabel = 'Data Pendaftar';
     protected static ?string $pluralModelLabel = 'Data Pendaftar';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 32;
 
 
 
@@ -60,7 +60,7 @@ class SiswaDataPendaftarResource extends Resource
         $user = auth()->user();
 
         // Jika user memiliki role 'murid' dan bukan super_admin/admin
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isMurid()) {
             $query->whereHas('siswa', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });

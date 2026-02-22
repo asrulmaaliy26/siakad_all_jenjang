@@ -22,7 +22,7 @@ class KurikulumResource extends Resource
 {
     protected static ?string $model = Kurikulum::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-group';
     protected static string | UnitEnum | null $navigationGroup = 'Master Data';
 
     protected static ?string $navigationLabel = 'Kurikulum ✓';

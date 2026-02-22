@@ -19,7 +19,7 @@ class JenjangPendidikanResource extends Resource
 {
     protected static ?string $model = JenjangPendidikan::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-pie';
     protected static string | UnitEnum | null $navigationGroup = 'Temp';
 
     public static function form(Schema $schema): Schema

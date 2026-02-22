@@ -151,16 +151,19 @@ class SiswaDataForm
                             ->label('Jurusan')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->disabled(fn() => auth()->user()->isMurid()),
                         \Filament\Forms\Components\Hidden::make('Status_Pendaftaran')
                             ->default('Y'),
                         Select::make('ro_program_sekolah')
                             ->options(\App\Models\RefOption\ProgramSekolah::pluck('nilai', 'id'))
                             ->label('Program Sekolah')
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->disabled(fn() => auth()->user()->isMurid()),
                         TextInput::make('No_Pendaftaran')
-                            ->label('No Pendaftaran (Opsional)'),
+                            ->label('No Pendaftaran (Opsional)')
+                            ->disabled(fn() => auth()->user()->isMurid()),
                     ])
                     ->columns(2) // Membuat section ini 2 kolom
                     ->collapsible(),

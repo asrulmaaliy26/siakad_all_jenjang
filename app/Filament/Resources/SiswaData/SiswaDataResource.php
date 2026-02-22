@@ -22,7 +22,7 @@ class SiswaDataResource extends Resource
 {
     protected static ?string $model = SiswaData::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-group';
     // protected static string | UnitEnum | null $navigationGroup = 'Master Data Siswa';
     protected static string | UnitEnum | null $navigationGroup = 'Master Data';
 
@@ -86,7 +86,7 @@ class SiswaDataResource extends Resource
             });
 
         $user = auth()->user();
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isMurid()) {
             $query->where('user_id', $user->id);
         }
 

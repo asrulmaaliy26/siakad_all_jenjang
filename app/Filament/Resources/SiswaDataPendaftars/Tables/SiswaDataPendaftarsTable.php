@@ -82,7 +82,7 @@ class SiswaDataPendaftarsTable
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
-                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()->isMurid()),
 
                 TextColumn::make('reff')
                     ->label('Referral')
@@ -101,7 +101,7 @@ class SiswaDataPendaftarsTable
                     ])
                     ->sortable()
 
-                    ->disabled(fn() => Auth::user()->hasRole('murid') && !Auth::user()->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()->isMurid()),
 
                 SelectColumn::make('Status_Kelulusan')
                     ->label('Status Kelulusan')
@@ -111,7 +111,7 @@ class SiswaDataPendaftarsTable
                         'N' => '❌ Tidak Lulus',
                     ])
                     ->sortable()
-                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()->isMurid()),
 
                 TextColumn::make('Diterima_di_Prodi')
                     ->label('Diterima di Prodi')

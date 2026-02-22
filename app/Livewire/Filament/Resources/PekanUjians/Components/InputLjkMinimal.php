@@ -32,7 +32,7 @@ class InputLjkMinimal extends Component implements HasForms
         $this->type = $type;
 
         $user = \Filament\Facades\Filament::auth()->user();
-        if ($user && $user->hasRole('murid')) {
+        if ($user && $user->isMurid()) {
             $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
             if ($siswa) {
                 $this->selectedStudentId = $siswa->id;

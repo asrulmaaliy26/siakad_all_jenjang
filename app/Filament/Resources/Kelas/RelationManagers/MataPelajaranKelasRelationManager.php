@@ -111,7 +111,7 @@ class MataPelajaranKelasRelationManager extends RelationManager
         return $table
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
-                if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+                if ($user && $user->isPengajar()) {
                     $query->whereHas('dosenData', function ($q) use ($user) {
                         $q->where('user_id', $user->id);
                     });

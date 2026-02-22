@@ -22,11 +22,11 @@ class PekanUjianResource extends Resource
 {
     protected static ?string $model = PekanUjian::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-pencil-square';
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 14;
+    protected static ?int $navigationSort = 44;
     protected static ?string $navigationLabel = 'Ujian';
 
     public static function form(Schema $schema): Schema

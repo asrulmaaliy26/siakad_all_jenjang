@@ -18,9 +18,7 @@ class TaPengajuanJudulsTable
     public static function configure(Table $table): Table
     {
         $user    = Filament::auth()->user();
-        $isPengajar = $user
-            && $user->hasRole('pengajar')
-            && !$user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+        $isPengajar = $user && $user->isPengajar();
         $dosenId = $isPengajar
             ? DosenData::where('user_id', $user->id)->value('id')
             : null;

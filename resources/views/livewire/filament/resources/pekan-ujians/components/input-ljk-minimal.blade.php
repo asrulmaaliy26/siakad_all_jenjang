@@ -1,6 +1,6 @@
     @php
     $user = \Filament\Facades\Filament::auth()->user();
-    $isMurid = $user && $user->hasRole('murid');
+    $isMurid = $user && $user->isMurid();
     @endphp
 
     @if(!$isMurid)

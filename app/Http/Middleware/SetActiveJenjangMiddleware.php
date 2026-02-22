@@ -23,7 +23,7 @@ class SetActiveJenjangMiddleware
                 // Do nothing, let the switcher or existing session handle it
             }
             // Priority 2: Murid (Force based on educational history)
-            elseif ($user->hasRole('murid')) {
+            elseif ($user->isMurid()) {
                 $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
                 if ($siswa) {
                     $riwayat = $siswa->riwayatPendidikanAktif;

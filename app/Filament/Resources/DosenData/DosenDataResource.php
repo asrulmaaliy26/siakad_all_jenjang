@@ -20,7 +20,7 @@ class DosenDataResource extends Resource
 {
     protected static ?string $model = DosenData::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user';
     protected static string | UnitEnum | null $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 15;
 
@@ -70,7 +70,7 @@ class DosenDataResource extends Resource
         $user = auth()->user();
 
         // Jika user memiliki role 'pengajar' dan bukan super_admin/admin
-        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isPengajar()) {
             $query->where('user_id', $user->id);
         }
 

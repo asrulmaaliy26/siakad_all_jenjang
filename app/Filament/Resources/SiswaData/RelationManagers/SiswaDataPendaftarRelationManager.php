@@ -12,6 +12,8 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 use Filament\Actions\BulkActionGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -29,42 +31,42 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                     ->tabs([
                         Tabs\Tab::make('Data Dasar')
                             ->schema([
-                                Forms\Components\TextInput::make('Nama_Lengkap')
+                                TextInput::make('Nama_Lengkap')
                                     ->maxLength(255),
-                                Forms\Components\TextInput::make('No_Pendaftaran')
+                                TextInput::make('No_Pendaftaran')
                                     ->maxLength(255)
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\Select::make('ro_program_sekolah')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                Select::make('ro_program_sekolah')
                                     ->options(\App\Models\RefOption\ProgramSekolah::pluck('nilai', 'id'))
                                     ->label('Program Sekolah')
                                     ->searchable()
                                     ->preload()
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\Select::make('id_jurusan')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                Select::make('id_jurusan')
                                     ->relationship('jurusan', 'nama')
                                     ->label('Jurusan')
                                     ->searchable()
                                     ->preload()
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('Tahun_Masuk')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('Tahun_Masuk')
                                     ->numeric()
                                     ->default(date('Y'))
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                                    ->disabled(fn() => auth()->user()->isMurid()),
                                 Forms\Components\DatePicker::make('Tgl_Daftar')
                                     ->default(now())
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('Kelas_Program_Kuliah')
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('Prodi_Pilihan_1')
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('Prodi_Pilihan_2')
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('Kelas_Program_Kuliah')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('Prodi_Pilihan_1')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('Prodi_Pilihan_2')
+                                    ->disabled(fn() => auth()->user()->isMurid()),
                                 Forms\Components\Select::make('Jalur_PMB')
                                     ->relationship('jalurPmbRef', 'nilai')
                                     ->label('Jalur PMB'),
                                 Forms\Components\FileUpload::make('Bukti_Jalur_PMB')
                                     ->directory('pendaftaran/bukti_jalur'),
-                                Forms\Components\TextInput::make('Jenis_Pembiayaan'),
+                                TextInput::make('Jenis_Pembiayaan'),
                                 Forms\Components\FileUpload::make('Bukti_Jenis_Pembiayaan')
                                     ->directory('pendaftaran/bukti_pembiayaan'),
                                 Forms\Components\Select::make('Status_Pendaftaran')
@@ -73,17 +75,17 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                         'N' => 'Tidak',
                                         'B' => 'Belum',
                                     ])
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                                    ->disabled(fn() => auth()->user()->isMurid()),
                             ])->columns(2),
 
                         Tabs\Tab::make('Data Mutasi')
                             ->schema([
-                                Forms\Components\TextInput::make('NIMKO_Asal'),
-                                Forms\Components\TextInput::make('Prodi_Asal'),
-                                Forms\Components\TextInput::make('PT_Asal'),
-                                Forms\Components\TextInput::make('Jml_SKS_Asal')->numeric(),
-                                Forms\Components\TextInput::make('IPK_Asal')->numeric(),
-                                Forms\Components\TextInput::make('Semester_Asal')->numeric(),
+                                TextInput::make('NIMKO_Asal'),
+                                TextInput::make('Prodi_Asal'),
+                                TextInput::make('PT_Asal'),
+                                TextInput::make('Jml_SKS_Asal')->numeric(),
+                                TextInput::make('IPK_Asal')->numeric(),
+                                TextInput::make('Semester_Asal')->numeric(),
                                 Forms\Components\FileUpload::make('Pengantar_Mutasi')
                                     ->directory('pendaftaran/mutasi'),
                                 Forms\Components\FileUpload::make('Transkip_Asal')
@@ -104,21 +106,21 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                         Tabs\Tab::make('Tes Tulis')
                             ->schema([
                                 Forms\Components\DatePicker::make('Tgl_Tes_Tulis'),
-                                Forms\Components\TextInput::make('N_Agama')->numeric(),
-                                Forms\Components\TextInput::make('N_Umum')->numeric(),
-                                Forms\Components\TextInput::make('N_Psiko')->numeric(),
-                                Forms\Components\TextInput::make('N_Jumlah_Tes_Tulis')->numeric(),
-                                Forms\Components\TextInput::make('N_Rerata_Tes_Tulis')->numeric(),
+                                TextInput::make('N_Agama')->numeric(),
+                                TextInput::make('N_Umum')->numeric(),
+                                TextInput::make('N_Psiko')->numeric(),
+                                TextInput::make('N_Jumlah_Tes_Tulis')->numeric(),
+                                TextInput::make('N_Rerata_Tes_Tulis')->numeric(),
                             ])->columns(3),
 
                         Tabs\Tab::make('Tes Lisan')
                             ->schema([
                                 Forms\Components\DatePicker::make('Tgl_Tes_Lisan'),
-                                Forms\Components\TextInput::make('N_Potensi_Akademik')->numeric(),
-                                Forms\Components\TextInput::make('N_Baca_al_Quran')->numeric(),
-                                Forms\Components\TextInput::make('N_Baca_Kitab_Kuning')->numeric(),
-                                Forms\Components\TextInput::make('N_Jumlah_Tes_Lisan')->numeric(),
-                                Forms\Components\TextInput::make('N_Rearata_Tes_Lisan')->numeric(),
+                                TextInput::make('N_Potensi_Akademik')->numeric(),
+                                TextInput::make('N_Baca_al_Quran')->numeric(),
+                                TextInput::make('N_Baca_Kitab_Kuning')->numeric(),
+                                TextInput::make('N_Jumlah_Tes_Lisan')->numeric(),
+                                TextInput::make('N_Rearata_Tes_Lisan')->numeric(),
                             ])->columns(3),
 
                         Tabs\Tab::make('Kelulusan')
@@ -129,24 +131,24 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                         'TL' => 'Tidak Lulus',
                                         'B' => 'Belum',
                                     ])
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('Jumlah_Nilai')->numeric(),
-                                Forms\Components\TextInput::make('Rata_Rata')->numeric(),
-                                Forms\Components\TextInput::make('Rekomendasi_1'),
-                                Forms\Components\TextInput::make('Rekomendasi_2'),
-                                Forms\Components\TextInput::make('No_SK_Kelulusan'),
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('Jumlah_Nilai')->numeric(),
+                                TextInput::make('Rata_Rata')->numeric(),
+                                TextInput::make('Rekomendasi_1'),
+                                TextInput::make('Rekomendasi_2'),
+                                TextInput::make('No_SK_Kelulusan'),
                                 Forms\Components\DatePicker::make('Tgl_SK_Kelulusan'),
-                                Forms\Components\TextInput::make('Diterima_di_Prodi'),
+                                TextInput::make('Diterima_di_Prodi'),
                             ])->columns(2),
 
                         Tabs\Tab::make('Pembayaran')
                             ->schema([
-                                Forms\Components\TextInput::make('Biaya_Pendaftaran')->numeric()->prefix('Rp')->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0),
+                                TextInput::make('Biaya_Pendaftaran')->numeric()->prefix('Rp')->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0),
                                 Forms\Components\FileUpload::make('Bukti_Biaya_Daftar')->directory('pendaftaran/pembayaran'),
                                 Forms\Components\Toggle::make('status_valid')->label('Valid')
-                                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
-                                Forms\Components\TextInput::make('verifikator'),
-                                Forms\Components\TextInput::make('reff'),
+                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                TextInput::make('verifikator'),
+                                TextInput::make('reff'),
                             ])->columns(2),
                     ])->columnSpanFull(),
             ]);

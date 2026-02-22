@@ -110,7 +110,7 @@ class SiswaDataTable
                         $record->update(['status_siswa' => $state]);
                         return $state;
                     })
-                    ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                    ->disabled(fn() => auth()->user()->isMurid()),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -186,7 +186,7 @@ class SiswaDataTable
                                 ->success()
                                 ->send();
                         })
-                        ->disabled(fn() => auth()->user()->hasRole('murid') && !auth()->user()->hasAnyRole(['super_admin', 'admin'])),
+                        ->disabled(fn() => auth()->user()->isMurid()),
                 ]),
             ])
             // ->toolbarActions([])

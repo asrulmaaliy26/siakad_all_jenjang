@@ -23,11 +23,11 @@ class MataPelajaranKelasResource extends Resource
 {
     protected static ?string $model = MataPelajaranKelas::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-library';
 
     protected static ?string $recordTitleAttribute = 'nama';
     protected static string | UnitEnum | null $navigationGroup = 'Perkuliahan';
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 42;
     // protected static ?string $navigationLabel = 'Perkuliahan';
 
     public static function getNavigationLabel(): string
@@ -81,14 +81,14 @@ class MataPelajaranKelasResource extends Resource
         $user = \Filament\Facades\Filament::auth()->user();
 
         // Jika user memiliki role 'pengajar' dan bukan super_admin/admin
-        if ($user && $user->hasRole('pengajar') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isPengajar()) {
             $query->whereHas('dosenData', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
         }
 
         // Jika user memiliki role 'murid' dan bukan super_admin/admin
-        if ($user && $user->hasRole('murid') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user && $user->isMurid()) {
             $query->whereHas('siswaDataLjk.akademikKrs.riwayatPendidikan.siswa', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
