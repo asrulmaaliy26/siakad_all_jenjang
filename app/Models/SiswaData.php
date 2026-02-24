@@ -11,6 +11,37 @@ class SiswaData extends Model
 
     protected $table = 'siswa_data';
 
+    protected static function booted()
+    {
+        static::deleting(function ($siswaData) {
+            // Jika sudah ada riwayat pendidikan, cegah penghapusan
+            if ($siswaData->riwayatPendidikan()->exists()) {
+                throw new \Exception('Data Mahasiswa tidak dapat dihapus karena sudah memiliki Riwayat Pendidikan.');
+            }
+
+            // Hapus data pendaftar jika ada
+            if ($siswaData->pendaftar) {
+                $siswaData->pendaftar->delete();
+            }
+
+            // Hapus data orang tua jika ada
+            if ($siswaData->orangTua) {
+                $siswaData->orangTua->delete();
+            }
+        });
+
+        static::deleted(function ($siswaData) {
+            // Hapus User terkait jika ada, harus dilakukan *setelah* SiswaData terhapus 
+            // karena Users adalah parent table (SiswaData memiliki user_id)
+            if ($siswaData->user_id) {
+                $user = \App\Models\User::find($siswaData->user_id);
+                if ($user) {
+                    $user->delete();
+                }
+            }
+        });
+    }
+
     public function scopeByJenjang($query, $jenjangId)
     {
         // Path A: siswa_data -> pendaftar -> jurusan -> jenjang

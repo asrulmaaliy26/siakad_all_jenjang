@@ -30,79 +30,136 @@ class MataPelajaranKelasRelationManager extends RelationManager
     {
         return $form->schema([
             /* =========================
-             * PILIH JURUSAN DULU
+             * FILTER JURUSAN (Default ke Jurusan Kelas)
              * ========================= */
-            Select::make('id_kurikulum')
-                ->label('kurikulum')
-                ->options(Kurikulum::pluck('nama', 'id'))
+            Select::make('id_jurusan')
+                ->label('Jurusan')
+                ->options(Jurusan::pluck('nama', 'id'))
                 ->searchable()
                 ->required()
+                ->reactive()
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->id_jurusan)
+                ->afterStateUpdated(fn($set) => $set('mata_pelajaran_kurikulum_ids', [])),
+
+            /* =========================
+             * FILTER KURIKULUM (Optional, filter by Jurusan)
+             * ========================= */
+            Select::make('id_kurikulum')
+                ->label('Kurikulum')
+                ->options(function (callable $get) {
+                    $jurusanId = $get('id_jurusan');
+                    if (!$jurusanId) return Kurikulum::pluck('nama', 'id');
+                    return Kurikulum::where('id_jurusan', $jurusanId)->pluck('nama', 'id');
+                })
+                ->searchable()
                 ->reactive()
                 ->afterStateUpdated(fn($set) => $set('mata_pelajaran_kurikulum_ids', [])),
 
             /* =========================
-             * MULTISELECT MAPEL (ASYNC)
+             * FILTER SEMESTER (Default ke Semester Kelas)
+             * ========================= */
+            Select::make('semester')
+                ->label('Filter Semester Mapel')
+                ->options([
+                    1 => 'Semester 1',
+                    2 => 'Semester 2',
+                    3 => 'Semester 3',
+                    4 => 'Semester 4',
+                    5 => 'Semester 5',
+                    6 => 'Semester 6',
+                    7 => 'Semester 7',
+                    8 => 'Semester 8',
+                ])
+                ->reactive()
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->semester)
+                ->afterStateUpdated(fn($set) => $set('mata_pelajaran_kurikulum_ids', [])),
+
+            /* =========================
+             * MULTISELECT MAPEL KURIKULUM
              * ========================= */
             MultiSelect::make('mata_pelajaran_kurikulum_ids')
                 ->label('Mata Pelajaran')
                 ->required()
                 ->searchable()
                 ->preload(false)
-                ->optionsLimit(20)
                 ->reactive()
 
                 // Saat dropdown dibuka (tanpa search)
-                ->options(function (callable $get) {
-                    $query = MataPelajaranKurikulum::query()
-                        ->with('mataPelajaranMaster');
+                ->options(function (callable $get, RelationManager $livewire) {
+                    $jurusanId = $get('id_jurusan');
+                    $kurikulumId = $get('id_kurikulum');
+                    $semester = $get('semester');
 
-                    if ($get('id_kurikulum')) {
-                        $query->where('id_kurikulum', $get('id_kurikulum'));
+                    $existingIds = $livewire->getOwnerRecord()
+                        ->mataPelajaranKelas()
+                        ->pluck('id_mata_pelajaran_kurikulum')
+                        ->toArray();
+
+                    $query = MataPelajaranKurikulum::query()
+                        ->with('mataPelajaranMaster')
+                        ->whereNotIn('id', $existingIds);
+
+                    if ($kurikulumId) {
+                        $query->where('id_kurikulum', $kurikulumId);
+                    } elseif ($jurusanId) {
+                        $query->whereHas('kurikulum', fn($q) => $q->where('id_jurusan', $jurusanId));
+                    }
+
+                    if ($semester) {
+                        $query->where('semester', $semester);
                     }
 
                     return $query
-                        ->limit(20)
+                        ->limit(50)
                         ->get()
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester
+                            $item->id => ($item->mataPelajaranMaster->nama ?? 'N/A') . ' - Semester ' . $item->semester
                         ])
                         ->toArray();
                 })
 
-
                 // Saat search
-                ->getSearchResultsUsing(function (string $search, callable $get) {
+                ->getSearchResultsUsing(function (string $search, callable $get, RelationManager $livewire) {
+                    $jurusanId = $get('id_jurusan');
+                    $kurikulumId = $get('id_kurikulum');
+                    $semester = $get('semester');
+
+                    $existingIds = $livewire->getOwnerRecord()
+                        ->mataPelajaranKelas()
+                        ->pluck('id_mata_pelajaran_kurikulum')
+                        ->toArray();
+
                     $query = MataPelajaranKurikulum::query()
                         ->with('mataPelajaranMaster')
+                        ->whereNotIn('id', $existingIds)
                         ->whereHas('mataPelajaranMaster', function ($q) use ($search) {
                             $q->where('nama', 'like', "%{$search}%");
                         });
 
-                    if ($get('id_kurikulum')) {
-                        $query->where('id_kurikulum', $get('id_kurikulum'));
+                    if ($kurikulumId) {
+                        $query->where('id_kurikulum', $kurikulumId);
+                    } elseif ($jurusanId) {
+                        $query->whereHas('kurikulum', fn($q) => $q->where('id_jurusan', $jurusanId));
+                    }
+
+                    if ($semester) {
+                        $query->where('semester', $semester);
                     }
 
                     return $query
                         ->limit(20)
                         ->get()
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester
+                            $item->id => ($item->mataPelajaranMaster->nama ?? 'N/A') . ' - Semester ' . $item->semester
                         ])
                         ->toArray();
                 })
 
-
-                ->getOptionLabelUsing(
-                    function ($value) {
-                        $item = MataPelajaranKurikulum::with('mataPelajaranMaster')->find($value);
-                        return $item ? $item->mataPelajaranMaster->nama . ' - Semester ' . $item->semester : null;
-                    }
-                ),
-
-            // TextInput::make('semester')
-            //     ->numeric()
-            //     ->minValue(1)
-            //     ->required(),
+                ->getOptionLabelUsing(function ($value) {
+                    $item = MataPelajaranKurikulum::with('mataPelajaranMaster')->find($value);
+                    return $item ? ($item->mataPelajaranMaster->nama ?? 'N/A') . ' - Semester ' . $item->semester : null;
+                })
+                ->columnSpanFull(),
         ]);
     }
 

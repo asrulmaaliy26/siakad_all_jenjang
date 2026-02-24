@@ -14,6 +14,8 @@ class MataPelajaranMasterForm
     {
         return $schema
             ->components([
+                TextInput::make('kode_feeder')
+                    ->required(),
                 TextInput::make('nama')
                     ->required(),
                 Select::make('id_jurusan')

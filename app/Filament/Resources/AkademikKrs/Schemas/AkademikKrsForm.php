@@ -87,14 +87,14 @@ class AkademikKrsForm
                 // TextInput::make('syarat_lain')
                 //     ->label('Syarat Lain'),
 
-                Select::make('status_aktif')
-                    ->label('Status Aktif')
-                    ->options([
-                        'Y' => 'Disetujui',
-                        'N' => 'Belum Disetujui',
-                    ])
-                    ->default('Y')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                // Select::make('status_aktif')
+                //     ->label('Status Aktif')
+                //     ->options([
+                //         'Y' => 'Disetujui',
+                //         'N' => 'Belum Disetujui',
+                //     ])
+                //     ->default('Y')
+                //     ->disabled(fn() => auth()->user()?->isMurid()),
 
                 // Uploads
                 \Filament\Forms\Components\FileUpload::make('kwitansi_krs')

@@ -264,18 +264,6 @@
         </tr>
     </table>
 
-    {{-- ══ TABEL MATA KULIAH ══ --}}
-    @php
-    $mataPelajaranList = \App\Models\MataPelajaranKelas::with([
-    'mataPelajaranKurikulum.mataPelajaranMaster',
-    'dosenData',
-    ])
-    ->where('id_kelas', $krs->id_kelas)
-    ->get();
-
-    $totalSks = 0;
-    @endphp
-
     <table class="tabel-mk">
         <thead>
             <tr>
@@ -288,30 +276,30 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($mataPelajaranList as $i => $mk)
+            @forelse($krs->siswaDataLjk as $i => $ljk)
             @php
-            $master = $mk->mataPelajaranKurikulum?->mataPelajaranMaster;
-            $sks = $mk->mataPelajaranKurikulum?->sks ?? 0;
-            $totalSks += $sks;
+            $mk = $ljk->mataPelajaranKelas;
+            $master = $mk?->mataPelajaranKurikulum?->mataPelajaranMaster;
+            $sks = $master?->bobot ?? 0;
             @endphp
             <tr>
                 <td class="center">{{ $i + 1 }}</td>
-                <td class="center">{{ $master?->kode ?? $master?->kode_feeder ?? '-' }}</td>
+                <td class="center">{{ $master?->kode_feeder ?? $master?->kode ?? '-' }}</td>
                 <td>{{ $master?->nama ?? '-' }}</td>
                 <td class="center">{{ $sks }}</td>
-                <td>{{ $mk->dosenData?->nama ?? '-' }}</td>
-                <td class="center">{{ $mk->hari ? Str::ucfirst(strtolower($mk->hari)) : '-' }}{{ $mk->jam ? ' / '.$mk->jam : '' }}</td>
+                <td>{{ $mk?->dosenData?->nama ?? '-' }}</td>
+                <td class="center">{{ $mk?->hari ? Str::ucfirst(strtolower($mk->hari)) : '-' }}{{ $mk?->jam ? ' / '.$mk->jam : '' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="text-align:center;color:#777;font-style:italic;">Tidak ada data mata kuliah</td>
+                <td colspan="6" style="text-align:center;color:#777;font-style:italic;">Tidak ada data mata kuliah (LJK tidak ditemukan)</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="3" style="text-align:right;">Total SKS</td>
-                <td class="center">{{ $totalSks }}</td>
+                <td class="center">{{ $totalSksLjk ?? 0 }}</td>
                 <td colspan="2"></td>
             </tr>
         </tfoot>

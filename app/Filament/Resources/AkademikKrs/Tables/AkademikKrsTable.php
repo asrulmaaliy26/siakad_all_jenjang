@@ -124,11 +124,11 @@ class AkademikKrsTable
                 SelectColumn::make('syarat_krs')
                     ->label('Syarat KRS')
                     ->options([
-                        'Y' => 'Terpenuhi',
-                        'N' => 'Belum',
+                        'Y' => 'Disetujui',
+                        'N' => 'Menunggu Persetujuan',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -138,21 +138,16 @@ class AkademikKrsTable
                     }),
 
                 // Status Aktif dengan SelectColumn
-                SelectColumn::make('status_aktif')
-                    ->label('Status Aktif')
-                    ->options([
-                        'Y' => 'Aktif',
-                        'N' => 'Tidak Aktif',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-active',
-                            'N' => 'status-badge status-inactive',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
+                // TextColumn::make('status_aktif')
+                //     ->label('Status Aktif')
+                //     ->formatStateUsing(fn($state) => $state === 'Y' ? 'Aktif' : 'Tidak Aktif')
+                //     ->extraAttributes(function ($state) {
+                //         $classes = [
+                //             'Y' => 'status-badge status-active',
+                //             'N' => 'status-badge status-inactive',
+                //         ];
+                //         return ['class' => $classes[$state] ?? 'status-badge status-default'];
+                //     }),
 
                 // Created At
                 TextColumn::make('created_at')

@@ -153,14 +153,48 @@ class SiswaDataForm
                             ->preload()
                             ->required()
                             ->disabled(fn() => auth()->user()->isMurid()),
-                        \Filament\Forms\Components\Hidden::make('Status_Pendaftaran')
-                            ->default('Y'),
+
                         Select::make('ro_program_sekolah')
                             ->options(\App\Models\RefOption\ProgramSekolah::pluck('nilai', 'id'))
                             ->label('Program Sekolah')
                             ->searchable()
                             ->preload()
+                            ->required()
                             ->disabled(fn() => auth()->user()->isMurid()),
+
+                        // TAHUN MASUK
+                        Select::make('Tahun_Masuk')
+                            ->label('Tahun Masuk')
+                            ->options(function () {
+                                $tahunSekarang = date('Y');
+                                $tahunMulai = $tahunSekarang - 5; // 5 tahun ke belakang
+                                $tahunAkhir = $tahunSekarang + 5; // 5 tahun ke depan
+
+                                $tahun = [];
+                                for ($i = $tahunMulai; $i <= $tahunAkhir; $i++) {
+                                    $tahun[$i] = $i;
+                                }
+                                return $tahun;
+                            })
+                            ->default(date('Y')) // Default tahun sekarang
+                            ->searchable()
+                            ->required()
+                            ->disabled(fn() => auth()->user()->isMurid()),
+
+                        // TANGGAL DAFTAR
+                        DatePicker::make('Tgl_Daftar')
+                            ->label('Tanggal Daftar')
+                            ->default(now()) // Default tanggal sekarang
+                            ->required()
+                            ->disabled(fn() => auth()->user()->isMurid())
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->native(false) // Menggunakan date picker dari Filament (bukan native browser)
+                            ->closeOnDateSelection(),
+
+                        \Filament\Forms\Components\Hidden::make('Status_Pendaftaran')
+                            ->default('Y'),
+
                         TextInput::make('No_Pendaftaran')
                             ->label('No Pendaftaran (Opsional)')
                             ->disabled(fn() => auth()->user()->isMurid()),

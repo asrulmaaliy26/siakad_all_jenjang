@@ -9,12 +9,16 @@ use Filament\Forms\Components\MultiSelect;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Log;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use App\Models\MataPelajaranMaster;
 use App\Models\Jurusan;
 
@@ -26,65 +30,63 @@ class MataPelajaranKurikulumRelationManager extends RelationManager
     public function form(Schema $form): Schema
     {
         return $form->schema([
-
-            /* =========================
-             * PILIH JURUSAN DULU
-             * ========================= */
             Select::make('id_jurusan')
                 ->label('Jurusan')
                 ->options(Jurusan::pluck('nama', 'id'))
                 ->searchable()
                 ->required()
                 ->reactive()
-                ->afterStateUpdated(fn($set) => $set('mata_pelajaran_master_ids', [])),
-
-            /* =========================
-             * MULTISELECT MAPEL (ASYNC)
-             * ========================= */
-            MultiSelect::make('mata_pelajaran_master_ids')
-                ->label('Mata Pelajaran')
-                ->required()
-                ->searchable()
-                ->preload(false)
-                ->optionsLimit(20)
-                ->reactive()
-
-                // Saat dropdown dibuka (tanpa search)
-                ->options(function (callable $get) {
-                    $query = MataPelajaranMaster::query();
-
-                    if ($get('id_jurusan')) {
-                        $query->where('id_jurusan', $get('id_jurusan'));
-                    }
-
-                    return $query
-                        ->limit(20)
-                        ->pluck('nama', 'id');
-                })
-
-                // Saat search
-                ->getSearchResultsUsing(function (string $search, callable $get) {
-                    $query = MataPelajaranMaster::query()
-                        ->where('nama', 'like', "%{$search}%");
-
-                    if ($get('id_jurusan')) {
-                        $query->where('id_jurusan', $get('id_jurusan'));
-                    }
-
-                    return $query
-                        ->limit(20)
-                        ->pluck('nama', 'id');
-                })
-
-                ->getOptionLabelUsing(
-                    fn($value) =>
-                    MataPelajaranMaster::find($value)?->nama
-                ),
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->id_jurusan)
+                ->afterStateUpdated(fn($set) => $set('mata_pelajaran_master_ids', []))
+                ->columnSpanFull(),
 
             TextInput::make('semester')
+                ->label('Semester')
+                ->helperText('Akan diterapkan ke semua mata pelajaran yang dipilih di bawah')
                 ->numeric()
-                ->minValue(1)
-                ->required(),
+                ->default(0)
+                ->required()
+                ->columnSpanFull(),
+
+            /* =========================
+             * PILIH MAPEL (Menggunakan Select Multiple agar mendukung data besar)
+             * ========================= */
+            Select::make('mata_pelajaran_master_ids')
+                ->label('Pilih Mata Pelajaran')
+                ->multiple()
+                ->searchable()
+                ->preload()
+                ->required()
+                ->options(function (callable $get, RelationManager $livewire) {
+                    $idJurusan = $get('id_jurusan');
+                    if (!$idJurusan) return [];
+
+                    // Ambil ID mapel yang sudah ada di kurikulum ini
+                    $existingIds = $livewire->getOwnerRecord()
+                        ->mataPelajaranKurikulum()
+                        ->pluck('id_mata_pelajaran_master')
+                        ->toArray();
+
+                    return MataPelajaranMaster::where('id_jurusan', $idJurusan)
+                        ->whereNotIn('id', $existingIds)
+                        ->orderBy('nama')
+                        ->pluck('nama', 'id');
+                })
+                ->getSearchResultsUsing(function (string $search, callable $get, RelationManager $livewire) {
+                    $idJurusan = $get('id_jurusan');
+
+                    $existingIds = $livewire->getOwnerRecord()
+                        ->mataPelajaranKurikulum()
+                        ->pluck('id_mata_pelajaran_master')
+                        ->toArray();
+
+                    return MataPelajaranMaster::where('id_jurusan', $idJurusan)
+                        ->whereNotIn('id', $existingIds)
+                        ->where('nama', 'like', "%{$search}%")
+                        ->limit(50)
+                        ->pluck('nama', 'id');
+                })
+                ->columnSpanFull(),
         ]);
     }
 
@@ -92,11 +94,40 @@ class MataPelajaranKurikulumRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                TextColumn::make('row_index')
+                    ->label('No')
+                    ->rowIndex(),
+                TextColumn::make('id')
+                    ->label('ID')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('mataPelajaranMaster.kode_feeder')
+                    ->label('Kode Feeder')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('semester'),
+                TextInputColumn::make('semester')
+                    ->rules(['required', 'numeric', 'min:1'])
+                    ->sortable(),
+            ])
+            ->paginated([10, 25, 50, 100])
+            ->defaultPaginationPageOption(10)
+            ->filters([
+                \Filament\Tables\Filters\SelectFilter::make('semester')
+                    ->options([
+                        '1' => 'Semester 1',
+                        '2' => 'Semester 2',
+                        '3' => 'Semester 3',
+                        '4' => 'Semester 4',
+                        '5' => 'Semester 5',
+                        '6' => 'Semester 6',
+                        '7' => 'Semester 7',
+                        '8' => 'Semester 8',
+                    ])
             ])
             ->headerActions([
                 CreateAction::make()
@@ -126,6 +157,7 @@ class MataPelajaranKurikulumRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                EditAction::make(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

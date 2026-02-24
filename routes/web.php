@@ -59,6 +59,8 @@ Route::get('/cetak-krs/{id}', function ($id) {
         'riwayatPendidikan.jurusan.jenjangPendidikan',
         'kelas.tahunAkademik',
         'kelas.programKelas',
+        'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
+        'siswaDataLjk.mataPelajaranKelas.dosenData',
     ])->findOrFail($id);
 
     // Proteksi: murid hanya bisa cetak KRS miliknya sendiri
@@ -70,7 +72,12 @@ Route::get('/cetak-krs/{id}', function ($id) {
         }
     }
 
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.krs', compact('krs'))
+    // Hitung total SKS berdasarkan LJK yang diambil
+    $totalSksLjk = $krs->siswaDataLjk->sum(function ($ljk) {
+        return $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
+    });
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.krs', compact('krs', 'totalSksLjk'))
         ->setPaper('a4', 'portrait');
 
     $namaSiswa = \Illuminate\Support\Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'krs');

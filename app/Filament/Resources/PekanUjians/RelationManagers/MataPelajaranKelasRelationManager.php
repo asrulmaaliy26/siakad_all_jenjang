@@ -203,9 +203,11 @@ class MataPelajaranKelasRelationManager extends RelationManager
                                 return false;
                             }
 
-                            // Cek syarat ujian (harus 'Y')
-                            if (($krs->{$syaratCol} ?? 'N') !== 'Y') {
-                                return false;
+                            // Cek syarat ujian hanya jika PekanUjian mewajibkan pembayaran (status_bayar = 'Y')
+                            if ($pekanUjian->status_bayar) {
+                                if (($krs->{$syaratCol} ?? 'N') !== 'Y') {
+                                    return false;
+                                }
                             }
                         }
 
