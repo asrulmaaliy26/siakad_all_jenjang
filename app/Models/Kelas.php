@@ -63,4 +63,8 @@ class Kelas extends Model
             'id'          // PK di tabel kelas
         );
     }
+    public function ulasans()
+    {
+        return $this->morphMany(Ulasan::class, 'reviewable');
+    }
 }

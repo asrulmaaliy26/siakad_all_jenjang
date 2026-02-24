@@ -141,4 +141,8 @@ class User extends Authenticatable implements FilamentUser
     {
         return DosenData::where('user_id', $this->id)->value('id');
     }
+    public function ulasans()
+    {
+        return $this->hasMany(Ulasan::class);
+    }
 }

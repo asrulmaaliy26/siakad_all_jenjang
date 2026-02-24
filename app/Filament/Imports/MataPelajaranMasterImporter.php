@@ -23,11 +23,11 @@ class MataPelajaranMasterImporter extends Importer
                 ->rules(['required', 'max:255'])
                 ->castStateUsing(fn($state) => trim($state))
                 ->example('Matematika'),
-            ImportColumn::make('jurusan')
-                ->relationship(resolveUsing: 'id')
+            ImportColumn::make('id_jurusan')
+                ->label('Jurusan (Isi dengan ID)')
+                ->guess(['jurusan', 'id_jurusan'])
                 ->requiredMapping()
                 ->rules(['required', 'integer'])
-                ->label('Jurusan (Isi dengan ID)')
                 ->example('1'),
             ImportColumn::make('bobot')
                 ->numeric()
@@ -46,7 +46,7 @@ class MataPelajaranMasterImporter extends Importer
             ImportColumn::make('referensi_jurusan')
                 ->label('Referensi Jurusan (ID - Nama)')
                 ->fillRecordUsing(fn() => null) // Ignore when saving
-                ->examples(fn() => \App\Models\Jurusan::with('jenjangPendidikan')->get()->map(function ($item) {
+                ->examples(fn() => \App\Models\Jurusan::withoutGlobalScopes()->with('jenjangPendidikan')->get()->map(function ($item) {
                     $jenjang = $item->jenjangPendidikan ? ' - ' . $item->jenjangPendidikan->nama : '';
                     return $item->id . ' - ' . $item->nama . $jenjang;
                 })->toArray()),
@@ -64,10 +64,36 @@ class MataPelajaranMasterImporter extends Importer
 
     public function resolveRecord(): ?MataPelajaranMaster
     {
-        return MataPelajaranMaster::firstOrNew([
-            // Use kode_feeder as unique key if available, else nama
-            'kode_feeder' => $this->data['kode_feeder'],
-        ]);
+        try {
+            $kodeFeeder = isset($this->data['kode_feeder']) ? trim($this->data['kode_feeder']) : null;
+
+            if (empty($kodeFeeder)) {
+                throw new \Exception("Kolom 'kode_feeder' tidak boleh kosong.");
+            }
+
+            // Validasi id_jurusan wajib ada di data
+            $idJurusan = $this->data['id_jurusan'] ?? null;
+            if (empty($idJurusan)) {
+                throw new \Exception("Kolom 'jurusan' (ID) tidak ditemukan atau kosong.");
+            }
+
+            // Cari record tanpa dipengaruhi Global Scope (Jenjang)
+            $record = MataPelajaranMaster::withoutGlobalScopes()
+                ->where('kode_feeder', $kodeFeeder)
+                ->first();
+
+            if ($record) {
+                \Illuminate\Support\Facades\Log::info("Import: Ditemukan record existing (ID: {$record->id}) untuk kode {$kodeFeeder}. Melakukan update.");
+                return $record;
+            }
+
+            \Illuminate\Support\Facades\Log::info("Import: Record baru untuk kode {$kodeFeeder}. Melakukan insert.");
+            return new MataPelajaranMaster();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error pada baris import [Kode: " . ($kodeFeeder ?? 'N/A') . "]: " . $e->getMessage());
+            // Lempar exception agar Filament mencatat baris ini sebagai 'failed'
+            throw $e;
+        }
     }
 
     public static function getCompletedNotificationBody(Import $import): string

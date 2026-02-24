@@ -22,7 +22,7 @@ class KurikulumForm
                     ->searchable(),
                 Select::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(TahunAkademik::pluck('nama', 'id'))
+                    ->options(TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"]))
                     ->searchable(),
                 // Select::make('id_jenjang_pendidikan') // Removed as per request
                 //     ->label('Jenjang Pendidikan')

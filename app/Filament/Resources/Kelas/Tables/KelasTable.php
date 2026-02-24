@@ -66,7 +66,7 @@ class KelasTable
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
                     ->options(
-                        TahunAkademik::pluck('nama', 'id')
+                        TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
                     )
                     ->searchable(),
 

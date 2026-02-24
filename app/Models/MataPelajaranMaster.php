@@ -24,4 +24,8 @@ class MataPelajaranMaster extends Model
     {
         return $this->belongsTo(Jurusan::class, 'id_jurusan');
     }
+    public function ulasans()
+    {
+        return $this->morphMany(Ulasan::class, 'reviewable');
+    }
 }

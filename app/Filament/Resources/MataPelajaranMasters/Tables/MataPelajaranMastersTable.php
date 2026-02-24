@@ -122,6 +122,7 @@ class MataPelajaranMastersTable
                                     'mata-pelajaran-excel-' . now()->format('Y-m-d')
                                 ),
                         ]),
+                    DeleteBulkAction::make(),
 
                 ]),
             ])

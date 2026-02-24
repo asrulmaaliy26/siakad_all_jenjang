@@ -2,11 +2,11 @@ APP_NAME="Sistem Informasi Akademik"
 APP_ENV=local
 APP_KEY=base64:a2fcGCPeXQ1/m3pB5ug0lfTucy1h0jrOdQZkA26y3s8=
 APP_DEBUG=true
-APP_URL=http://localhost
+APP_URL=http://siakadlama.staialmannan.ac.id
 
-APP_LOCALE=id  # Ubah ke Indonesia
+APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
-APP_FAKER_LOCALE=id_ID  # Ubah ke Indonesia
+APP_FAKER_LOCALE=en_US
 
 APP_MAINTENANCE_DRIVER=file
 # APP_MAINTENANCE_STORE=database
@@ -18,7 +18,7 @@ BCRYPT_ROUNDS=12
 LOG_CHANNEL=stack
 LOG_STACK=single
 LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=error  # Ubah dari debug ke error untuk production
+LOG_LEVEL=debug
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -27,17 +27,18 @@ DB_DATABASE=staialmannan_siakadlama
 DB_USERNAME=staialmannan_root
 DB_PASSWORD=11999988zamA@
 
-SESSION_DRIVER=file  # Ubah dari database ke file untuk performa lebih baik di VPS
+SESSION_DRIVER=database
 SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
 SESSION_PATH=/
 SESSION_DOMAIN=null
 
 BROADCAST_CONNECTION=log
-FILESYSTEM_DISK=public
-QUEUE_CONNECTION=database
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+# QUEUE_CONNECTION=database
 
-CACHE_STORE=file
+CACHE_STORE=database
 # CACHE_PREFIX=
 
 MEMCACHED_HOST=127.0.0.1
