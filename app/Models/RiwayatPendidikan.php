@@ -26,6 +26,24 @@ class RiwayatPendidikan extends Model
     }
 
     protected $table = 'riwayat_pendidikan';
+
+    protected static function booted()
+    {
+        static::deleting(function ($riwayat) {
+            // Delete related KRS (this will trigger AkademikKrs deleting event)
+            $riwayat->akademikKrs->each->delete();
+
+            // Delete related Title Submissions
+            $riwayat->pengajuanJudul()->delete();
+
+            // Delete related Proposals
+            $riwayat->seminarProposal()->delete();
+
+            // Delete related Thesis/Skripsi
+            $riwayat->skripsi()->delete();
+        });
+    }
+
     protected $fillable = [
         'id_siswa_data',
         // 'id_jenjang_pendidikan', // Derived from Jurusan
@@ -149,7 +167,22 @@ class RiwayatPendidikan extends Model
         $startDate = \Carbon\Carbon::parse($this->tanggal_mulai);
         $refDate = $date ? \Carbon\Carbon::parse($date) : now();
 
+        // Jika tanggal referensi sebelum tanggal mulai, tetap semester 1
         if ($refDate->lessThan($startDate)) return 1;
+
+        // Logika Semester Akademik:
+        // Ganjil: Juli - Desember (Bulan 7-12) -> +1 semester
+        // Genap: Januari - Juni (Bulan 1-6) -> +2 semester
+        // Semester dihitung dari selisih tahun akademik
+
+        // $isGenap = $refDate->month <= 6;
+        // $academicYear = $isGenap ? $refDate->year - 1 : $refDate->year;
+        // $startAcademicYear = $startDate->month <= 6 ? $startDate->year - 1 : $startDate->year;
+
+        // $yearsDiff = $academicYear - $startAcademicYear;
+        // $semester = ($yearsDiff * 2) + ($isGenap ? 2 : 1);
+
+        // return max(1, $semester);
 
         $diffInMonths = $startDate->diffInMonths($refDate);
         return (int) floor($diffInMonths / 6) + 1;

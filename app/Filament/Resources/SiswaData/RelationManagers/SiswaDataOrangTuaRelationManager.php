@@ -111,11 +111,13 @@ class SiswaDataOrangTuaRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                // ->visible(fn() => ! auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn() => ! auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
                 ]),
             ]);
     }

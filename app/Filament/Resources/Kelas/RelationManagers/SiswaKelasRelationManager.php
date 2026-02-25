@@ -11,6 +11,7 @@ use Filament\Forms\Components\MultiSelect;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Schemas\Schema;
@@ -21,52 +22,38 @@ use App\Models\Jurusan;
 use App\Models\Kurikulum;
 use App\Models\MataPelajaranKurikulum;
 use App\Models\RiwayatPendidikan;
+use App\Models\SiswaDataLJK;
 
 class SiswaKelasRelationManager extends RelationManager
 {
-    protected static string $relationship = 'AkademikKrs';
+    protected static string $relationship = 'siswaDataLjk';
     protected static ?string $title = 'Siswa/Mahasiswa';
+
+    protected function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->select('siswa_data_ljk.*')
+            ->join('akademik_krs', 'siswa_data_ljk.id_akademik_krs', '=', 'akademik_krs.id')
+            ->groupBy('siswa_data_ljk.id_akademik_krs');
+    }
 
     public function form(Schema $form): Schema
     {
         return $form->schema([
-            /* =========================
-             * PILIH JURUSAN DULU
-             * ========================= */
-            // Select::make('id_jenjang_pendidikan')
-            //     ->label('Jenjang Pendidikan')
-            //     ->options(JenjangPendidikan::pluck('nama', 'id'))
-            //     ->searchable()
-            //     ->required()
-            //     ->reactive()
-            //     ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
-
-            /* =========================
-             * PILIH JURUSAN DULU
-             * ========================= */
-            Select::make('id_jurusan')
-                ->label('Jurusan')
-                ->options(Jurusan::pluck('nama', 'id'))
-                ->searchable()
-                ->required()
-                ->reactive()
-                ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
-
-            /* =========================
-             * FILTER SEMESTER
-             * ========================= */
             Select::make('filter_semester')
-                ->label('Semester Saat Ini')
-                ->options(array_combine(range(1, 14), range(1, 14)))
-                ->searchable()
+                ->label('Semester (Filter)')
+                ->options(array_combine(range(1, 8), range(1, 8)))
                 ->reactive()
                 ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
 
-            // /* =========================
-            //  * MULTISELECT MAPEL (ASYNC)
-            //  * ========================= */
+            Select::make('ro_program_sekolah')
+                ->label('Program Kelas (Filter)')
+                ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                ->reactive()
+                ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
+
             MultiSelect::make('riwayat_pendidikan_ids')
-                ->label('Siswa/Mahasiswa')
+                ->label('Pilih Siswa/Mahasiswa')
                 ->required()
                 ->searchable()
                 ->preload(false)
@@ -74,29 +61,34 @@ class SiswaKelasRelationManager extends RelationManager
                 ->reactive()
 
                 // Saat dropdown dibuka (tanpa search)
-                ->options(function (callable $get, RelationManager $livewire, $state) {
+                ->options(function (callable $get, RelationManager $livewire) {
                     $kelas = $livewire->getOwnerRecord();
-                    // Ensure relation is loaded
-                    $kelas->loadMissing('jurusan');
-                    $jenjangId = $kelas->jurusan?->id_jenjang_pendidikan;
+                    $jurusanId = $get('id_jurusan') ?? $kelas->id_jurusan;
+                    $programId = $get('ro_program_sekolah');
 
                     $query = RiwayatPendidikan::query()
+                        ->where('id_jurusan', $jurusanId)
                         ->with('siswa');
 
-                    if ($jenjangId) {
-                        $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-                            $q->where('id_jenjang_pendidikan', $jenjangId);
-                        });
+                    if ($programId) {
+                        $query->where('ro_program_sekolah', $programId);
                     }
 
-                    if ($get('id_jurusan')) {
-                        $query->where('id_jurusan', $get('id_jurusan'));
-                    }
+                    // Hanya yang punya KRS aktif
+                    $query->whereHas('akademikKrs', function ($q) {
+                        $q->where('status_aktif', 'Y');
+                    });
 
-                    // Filter Semester logic
-                    if ($get('filter_semester')) {
-                        $query->whereNotNull('tanggal_mulai');
-                    }
+                    // Hanya yang belum punya LJK di kelas ini sama sekali (kecuali statusnya 'TL')
+                    $query->whereDoesntHave('akademikKrs.siswaDataLjk', function ($q) use ($kelas) {
+                        $q->whereHas('mataPelajaranKelas', function ($sub) use ($kelas) {
+                            $sub->where('id_kelas', $kelas->id);
+                        })
+                            ->where(function ($sub) {
+                                $sub->where('Status_Nilai', '!=', 'TL')
+                                    ->orWhereNull('Status_Nilai');
+                            });
+                    });
 
                     $results = $query->limit(100)->get();
 
@@ -111,33 +103,35 @@ class SiswaKelasRelationManager extends RelationManager
                         ])
                         ->toArray();
                 })
-
-
-                // Saat search
                 ->getSearchResultsUsing(function (string $search, callable $get, RelationManager $livewire) {
                     $kelas = $livewire->getOwnerRecord();
-                    $kelas->loadMissing('jurusan');
-                    $jenjangId = $kelas->jurusan?->id_jenjang_pendidikan;
+                    $jurusanId = $get('id_jurusan') ?? $kelas->id_jurusan;
+                    $programId = $get('ro_program_sekolah');
 
                     $query = RiwayatPendidikan::query()
+                        ->where('id_jurusan', $jurusanId)
                         ->with('siswa')
                         ->whereHas('siswa', function ($q) use ($search) {
                             $q->where('nama', 'like', "%{$search}%");
                         });
 
-                    if ($jenjangId) {
-                        $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-                            $q->where('id_jenjang_pendidikan', $jenjangId);
-                        });
+                    if ($programId) {
+                        $query->where('ro_program_sekolah', $programId);
                     }
 
-                    if ($get('id_jurusan')) {
-                        $query->where('id_jurusan', $get('id_jurusan'));
-                    }
+                    $query->whereHas('akademikKrs', function ($q) {
+                        $q->where('status_aktif', 'Y');
+                    });
 
-                    if ($get('filter_semester')) {
-                        $query->whereNotNull('tanggal_mulai');
-                    }
+                    $query->whereDoesntHave('akademikKrs.siswaDataLjk', function ($q) use ($kelas) {
+                        $q->whereHas('mataPelajaranKelas', function ($sub) use ($kelas) {
+                            $sub->where('id_kelas', $kelas->id);
+                        })
+                            ->where(function ($sub) {
+                                $sub->where('Status_Nilai', '!=', 'TL')
+                                    ->orWhereNull('Status_Nilai');
+                            });
+                    });
 
                     $results = $query->limit(100)->get();
 
@@ -152,10 +146,9 @@ class SiswaKelasRelationManager extends RelationManager
                         ])
                         ->toArray();
                 })
-
                 ->getOptionLabelUsing(
                     fn($value) =>
-                    RiwayatPendidikan::find($value)?->nama
+                    RiwayatPendidikan::with('siswa')->find($value)?->siswa?->nama ?? '-'
                 ),
 
             // TextInput::make('semester')
@@ -169,12 +162,12 @@ class SiswaKelasRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                TextColumn::make('riwayatPendidikan.siswa.nama')
+                TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nama')
                     ->label('Nama Siswa/Mahasiswa')
                     ->searchable(),
-                TextColumn::make('riwayatPendidikan.tanggal_mulai')
+                TextColumn::make('akademikKrs.riwayatPendidikan.tanggal_mulai')
                     ->label('Semester Saat Ini')
-                    ->formatStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester()),
+                    ->formatStateUsing(fn($record) => $record->akademikKrs?->riwayatPendidikan?->getSemester()),
             ])
             ->headerActions([
                 CreateAction::make()
@@ -193,61 +186,74 @@ class SiswaKelasRelationManager extends RelationManager
 
                         $kelas = $livewire->getOwnerRecord();
 
-                        foreach ($jurusan as $idjurusan) {
-                            // Hitung IPS dari LJK data terakhir mahasiswa
-                            $latestKrs = AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
+                        foreach ($jurusan as $idRiwayat) {
+                            // Find active KRS for this student 
+                            $activeKrs = AkademikKrs::where('id_riwayat_pendidikan', $idRiwayat)
                                 ->where('status_aktif', 'Y')
-                                ->latest()
-                                ->first()
-                                ?? AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
                                 ->latest()
                                 ->first();
 
-                            $ips = 0;
-                            if ($latestKrs) {
-                                $ips = \App\Models\SiswaDataLJK::where('id_akademik_krs', $latestKrs->id)
-                                    ->avg('Nilai_Akhir') ?? 0;
+                            if (!$activeKrs) {
+                                Log::warning("Mahasiswa (Riwayat ID: {$idRiwayat}) tidak memiliki KRS aktif.");
+                                continue;
                             }
 
-                            // Tentukan jumlah SKS berdasarkan IPS
-                            // Aturan: 3 -> 24 SKS, 2 -> 18 SKS, <2 -> 12 SKS
-                            $sks = 12;
-                            if ($ips >= 3.0) {
-                                $sks = 24;
-                            } elseif ($ips >= 2.0) {
-                                $sks = 18;
+                            // Update KRS to associate with this class
+                            // $activeKrs->update(['id_kelas' => $kelas->id]);
+
+                            // Create LJK for all Mata Pelajaran in this class
+                            $mapelKelasIds = $kelas->mataPelajaranKelas()->pluck('id');
+                            foreach ($mapelKelasIds as $idMapel) {
+                                $existing = SiswaDataLJK::where('id_akademik_krs', $activeKrs->id)
+                                    ->where('id_mata_pelajaran_kelas', $idMapel)
+                                    ->first();
+
+                                // Jika sudah ada dan statusnya TL, hapus dulu agar bisa buat baru (reset)
+                                if ($existing && $existing->Status_Nilai === 'TL') {
+                                    $existing->delete();
+                                }
+
+                                SiswaDataLJK::firstOrCreate([
+                                    'id_akademik_krs' => $activeKrs->id,
+                                    'id_mata_pelajaran_kelas' => $idMapel,
+                                ]);
                             }
-
-                            // Nonaktifkan semua KRS lama untuk riwayat pendidikan ini
-                            AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
-                                ->update(['status_aktif' => 'N']);
-
-                            $kelas->akademikKrs()->create([
-                                'id_riwayat_pendidikan' => $idjurusan,
-                                'jumlah_sks' => $sks,
-                                'tgl_krs' => now(),
-                                'status_aktif' => 'Y',
-                                'kode_tahun' => $kelas->tahunAkademik?->nama,
-                                'status_bayar' => 'N',
-                                'syarat_uts' => 'N',
-                                'syarat_uas' => 'N',
-                                'syarat_krs' => 'N',
-                            ]);
                         }
 
                         return null; // hentikan default create
                     }),
             ])
             ->actions([
-                DeleteAction::make(),
-                // DeleteAction::make()
-                //     ->disabled(fn($record) => $record->pertemuanKelas()->exists())
-                //     ->tooltip('Masih memiliki data pertemuan')
+                DeleteAction::make()
+                    ->label('Hapus dari Kelas')
+                    ->modalHeading('Hapus Siswa dari Kelas')
+                    ->modalDescription('Apakah Anda yakin ingin menghapus siswa ini dari kelas? Ini akan menghapus seluruh data LJK siswa untuk semua mata pelajaran di kelas ini.')
+                    ->using(function (SiswaDataLJK $record, RelationManager $livewire) {
+                        $kelasId = $livewire->getOwnerRecord()->id;
+                        $krsId = $record->id_akademik_krs;
+
+                        // Hapus SEMUA LJK milik mahasiswa ini yang ada di mata pelajaran kelas ini
+                        SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', function ($query) use ($kelasId) {
+                                $query->where('id_kelas', $kelasId);
+                            })
+                            ->delete();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-
+                    DeleteBulkAction::make()
+                        ->label('Hapus Terpilih dari Kelas')
+                        ->using(function (\Illuminate\Support\Collection $records, RelationManager $livewire) {
+                            $kelasId = $livewire->getOwnerRecord()->id;
+                            foreach ($records as $record) {
+                                SiswaDataLJK::where('id_akademik_krs', $record->id_akademik_krs)
+                                    ->whereHas('mataPelajaranKelas', function ($query) use ($kelasId) {
+                                        $query->where('id_kelas', $kelasId);
+                                    })
+                                    ->delete();
+                            }
+                        }),
                 ]),
             ]);
     }

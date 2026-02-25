@@ -43,8 +43,12 @@ class AkademikKrsForm
                     ->label('Tanggal KRS')
                     ->disabled(fn() => auth()->user()?->isMurid()),
 
-                TextInput::make('kode_tahun')
-                    ->label('Kode Tahun')
+                Select::make('kode_tahun')
+                    ->label('Tahun Akademik')
+                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"]))
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->searchable()
+                    ->required()
                     ->disabled(fn() => auth()->user()?->isMurid()),
 
                 // ENUM fields
@@ -100,51 +104,28 @@ class AkademikKrsForm
                 \Filament\Forms\Components\FileUpload::make('kwitansi_krs')
                     ->label('Bukti Pembayaran / Kwitansi')
                     ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadKrsPath($get, $record, 'kwitansi_krs'))
-                    ->image()
+                    ->multiple()
+                    ->reorderable()
+                    ->appendFiles()
                     ->disk('public')
                     ->visibility('public')
                     ->preserveFilenames()
                     ->maxSize(10240)
                     ->downloadable()
-                    ->openable()
-                    // Hapus file saat klik ❌
-                    ->afterStateUpdated(function ($state, $record) {
-                        if (blank($state) && $record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                    })
-
-                    // Hapus file lama saat upload baru
-                    ->deleteUploadedFileUsing(function ($file, $record) {
-                        if ($record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                        return true;
-                    }), // full width,
+                    ->openable(),
 
                 \Filament\Forms\Components\FileUpload::make('berkas_lain')
                     ->label('Berkas Pendukung Lain')
                     ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadKrsPath($get, $record, 'berkas_lain'))
+                    ->multiple()
+                    ->reorderable()
+                    ->appendFiles()
                     ->disk('public')
                     ->visibility('public')
                     ->preserveFilenames()
                     ->maxSize(10240)
                     ->downloadable()
-                    ->openable()
-                    // Hapus file saat klik ❌
-                    ->afterStateUpdated(function ($state, $record) {
-                        if (blank($state) && $record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                    })
-
-                    // Hapus file lama saat upload baru
-                    ->deleteUploadedFileUsing(function ($file, $record) {
-                        if ($record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                        return true;
-                    }), // full width,
+                    ->openable(),
 
                 // Timestamps
                 DatePicker::make('created_at')

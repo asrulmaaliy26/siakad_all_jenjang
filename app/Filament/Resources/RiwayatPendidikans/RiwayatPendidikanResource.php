@@ -23,7 +23,11 @@ class RiwayatPendidikanResource extends Resource
     protected static ?string $model = RiwayatPendidikan::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
-    protected static string | UnitEnum | null $navigationGroup = 'Temp';
+    protected static string | UnitEnum | null $navigationGroup = 'Master Data';
+
+    protected static ?string $navigationLabel = 'Riwayat Pendidikan';
+
+    protected static ?int $navigationSort = 17;
 
     // protected static ?string $navigationLabel = 'Siswa/Mahasiswa';
 

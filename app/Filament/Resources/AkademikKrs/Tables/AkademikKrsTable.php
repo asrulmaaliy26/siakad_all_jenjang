@@ -13,6 +13,8 @@ use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Filament\Tables;
+use Filament\Forms\Components\FileUpload;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\Column;
 use Filament\Actions\BulkAction;
@@ -36,7 +38,7 @@ class AkademikKrsTable
                     ->weight('semibold')
                     ->color('primary'),
 
-                TextColumn::make('riwayatPendidikan.siswaData.nomor_induk')
+                TextColumn::make('riwayatPendidikan.nomor_induk')
                     ->label('NIM')
                     ->searchable()
                     ->sortable()
@@ -52,7 +54,7 @@ class AkademikKrsTable
                     ->searchable()
                     ->sortable()
                     ->toggleable()
-                    ->visible(fn() => ! auth()->user()?->isMurid()),
+                    ->visible(fn() => !auth()->user()?->isMurid()),
 
                 TextColumn::make('semester')
                     ->label('Semester')
@@ -73,6 +75,13 @@ class AkademikKrsTable
                     ->formatStateUsing(fn($state) => "{$state} SKS")
                     ->icon('heroicon-o-calculator')
                     ->iconPosition('before'),
+
+                TextColumn::make('tahunAkademik.nama')
+                    ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : $record->kode_tahun)
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
 
                 // Status Bayar dengan SelectColumn yang mendukung dark mode
                 SelectColumn::make('status_bayar')
@@ -158,29 +167,110 @@ class AkademikKrsTable
                             'N' => 'status-badge status-danger',
                         ];
                         return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
-                // ->afterStateUpdated(function ($record, $state) {
-                //     if ($state === 'N') {
-                //         try {
-                //             $record->deactivateAndCreateNew();
-                //             Notification::make()
-                //                 ->title('Berhasil')
-                //                 ->body('KRS telah dinonaktifkan dan KRS baru untuk semester berikutnya telah dibuat otomatis.')
-                //                 ->success()
-                //                 ->send();
-                //         } catch (\Exception $e) {
-                //             // Revert status_aktif jika gagal
-                //             $record->update(['status_aktif' => 'Y']);
+                    })
+                    ->afterStateUpdated(function ($record, $state) {
+                        if ($state === 'N') {
+                            // Cek syarat bayar
+                            if ($record->status_bayar !== 'Y') {
+                                // Revert status_aktif jika belum bayar
+                                $record->update(['status_aktif' => 'Y']);
 
-                //             Notification::make()
-                //                 ->title('Gagal')
-                //                 ->body($e->getMessage())
-                //                 ->danger()
-                //                 ->persistent()
-                //                 ->send();
-                //         }
-                //     }
-                // }),
+                                Notification::make()
+                                    ->title('Gagal Menonaktifkan')
+                                    ->body('KRS tidak dapat dinonaktifkan karena status pembayaran belum disetujui atau belum lunas.')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Cek status mahasiswa (Aktif/Tidak)
+                            $statusMhs = $record->riwayatPendidikan?->statusSiswa?->nilai ?? 'Tidak Diketahui';
+                            if (strtolower($statusMhs) !== 'aktif') {
+                                // Revert status_aktif jika mahasiswa tidak aktif
+                                $record->update(['status_aktif' => 'Y']);
+
+                                Notification::make()
+                                    ->title('Gagal Menonaktifkan')
+                                    ->body("KRS tidak dapat dinonaktifkan karena status Mahasiswa saat ini adalah: {$statusMhs}. Mahasiswa harus berstatus 'Aktif'.")
+                                    ->warning()
+                                    ->send();
+                                return;
+                            }
+
+                            try {
+                                $record->deactivateAndCreateNew();
+                                Notification::make()
+                                    ->title('Berhasil')
+                                    ->body('KRS telah dinonaktifkan dan KRS baru untuk semester berikutnya telah dibuat otomatis.')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                // Revert status_aktif jika gagal proses deaktifasi
+                                $record->update(['status_aktif' => 'Y']);
+
+                                Notification::make()
+                                    ->title('Gagal')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }
+                    }),
+
+                TextColumn::make('kwitansi_krs')
+                    ->label('Kwitansi')
+                    ->getStateUsing(fn($record) => count($record->kwitansi_krs ?? []) > 0 ? count($record->kwitansi_krs) . ' File' : '-')
+                    ->badge()
+                    ->color(fn($state) => $state !== '-' ? 'success' : 'gray')
+                    ->icon('heroicon-o-document-check')
+                    ->toggleable()
+                    ->action(
+                        Action::make('view_kwitansi')
+                            ->modalHeading('Lihat Kwitansi')
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->fillForm(fn($record) => [
+                                'kwitansi_krs' => $record->kwitansi_krs,
+                            ])
+                            ->form([
+                                FileUpload::make('kwitansi_krs')
+                                    ->label('Berkas Kwitansi')
+                                    ->multiple()
+                                    ->disk('public')
+                                    ->disabled()
+                                    ->openable()
+                                    ->downloadable()
+                                    ->dehydrated(false)
+                            ])
+                    ),
+
+                TextColumn::make('berkas_lain')
+                    ->label('Berkas')
+                    ->getStateUsing(fn($record) => count($record->berkas_lain ?? []) > 0 ? count($record->berkas_lain) . ' File' : '-')
+                    ->badge()
+                    ->color(fn($state) => $state !== '-' ? 'success' : 'gray')
+                    ->icon('heroicon-o-paper-clip')
+                    ->toggleable()
+                    ->action(
+                        Action::make('view_berkas_lain')
+                            ->modalHeading('Lihat Berkas Pendukung')
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->fillForm(fn($record) => [
+                                'berkas_lain' => $record->berkas_lain,
+                            ])
+                            ->form([
+                                FileUpload::make('berkas_lain')
+                                    ->label('Berkas Pendukung')
+                                    ->multiple()
+                                    ->disk('public')
+                                    ->disabled()
+                                    ->openable()
+                                    ->downloadable()
+                                    ->dehydrated(false)
+                            ])
+                    ),
 
                 // Created At
                 TextColumn::make('created_at')

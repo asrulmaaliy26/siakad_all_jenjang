@@ -81,7 +81,7 @@ class SiswaDataTable
                                 ->exists();
 
                             if (!$exists) {
-                                \App\Models\RiwayatPendidikan::create([
+                                $riwayat = \App\Models\RiwayatPendidikan::create([
                                     'id_siswa_data' => $record->id,
                                     'id_jurusan' => $pendaftar->id_jurusan,
                                     'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
@@ -92,9 +92,23 @@ class SiswaDataTable
                                     'ro_status_siswa' => $idStatusSiswa, // Set status siswa di riwayat pendidikan
                                 ]);
 
+                                // Buat Akademik KRS Pertama otomatis
+                                $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'aktif')->first();
+                                \App\Models\AkademikKrs::create([
+                                    'id_riwayat_pendidikan' => $riwayat->id,
+                                    'jumlah_sks' => 24,
+                                    'tgl_krs' => now(),
+                                    'kode_tahun' => $tahunAkademikAktif?->nama ?? (date('Y') . '/' . (date('Y') + 1)),
+                                    'status_bayar' => 'N',
+                                    'syarat_uts' => 'N',
+                                    'syarat_uas' => 'N',
+                                    'syarat_krs' => 'N',
+                                    'status_aktif' => 'Y',
+                                ]);
+
                                 \Filament\Notifications\Notification::make()
-                                    ->title('Riwayat Pendidikan Dibuat')
-                                    ->body('Riwayat pendidikan berhasil dibuat otomatis dan status siswa diaktifkan.')
+                                    ->title('Aktivasi Berhasil')
+                                    ->body('Riwayat pendidikan dan KRS pertama (24 SKS) berhasil dibuat otomatis.')
                                     ->success()
                                     ->send();
                             } else {
@@ -110,7 +124,11 @@ class SiswaDataTable
                         $record->update(['status_siswa' => $state]);
                         return $state;
                     })
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                    ->disabled(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user && $user->isMurid();
+                    }),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -167,7 +185,7 @@ class SiswaDataTable
                                     ->exists();
 
                                 if (!$exists) {
-                                    \App\Models\RiwayatPendidikan::create([
+                                    $riwayat = \App\Models\RiwayatPendidikan::create([
                                         'id_siswa_data' => $record->id,
                                         'id_jurusan' => $pendaftar->id_jurusan,
                                         'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
@@ -175,6 +193,21 @@ class SiswaDataTable
                                         'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
                                         'tanggal_mulai' => now(),
                                         'status' => 'Aktif',
+                                    ]);
+
+                                    // Buat Akademik KRS Pertama otomatis
+                                    $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'aktif')->first();
+                                    \App\Models\AkademikKrs::create([
+                                        'id_riwayat_pendidikan' => $riwayat->id,
+                                        'jumlah_sks' => 24,
+                                        'tgl_krs' => now(),
+                                        'kode_tahun' => $tahunAkademikAktif?->nama ?? date('Y') . '/' . (date('Y') + 1),
+                                        'status_bayar' => 'N',
+                                        'syarat_uts' => 'N',
+                                        'syarat_uas' => 'N',
+                                        'syarat_krs' => 'N',
+                                        'status_aktif' => 'Y',
+                                        'created_at' => now(),
                                     ]);
                                     $successCount++;
                                 }
@@ -186,7 +219,11 @@ class SiswaDataTable
                                 ->success()
                                 ->send();
                         })
-                        ->disabled(fn() => auth()->user()->isMurid()),
+                        ->disabled(function () {
+                            /** @var \App\Models\User $user */
+                            $user = auth()->user();
+                            return $user && $user->isMurid();
+                        }),
                 ]),
             ])
             // ->toolbarActions([])

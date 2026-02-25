@@ -9,6 +9,12 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Actions\BulkAction;
+use App\Models\DosenData;
+use Illuminate\Database\Eloquent\Collection;
+use Filament\Forms\Components\Select;
 
 class RiwayatPendidikansTable
 {
@@ -16,14 +22,23 @@ class RiwayatPendidikansTable
     {
         return $table
             ->columns([
-                TextColumn::make('angkatan'),
+                TextColumn::make('angkatan')
+                    ->sortable(),
+                TextColumn::make('semester')
+                    ->label('Smt')
+                    ->badge()
+                    ->color('info')
+                    ->getStateUsing(fn($record) => $record->getSemester())
+                    ->sortable(),
                 TextColumn::make('siswa.nama')
                     ->label('Nama')
-                    // ->numeric()
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('nomor_induk')
+                TextInputColumn::make('nomor_induk')
+                    ->label('NIM')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('jenjangPendidikan.nama')
+                TextColumn::make('jurusan.jenjangPendidikan.nama')
                     // ->numeric()
                     ->sortable(),
                 TextColumn::make('jurusan.nama')
@@ -65,7 +80,9 @@ class RiwayatPendidikansTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->relationship('jurusan', 'nama'),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -73,6 +90,23 @@ class RiwayatPendidikansTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    BulkAction::make('set_wali_dosen')
+                        ->label('Set Wali Dosen')
+                        ->icon('heroicon-o-user-group')
+                        ->form([
+                            Select::make('id_wali_dosen')
+                                ->label('Pilih Wali Dosen')
+                                ->options(DosenData::pluck('nama', 'id'))
+                                ->placeholder('Pilih Dosen...')
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $records->each->update([
+                                'id_wali_dosen' => $data['id_wali_dosen'],
+                            ]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make(),
                 ]),

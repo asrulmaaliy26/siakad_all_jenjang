@@ -60,6 +60,10 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->label('Mata Kuliah')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('mataPelajaranKelas.kelas.programKelas.nilai')
+                    ->label('Program')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('mataPelajaranKelas.dosenData.nama')
                     ->label('Dosen Pengajar')
                     ->searchable()

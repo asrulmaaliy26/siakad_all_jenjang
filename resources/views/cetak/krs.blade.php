@@ -218,7 +218,7 @@
     {{-- ══ JUDUL DOKUMEN ══ --}}
     <div class="judul-dok">
         <h2>Kartu Rencana Studi (KRS)</h2>
-        <p>Semester {{ $krs->semester }} &mdash; Tahun Akademik {{ $krs->kelas?->tahunAkademik?->nama ?? $krs->kode_tahun ?? '-' }}</p>
+        <p>Semester {{ $krs->semester }} &mdash; Tahun Akademik {{ $krs->kelas->first()?->tahunAkademik?->nama ?? $krs->kode_tahun ?? '-' }}</p>
     </div>
 
     {{-- ══ INFORMASI MAHASISWA ══ --}}
@@ -226,7 +226,7 @@
     $mahasiswa = $krs->riwayatPendidikan?->siswa;
     $riwayat = $krs->riwayatPendidikan;
     $jurusan = $riwayat?->jurusan;
-    $kelas = $krs->kelas;
+    $kelas = $krs->kelas->first();
     @endphp
 
     <table class="info-tabel">

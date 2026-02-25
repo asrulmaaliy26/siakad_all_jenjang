@@ -28,6 +28,7 @@ class RiwayatPendidikanForm
                 Select::make('id_jurusan')
                     ->label('Jurusan')
                     ->options(Jurusan::pluck('nama', 'id'))
+                    ->reactive()
                     ->searchable(),
                 Select::make('ro_status_siswa')
                     ->label('Status Siswa')
@@ -39,7 +40,15 @@ class RiwayatPendidikanForm
                 DatePicker::make('tanggal_selesai'),
                 Select::make('id_wali_dosen')
                     ->label('Wali Dosen')
-                    ->relationship('waliDosen', 'nama')
+                    ->options(function (callable $get) {
+                        $jurusanId = $get('id_jurusan');
+                        if (!$jurusanId) {
+                            return \App\Models\DosenData::pluck('nama', 'id');
+                        }
+
+                        return \App\Models\DosenData::where('id_jurusan', $jurusanId)
+                            ->pluck('nama', 'id');
+                    })
                     ->searchable()
                     ->preload(),
                 Select::make('status_aktif')

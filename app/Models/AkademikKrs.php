@@ -13,6 +13,16 @@ class AkademikKrs extends Model
 
     protected $table = 'akademik_krs';
 
+    protected static function booted()
+    {
+        static::deleting(function ($krs) {
+            // Delete related LJK records
+            $krs->siswaDataLjk()->delete();
+            // Delete related attendance records
+            $krs->absensiSiswa()->delete();
+        });
+    }
+
     public function scopeByJenjang($query, $jenjangId)
     {
         // Path: akademik_krs -> riwayat_pendidikan -> jurusan -> id_jenjang_pendidikan
@@ -22,7 +32,7 @@ class AkademikKrs extends Model
     }
     protected $fillable = [
         'id_riwayat_pendidikan',
-        'id_kelas',
+        // 'id_kelas',
         'jumlah_sks',
         'tgl_krs',
         'kode_tahun',
@@ -36,14 +46,32 @@ class AkademikKrs extends Model
         'status_aktif',
     ];
 
+    protected $casts = [
+        'kwitansi_krs' => 'array',
+        'berkas_lain' => 'array',
+    ];
+
     public function riwayatPendidikan()
     {
         return $this->belongsTo(RiwayatPendidikan::class, 'id_riwayat_pendidikan');
     }
 
+    // Relationship to Kelas via SiswaDataLJK
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class, 'id_kelas');
+        return $this->hasManyThrough(
+            Kelas::class,
+            SiswaDataLJK::class,
+            'id_akademik_krs',
+            'id',
+            'id',
+            'id_mata_pelajaran_kelas'
+        );
+    }
+
+    public function tahunAkademik()
+    {
+        return $this->belongsTo(TahunAkademik::class, 'kode_tahun', 'nama');
     }
 
     public function siswaDataLjk()
@@ -120,7 +148,7 @@ class AkademikKrs extends Model
             // 6. Buat Akademik KRS baru
             $newKrs = self::create([
                 'id_riwayat_pendidikan' => $this->id_riwayat_pendidikan,
-                'id_kelas' => $this->id_kelas,
+                // 'id_kelas' => $this->id_kelas, // Removed
                 'jumlah_sks' => $newSks,
                 'tgl_krs' => $now,
                 'kode_tahun' => $tahunAkademik,

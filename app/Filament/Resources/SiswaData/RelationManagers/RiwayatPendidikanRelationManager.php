@@ -36,23 +36,18 @@ class RiwayatPendidikanRelationManager extends RelationManager
 
             Select::make('id_jurusan')
                 ->label('Jurusan')
-                ->relationship('jurusan', 'nama'), // kolom display dari Jurusan
-
+                ->relationship('jurusan', 'nama')
+                ->reactive(),
 
             Select::make('ro_status_siswa')
                 ->label('Status Siswa')
-                ->relationship('statusSiswa', 'nilai'), // kolom display dari StatusSiswa
+                ->relationship('statusSiswa', 'nilai'),
 
-
-            // kalo mau pake model yang kaya di bawah harus menambahkan relation di
-            // Select::make('ro_program_sekolah')
-            //     ->label('Program Sekolah')
-            //     ->relationship('ProgramSekolah', 'nilai')
             Select::make('ro_program_sekolah')
                 ->label('Program Sekolah')
                 ->options(ProgramSekolah::pluck('nilai', 'id'))
                 ->searchable(),
-            // Data teks
+
             TextInput::make('nomor_induk')
                 ->label('Nomor Induk'),
 
@@ -66,8 +61,19 @@ class RiwayatPendidikanRelationManager extends RelationManager
             TextInput::make('th_masuk')
                 ->label('Tahun Masuk'),
 
-            TextInput::make('dosen_wali')
-                ->label('Dosen Wali'),
+            Select::make('id_wali_dosen')
+                ->label('Dosen Wali')
+                ->options(function (callable $get) {
+                    $jurusanId = $get('id_jurusan');
+                    if (!$jurusanId) {
+                        return \App\Models\DosenData::pluck('nama', 'id');
+                    }
+
+                    return \App\Models\DosenData::where('id_jurusan', $jurusanId)
+                        ->pluck('nama', 'id');
+                })
+                ->searchable()
+                ->preload(),
 
             TextInput::make('no_seri_ijazah')
                 ->label('No. Seri Ijazah'),
@@ -166,6 +172,11 @@ class RiwayatPendidikanRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('programSekolah.nilai'),
                 Tables\Columns\TextColumn::make('statusSiswa.nilai'),
                 Tables\Columns\TextColumn::make('status'),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Terakhir Diperbarui')
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->headerActions([
                 CreateAction::make(),
@@ -177,10 +188,13 @@ class RiwayatPendidikanRelationManager extends RelationManager
                         // Ambil data asli sebelum edit
                         $oldRecord = $record->fresh();
 
-                        // Copy data lama untuk history
-                        $history = $oldRecord->replicate();
-                        $history->status = 'N';
-                        $history->save();
+                        // Copy data lama untuk history HANYA jika data lama sudah berisi (misal: nomor_induk tidak kosong)
+                        // Jika masih baru (null/kosong), langsung update saja tanpa menambah baris baru.
+                        if (!empty($oldRecord->nomor_induk)) {
+                            $history = $oldRecord->replicate();
+                            $history->status = 'N';
+                            $history->save();
+                        }
 
                         // Update data baru
                         $data['status'] = 'Y';

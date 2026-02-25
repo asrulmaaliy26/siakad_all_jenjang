@@ -45,6 +45,7 @@ class KelasResource extends Resource
             //
             MataPelajaranKelasRelationManager::class,
             SiswaKelasRelationManager::class,
+            RelationManagers\SiswaDataLJKRelationManager::class,
         ];
     }
 

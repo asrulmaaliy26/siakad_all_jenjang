@@ -20,17 +20,10 @@ class Kelas extends Model
     protected $fillable = [
         'ro_program_kelas',
         'semester',
-        // 'id_jenjang_pendidikan', // Removed as per request, derived from Jurusan
         'id_tahun_akademik',
         'id_jurusan',
         'status_aktif'
     ];
-
-    // Relationship removed, access via $kelas->jurusan->jenjangPendidikan
-    // public function jenjangPendidikan()
-    // {
-    //     return $this->belongsTo(JenjangPendidikan::class, 'id_jenjang_pendidikan');
-    // }
 
     public function tahunAkademik()
     {
@@ -41,7 +34,6 @@ class Kelas extends Model
         return $this->belongsTo(Jurusan::class, 'id_jurusan');
     }
 
-    // Relasi ke ProgramKelas
     public function programKelas()
     {
         return $this->belongsTo(ProgramKelas::class, 'ro_program_kelas');
@@ -51,20 +43,25 @@ class Kelas extends Model
     {
         return $this->hasMany(
             MataPelajaranKelas::class,
-            'id_kelas',   // FK di tabel mata_pelajaran_kelas
-            'id'          // PK di tabel kelas
+            'id_kelas',
+            'id'
         );
     }
-    public function akademikKrs()
-    {
-        return $this->hasMany(
-            AkademikKrs::class,
-            'id_kelas',   // FK di tabel mata_pelajaran_kelas
-            'id'          // PK di tabel kelas
-        );
-    }
+
     public function ulasans()
     {
         return $this->morphMany(Ulasan::class, 'reviewable');
+    }
+
+    public function siswaDataLjk()
+    {
+        return $this->hasManyThrough(
+            SiswaDataLJK::class,
+            MataPelajaranKelas::class,
+            'id_kelas',
+            'id_mata_pelajaran_kelas',
+            'id',
+            'id'
+        );
     }
 }

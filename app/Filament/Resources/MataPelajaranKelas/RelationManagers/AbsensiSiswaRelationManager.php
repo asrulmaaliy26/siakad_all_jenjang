@@ -223,7 +223,11 @@ class AbsensiSiswaRelationManager extends RelationManager
                     ->color('info')
                     ->url(fn(): string => route('cetak.absensi.kosong', ['id_mata_pelajaran_kelas' => $this->getOwnerRecord()->id]))
                     ->openUrlInNewTab()
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                    ->disabled(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user && $user->isMurid();
+                    }),
 
                 Action::make('rekap_absensi')
                     ->label('Rekap Absensi')
@@ -252,15 +256,16 @@ class AbsensiSiswaRelationManager extends RelationManager
                                     WHEN COUNT(a.id) = 0 THEN 'BELUM ABSEN'
                                     ELSE 'TIDAK LULUS'
                                 END AS status_kelulusan_absensi
-                            FROM akademik_krs ak
+                            FROM mata_pelajaran_kelas mpk
+                            JOIN siswa_data_ljk sljk ON sljk.id_mata_pelajaran_kelas = mpk.id
+                            JOIN akademik_krs ak ON sljk.id_akademik_krs = ak.id
                             JOIN riwayat_pendidikan rp ON ak.id_riwayat_pendidikan = rp.id
                             JOIN siswa_data sd ON rp.id_siswa_data = sd.id
-                            CROSS JOIN mata_pelajaran_kelas mpk
                             LEFT JOIN absensi_siswa a ON a.id_krs = ak.id AND a.id_mata_pelajaran_kelas = mpk.id
                             JOIN mata_pelajaran_kurikulum mpkur ON mpk.id_mata_pelajaran_kurikulum = mpkur.id
                             JOIN mata_pelajaran_master mp ON mpkur.id_mata_pelajaran_master = mp.id
                             LEFT JOIN dosen_data dd ON mpk.id_dosen_data = dd.id
-                            WHERE mpk.id = ? AND ak.id_kelas = mpk.id_kelas
+                            WHERE mpk.id = ?
                             GROUP BY sd.id, sd.nama, sd.nomor_induk, mp.nama, mp.bobot, dd.nama, mpk.hari, mpk.jam, mpk.tanggal
                         ", [$record->id]);
 
@@ -276,7 +281,9 @@ class AbsensiSiswaRelationManager extends RelationManager
                     ->label('Buat Sesi Absensi')
                     ->form(function ($livewire) {
                         $record = $livewire->getOwnerRecord();
-                        $krsList = AkademikKRS::where('id_kelas', $record->id_kelas)
+                        $krsList = AkademikKRS::whereHas('siswaDataLjk', function ($query) use ($record) {
+                            $query->where('id_mata_pelajaran_kelas', $record->id);
+                        })
                             ->with('riwayatPendidikan.siswaData')
                             ->get();
 
@@ -342,7 +349,11 @@ class AbsensiSiswaRelationManager extends RelationManager
                             ->success()
                             ->send();
                     })
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                    ->disabled(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user && $user->isMurid();
+                    }),
             ])
             ->actions([
                 EditAction::make()

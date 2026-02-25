@@ -14,7 +14,9 @@ Route::get('/cetak-absensi-kosong/{id_mata_pelajaran_kelas}', function ($id) {
     }
 
     $kelas = \App\Models\MataPelajaranKelas::with(['dosenData', 'mataPelajaranKurikulum.mataPelajaranMaster', 'kelas.tahunAkademik', 'kelas.programKelas', 'ruangKelas'])->findOrFail($id);
-    $krsList = \App\Models\AkademikKRS::where('id_kelas', $kelas->id_kelas)
+    $krsList = \App\Models\AkademikKRS::whereHas('siswaDataLjk', function ($query) use ($id) {
+        $query->where('id_mata_pelajaran_kelas', $id);
+    })
         ->with('riwayatPendidikan.siswaData')
         ->get()
         ->sortBy(function ($krs) {
@@ -30,7 +32,9 @@ Route::get('/cetak-absensi-terisi/{id_mata_pelajaran_kelas}', function ($id) {
     }
 
     $kelas = \App\Models\MataPelajaranKelas::with(['dosenData', 'mataPelajaranKurikulum.mataPelajaranMaster', 'kelas.tahunAkademik', 'kelas.programKelas', 'ruangKelas'])->findOrFail($id);
-    $krsList = \App\Models\AkademikKRS::where('id_kelas', $kelas->id_kelas)
+    $krsList = \App\Models\AkademikKRS::whereHas('siswaDataLjk', function ($query) use ($id) {
+        $query->where('id_mata_pelajaran_kelas', $id);
+    })
         ->with('riwayatPendidikan.siswaData')
         ->get()
         ->sortBy(function ($krs) {

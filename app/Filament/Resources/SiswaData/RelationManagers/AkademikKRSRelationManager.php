@@ -11,6 +11,7 @@ use Filament\Schemas\Schema;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteBulkAction;
 
 class AkademikKRSRelationManager extends RelationManager
@@ -21,61 +22,51 @@ class AkademikKRSRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            Forms\Components\TextInput::make('id_riwayat_pendidikan')
+            Forms\Components\Select::make('id_riwayat_pendidikan')
                 ->label('Riwayat Pendidikan')
-                ->numeric()
-                ->required(),
-
-            Forms\Components\TextInput::make('id_kelas')
-                ->label('Kelas')
-                ->numeric(),
-
-            // Data KRS
-            Forms\Components\TextInput::make('semester')
-                ->label('Semester')
-                ->required(),
-
-            // Forms\Components\TextInput::make('tahun_akademik')
-            //     ->label('Tahun Akademik')
-            //     ->required(),
+                ->relationship('riwayatPendidikan', 'nomor_induk')
+                ->getOptionLabelFromRecordUsing(fn($record) => "{$record->siswa->nama} - {$record->nomor_induk}")
+                ->searchable()
+                ->preload()
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
             Forms\Components\TextInput::make('jumlah_sks')
                 ->label('Jumlah SKS')
-                ->numeric(),
+                ->numeric()
+                ->default(24)
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
             Forms\Components\DatePicker::make('tgl_krs')
-                ->label('Tanggal KRS'),
+                ->label('Tanggal KRS')
+                ->default(now())
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
-            Forms\Components\TextInput::make('kode_ta')
-                ->label('Kode TA'),
-
-            Forms\Components\TextInput::make('kwitansi_krs')
-                ->label('Kwitansi KRS'),
+            Forms\Components\Select::make('kode_tahun')
+                ->label('Tahun Akademik')
+                ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"]))
+                ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                ->searchable()
+                ->required()
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
             // ENUM fields
             Forms\Components\Select::make('status_bayar')
                 ->label('Status Bayar')
                 ->options([
-                    'Y' => 'Ya',
-                    'N' => 'Tidak',
+                    'Y' => 'Lunas',
+                    'N' => 'Belum Lunas',
                 ])
-                ->default('N'),
-
-            Forms\Components\Select::make('syarat_uts')
-                ->label('Syarat UTS')
-                ->options([
-                    'Y' => 'Ya',
-                    'N' => 'Tidak',
-                ])
-                ->default('N'),
+                ->default('N')
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
             Forms\Components\Select::make('syarat_krs')
                 ->label('Syarat KRS')
                 ->options([
-                    'Y' => 'Ya',
-                    'N' => 'Tidak',
+                    'Y' => 'Terpenuhi',
+                    'N' => 'Belum',
                 ])
-                ->default('N'),
+                ->default('N')
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
             Forms\Components\Select::make('status_aktif')
                 ->label('Status Aktif')
@@ -83,16 +74,20 @@ class AkademikKRSRelationManager extends RelationManager
                     'Y' => 'Aktif',
                     'N' => 'Tidak Aktif',
                 ])
-                ->default('Y'),
+                ->default('Y')
+                ->disabled(fn() => auth()->user()?->isMurid()),
 
-            // Timestamps
-            Forms\Components\DatePicker::make('created_at')
-                ->label('Dibuat')
-                ->disabled(),
+            Forms\Components\FileUpload::make('kwitansi_krs')
+                ->label('Kwitansi')
+                ->multiple()
+                ->disk('public')
+                ->directory('krs/kwitansi'),
 
-            Forms\Components\DatePicker::make('updated_at')
-                ->label('Diperbarui')
-                ->disabled(),
+            Forms\Components\FileUpload::make('berkas_lain')
+                ->label('Berkas Lain')
+                ->multiple()
+                ->disk('public')
+                ->directory('krs/berkas'),
         ]);
     }
 
@@ -100,62 +95,104 @@ class AkademikKRSRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                // Relasi / Foreign Key
-                Tables\Columns\TextColumn::make('riwayatPendidikan.siswa.nama')
-                    ->label('Mahasiswa'), // Asumsi relasi bernama riwayatPendidikan
-
-                Tables\Columns\TextColumn::make('kelas.programKelas.nilai')
-                    ->label('Kelas'), // Asumsi relasi bernama kelas
-
-                // Data KRS
                 Tables\Columns\TextColumn::make('semester')
-                    ->label('Semester'),
+                    ->label('Smt')
+                    ->badge()
+                    ->color('info')
+                    ->getStateUsing(function ($record) {
+                        return $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at);
+                    })
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
-                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : '-')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : $record->kode_tahun)
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
+                    ->sortable(),
 
-                // Tables\Columns\TextColumn::make('kode_ta')
-                //     ->label('Kode TA'),
+                Tables\Columns\TextColumn::make('kelas.programKelas.nilai')
+                    ->label('Kelas')
+                    ->listWithLineBreaks()
+                    ->bulleted(),
 
                 Tables\Columns\TextColumn::make('jumlah_sks')
-                    ->label('SKS'),
+                    ->label('SKS')
+                    ->numeric()
+                    ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status_bayar')
-                    ->label('Status Bayar')
-                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Lunas' : 'Belum Lunas')
+                    ->label('Bayar')
+                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Lunas' : 'Belum')
                     ->colors([
-                        'success' => fn($state) => $state === 'Y',
-                        'danger' => fn($state) => $state === 'N',
-                    ]),
-
-                Tables\Columns\BadgeColumn::make('syarat_uts')
-                    ->label('Syarat UTS')
-                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Terpenuhi' : 'Belum')
-                    ->colors([
-                        'success' => fn($state) => $state === 'Y',
-                        'danger' => fn($state) => $state === 'N',
+                        'success' => 'Y',
+                        'danger' => 'N',
                     ]),
 
                 Tables\Columns\BadgeColumn::make('syarat_krs')
-                    ->label('Syarat KRS')
-                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Terpenuhi' : 'Belum')
+                    ->label('KRS')
+                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'OK' : 'Belum')
                     ->colors([
-                        'success' => fn($state) => $state === 'Y',
-                        'danger' => fn($state) => $state === 'N',
+                        'success' => 'Y',
+                        'danger' => 'N',
                     ]),
 
                 Tables\Columns\BadgeColumn::make('status_aktif')
-                    ->label('Status Aktif')
-                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Aktif' : 'Tidak Aktif')
+                    ->label('Aktif')
+                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Y' : 'N')
                     ->colors([
-                        'success' => fn($state) => $state === 'Y',
-                        'danger' => fn($state) => $state === 'N',
+                        'success' => 'Y',
+                        'danger' => 'N',
                     ]),
 
+                Tables\Columns\TextColumn::make('kwitansi_krs')
+                    ->label('Kwitansi')
+                    ->getStateUsing(fn($record) => count($record->kwitansi_krs ?? []) > 0 ? count($record->kwitansi_krs) . ' File' : '-')
+                    ->badge()
+                    ->color(fn($state) => $state !== '-' ? 'success' : 'gray')
+                    ->action(
+                        Action::make('view_kwitansi')
+                            ->modalHeading('Lihat Kwitansi')
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->fillForm(fn($record) => [
+                                'kwitansi_krs' => $record->kwitansi_krs,
+                            ])
+                            ->form([
+                                Forms\Components\FileUpload::make('kwitansi_krs')
+                                    ->label('Berkas Kwitansi')
+                                    ->multiple()
+                                    ->disk('public')
+                                    ->disabled()
+                                    ->openable()
+                                    ->downloadable()
+                                    ->dehydrated(false)
+                            ])
+                    ),
+
+                Tables\Columns\TextColumn::make('berkas_lain')
+                    ->label('Berkas')
+                    ->getStateUsing(fn($record) => count($record->berkas_lain ?? []) > 0 ? count($record->berkas_lain) . ' File' : '-')
+                    ->badge()
+                    ->color(fn($state) => $state !== '-' ? 'success' : 'gray')
+                    ->action(
+                        Action::make('view_berkas_lain')
+                            ->modalHeading('Lihat Berkas Pendukung')
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->fillForm(fn($record) => [
+                                'berkas_lain' => $record->berkas_lain,
+                            ])
+                            ->form([
+                                Forms\Components\FileUpload::make('berkas_lain')
+                                    ->label('Berkas Pendukung')
+                                    ->multiple()
+                                    ->disk('public')
+                                    ->disabled()
+                                    ->openable()
+                                    ->downloadable()
+                                    ->dehydrated(false)
+                            ])
+                    ),
             ])
             ->filters([
                 // Bisa tambahkan filter semester, tahun akademik, atau status_bayar
@@ -181,7 +218,8 @@ class AkademikKRSRelationManager extends RelationManager
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
                 ]),
             ]);
     }

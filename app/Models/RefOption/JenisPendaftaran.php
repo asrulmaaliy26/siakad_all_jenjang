@@ -46,10 +46,10 @@ class JenisPendaftaran extends Model
     /**
      * Getter untuk deskripsi (hanya alias, optional)
      */
-    public function getDeskripsiAttribute()
-    {
-        return $this->deskripsi;
-    }
+    // public function getDeskripsiAttribute()
+    // {
+    //     return $this->deskripsi;
+    // }
 
     /**
      * Relasi ke tabel Kelas
