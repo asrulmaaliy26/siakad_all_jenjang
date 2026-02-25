@@ -198,6 +198,7 @@ class PengaturanPendaftaranResource extends Resource
             ->columns([
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : '-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),

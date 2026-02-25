@@ -21,6 +21,7 @@ class PekanUjiansTable
             ->columns([
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : '-')
                     ->sortable()
                     ->searchable(),
 
@@ -58,7 +59,12 @@ class PekanUjiansTable
                     ->wrap(),
             ])
             ->filters([
-                //
+                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
+                    ->label('Tahun Akademik')
+                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => "{$t->nama} - {$t->periode}"]))
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->id)
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 ViewAction::make(),

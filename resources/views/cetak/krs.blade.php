@@ -345,11 +345,17 @@
     <div class="ttd-area">
         <div class="ttd-col">
             <div class="ttd-label">Mengetahui,<br>Dosen Wali / PA</div>
-            <div class="ttd-garis">( _____________________ )</div>
+            <div class="ttd-garis">
+                ( {{ $krs->riwayatPendidikan?->waliDosen?->nama ?? '_____________________' }} )<br>
+                NIDN. {{ $krs->riwayatPendidikan?->waliDosen?->NIPDN ?? '_____________________' }}
+            </div>
         </div>
         <div class="ttd-col">
             <div class="ttd-label">Menyetujui,<br>Ketua Program Studi</div>
-            <div class="ttd-garis">( _____________________ )</div>
+            <div class="ttd-garis">
+                ( {{ $kaprodi?->nama ?? '_____________________' }} )<br>
+                NIDN. {{ $kaprodi?->NIPDN ?? '_____________________' }}
+            </div>
         </div>
         <div class="ttd-col">
             <div class="ttd-label">

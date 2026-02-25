@@ -145,12 +145,18 @@ class SiswaDataLJKSTable
                     ->searchable()
                     ->preload(),
 
+                SelectFilter::make('tahun_akademik')
+                    ->label('Tahun Akademik')
+                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->nama => "{$t->nama} - {$t->periode}"]))
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->query(function ($query, array $data) {
+                        return $query->when($data['value'], function ($query, $value) {
+                            $query->whereHas('akademikKrs', fn($q) => $q->where('kode_tahun', $value));
+                        });
+                    })
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('cekal_kuliah')
-                    ->label('Status Cekal')
-                    ->options([
-                        'Y' => 'Dicekal',
-                        'N' => 'Tidak Dicekal',
-                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

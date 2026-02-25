@@ -56,6 +56,7 @@ Route::get('/cetak-krs/{id}', function ($id) {
 
     $krs = \App\Models\AkademikKrs::with([
         'riwayatPendidikan.siswa',
+        'riwayatPendidikan.waliDosen',
         'riwayatPendidikan.jurusan.jenjangPendidikan',
         'kelas.tahunAkademik',
         'kelas.programKelas',
@@ -77,7 +78,14 @@ Route::get('/cetak-krs/{id}', function ($id) {
         return $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
     });
 
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.krs', compact('krs', 'totalSksLjk'))
+    // Cari Kaprodi (Dosen yang memiliki role 'kaprodi' di Jurusan mahasiswa tersebut)
+    $kaprodi = \App\Models\DosenData::where('id_jurusan', $krs->riwayatPendidikan?->id_jurusan)
+        ->whereHas('user', function ($q) {
+            $q->role('kaprodi');
+        })
+        ->first();
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('cetak.krs', compact('krs', 'totalSksLjk', 'kaprodi'))
         ->setPaper('a4', 'portrait');
 
     $namaSiswa = \Illuminate\Support\Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'krs');

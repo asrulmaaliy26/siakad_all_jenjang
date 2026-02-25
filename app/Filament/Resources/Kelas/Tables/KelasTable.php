@@ -68,6 +68,7 @@ class KelasTable
                     ->options(
                         TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
                     )
+                    ->default(TahunAkademik::where('status', 'Aktif')->first()?->id)
                     ->searchable(),
 
                 SelectFilter::make('jenjang_pendidikan') // Changed name to avoid conflict with missing column

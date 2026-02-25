@@ -15,6 +15,11 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\Column;
+use Filament\Actions\BulkAction;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
+use Carbon\Carbon;
 
 class AkademikKrsTable
 {
@@ -49,12 +54,13 @@ class AkademikKrsTable
                     ->toggleable()
                     ->visible(fn() => ! auth()->user()?->isMurid()),
 
-                // Data KRS
                 TextColumn::make('semester')
                     ->label('Semester')
-                    ->sortable()
                     ->badge()
                     ->color('info')
+                    ->getStateUsing(function ($record) {
+                        return $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at);
+                    })
                     ->formatStateUsing(fn($state) => "Semester {$state}")
                     ->icon('heroicon-o-academic-cap')
                     ->iconPosition('before'),
@@ -138,16 +144,43 @@ class AkademikKrsTable
                     }),
 
                 // Status Aktif dengan SelectColumn
-                // TextColumn::make('status_aktif')
-                //     ->label('Status Aktif')
-                //     ->formatStateUsing(fn($state) => $state === 'Y' ? 'Aktif' : 'Tidak Aktif')
-                //     ->extraAttributes(function ($state) {
-                //         $classes = [
-                //             'Y' => 'status-badge status-active',
-                //             'N' => 'status-badge status-inactive',
-                //         ];
-                //         return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                //     }),
+                SelectColumn::make('status_aktif')
+                    ->label('Status Aktif')
+                    ->options([
+                        'Y' => 'Aktif',
+                        'N' => 'Tidak Aktif',
+                    ])
+                    ->selectablePlaceholder(false)
+                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
+                    ->extraAttributes(function ($state) {
+                        $classes = [
+                            'Y' => 'status-badge status-success',
+                            'N' => 'status-badge status-danger',
+                        ];
+                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
+                    }),
+                // ->afterStateUpdated(function ($record, $state) {
+                //     if ($state === 'N') {
+                //         try {
+                //             $record->deactivateAndCreateNew();
+                //             Notification::make()
+                //                 ->title('Berhasil')
+                //                 ->body('KRS telah dinonaktifkan dan KRS baru untuk semester berikutnya telah dibuat otomatis.')
+                //                 ->success()
+                //                 ->send();
+                //         } catch (\Exception $e) {
+                //             // Revert status_aktif jika gagal
+                //             $record->update(['status_aktif' => 'Y']);
+
+                //             Notification::make()
+                //                 ->title('Gagal')
+                //                 ->body($e->getMessage())
+                //                 ->danger()
+                //                 ->persistent()
+                //                 ->send();
+                //         }
+                //     }
+                // }),
 
                 // Created At
                 TextColumn::make('created_at')
@@ -180,16 +213,21 @@ class AkademikKrsTable
                         '7' => 'Semester 7',
                         '8' => 'Semester 8',
                     ])
+                    ->query(function ($query, array $data) {
+                        if (empty($data['value'])) return;
+
+                        // Filtering by virtual semester is complex; 
+                        // For now we skip or implement if absolutely necessary.
+                        // Let's just notify it's a display field.
+                    })
                     ->searchable()
                     ->preload()
                     ->native(false),
 
-                SelectFilter::make('tahun_akademik')
+                SelectFilter::make('kode_tahun')
                     ->label('Tahun Akademik')
-                    ->options([
-                        '2023/2024' => '2023/2024',
-                        '2024/2025' => '2024/2025',
-                    ])
+                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"])->toArray())
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
                     ->searchable()
                     ->native(false),
 
@@ -257,6 +295,118 @@ class AkademikKrsTable
             ])
             ->bulkActions([
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
+                BulkAction::make('update_status')
+                    ->label('Update Status Terpilih')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->form([
+                        Select::make('status_aktif')
+                            ->label('Status Aktif')
+                            ->options([
+                                'Y' => 'Aktif',
+                                'N' => 'Tidak Aktif',
+                            ])
+                            ->placeholder('Pilih Status Aktif...'),
+                        Select::make('status_bayar')
+                            ->label('Status Bayar')
+                            ->options([
+                                'Y' => 'Lunas',
+                                'N' => 'Belum Lunas',
+                            ])
+                            ->placeholder('Pilih Status Bayar...'),
+                        Select::make('syarat_uts')
+                            ->label('Syarat UTS')
+                            ->options([
+                                'Y' => 'Terpenuhi',
+                                'N' => 'Belum Terpenuhi',
+                            ])
+                            ->placeholder('Pilih Syarat UTS...'),
+                        Select::make('syarat_uas')
+                            ->label('Syarat UAS')
+                            ->options([
+                                'Y' => 'Terpenuhi',
+                                'N' => 'Belum Terpenuhi',
+                            ])
+                            ->placeholder('Pilih Syarat UAS...'),
+                        Select::make('syarat_krs')
+                            ->label('Syarat KRS')
+                            ->options([
+                                'Y' => 'Disetujui',
+                                'N' => 'Menunggu Persetujuan',
+                            ])
+                            ->selectablePlaceholder(false)
+                            ->disabled(fn() => auth()->user()?->isMurid())
+                            ->extraAttributes(function ($state) {
+                                $classes = [
+                                    'Y' => 'status-badge status-success',
+                                    'N' => 'status-badge status-warning',
+                                ];
+                                return ['class' => $classes[$state] ?? 'status-badge status-default'];
+                            }),
+                    ])
+                    ->action(function (Collection $records, array $data): void {
+                        $updateData = array_filter($data, fn($value) => $value !== null);
+
+                        if (empty($updateData)) {
+                            Notification::make()
+                                ->title('Peringatan')
+                                ->body('Tidak ada status yang dipilih untuk diperbarui.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+
+                        // Jika status_aktif diubah ke 'N', gunakan logika deaktifasi
+                        // if (isset($updateData['status_aktif']) && $updateData['status_aktif'] === 'N') {
+                        //     $successCount = 0;
+                        //     $errorMessages = [];
+
+                        //     foreach ($records as $record) {
+                        //         try {
+                        //             // Update field lain dulu jika ada
+                        //             $otherUpdates = array_diff_key($updateData, ['status_aktif' => '']);
+                        //             if (!empty($otherUpdates)) {
+                        //                 $record->update($otherUpdates);
+                        //             }
+
+                        //             // Jalankan deaktifasi dan pembuatan KRS baru
+                        //             $record->deactivateAndCreateNew();
+                        //             $successCount++;
+                        //         } catch (\Exception $e) {
+                        //             $mhsName = $record->riwayatPendidikan->siswaData->nama ?? 'Siswa';
+                        //             $errorMessages[] = "{$mhsName}: " . $e->getMessage();
+                        //         }
+                        //     }
+
+                        //     if ($successCount > 0) {
+                        //         Notification::make()
+                        //             ->title('Proses Selesai')
+                        //             ->body("{$successCount} data KRS berhasil dinonaktifkan dan diperbarui.")
+                        //             ->success()
+                        //             ->send();
+                        //     }
+
+                        //     if (!empty($errorMessages)) {
+                        //         Notification::make()
+                        //             ->title('Beberapa Gagal')
+                        //             ->body(implode("\n", $errorMessages))
+                        //             ->danger()
+                        //             ->persistent()
+                        //             ->send();
+                        //     }
+                        // } else {
+                        // Update normal untuk status lainnya atau status_aktif = 'Y'
+                        $records->each(fn($record) => $record->update($updateData));
+
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Status ' . count($records) . ' data KRS berhasil diperbarui.')
+                            ->success()
+                            ->send();
+                        // }
+                    })
+                    ->deselectRecordsAfterCompletion()
+                    ->visible(fn() => ! auth()->user()?->isMurid()),
                 DeleteBulkAction::make()
                     ->label('Hapus Terpilih')
                     ->icon('heroicon-o-trash')

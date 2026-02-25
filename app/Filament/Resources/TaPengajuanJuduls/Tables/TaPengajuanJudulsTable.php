@@ -109,6 +109,7 @@ class TaPengajuanJudulsTable
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
                     ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->id)
                     ->searchable()
                     ->preload(),
             ])

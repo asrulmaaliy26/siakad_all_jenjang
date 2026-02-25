@@ -94,63 +94,20 @@ class SiswaKelasRelationManager extends RelationManager
                     }
 
                     // Filter Semester logic
-                    if ($semester = $get('filter_semester')) {
-                        // Logic: (Year(Now) - Year(Start)) * 2 + (Month(Now) >= 7 ? 1 : 0) - (Month(Start) >= 7 ? 0 : 1) + 1
-                        // Simplified: Every 6 months is a semester.
-                        // Assuming Ganjil starts in July (7), Genap starts in January (1).
-
-                        // We filter using whereRaw for performance, or fetch and filter in PHP if dataset is small.
-                        // Given we need pagination/limit, SQL based is better but complex date math.
-                        // Let's use a simpler heuristic or standard calculation if possible.
-                        // "setiap tahun 2 kali dari januari ihngg dst" -> Jan-Jun = Genap/Ganjil?
-                        // Usually Academic Year starts in July.
-                        // Jan 2024 - Jun 2024: Sem Genap 2023/2024
-                        // Jul 2024 - Dec 2024: Sem Ganjil 2024/2025
-
-                        // User request: "count tanggal mulai jika setiap tahun 2 kali dari januari ihngg dst"
-                        // This implies: 
-                        // Smt 1: Starts Jan Year X  (or Jul Year X-1)
-                        // This seems to imply simple 6-month blocks from Start Date.
-
-                        // Let's implement filtering in PHP for the results found, 
-                        // filtering query where valid date exists.
-
+                    if ($get('filter_semester')) {
                         $query->whereNotNull('tanggal_mulai');
-
-                        // Since we can't easily do complex date math in all SQL dialects for semeters query-side without stored procs or complex logic:
-                        // We will filter the results after fetch if list is small, OR 
-                        // use a whereRaw approximation.
-
-                        // Let's try PHP filtering on a slightly larger result set or refine query.
-                        // Actually, for a MultiSelect with search, we need to return array [id => label].
-                        // We can fetch candidate rows and filter.
                     }
 
-                    // Get results and filter in PHP
-                    $results = $query->limit(100)->get(); // Fetch more to allow filtering
+                    $results = $query->limit(100)->get();
 
                     if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(function ($item) use ($semester) {
-                            if (!$item->tanggal_mulai) return false;
-
-                            $start = \Carbon\Carbon::parse($item->tanggal_mulai);
-                            $now = \Carbon\Carbon::now();
-
-                            // Calculate diff in months
-                            $diffInMonths = $start->diffInMonths($now);
-
-                            // Calculate semester: 0-5 months = Sem 1, 6-11 = Sem 2, etc.
-                            // Formula: floor(months / 6) + 1
-                            $calculatedSemester = floor($diffInMonths / 6) + 1;
-
-                            return $calculatedSemester == $semester;
-                        });
+                        $results = $results->filter(fn($item) => $item->getSemester() == $semester);
                     }
 
                     return $results
                         ->take(20)
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->siswa?->nama . ' (Sem ' . $this->calculateSemester($item->tanggal_mulai) . ')' ?? '-'
+                            $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
                         ])
                         ->toArray();
                 })
@@ -185,20 +142,13 @@ class SiswaKelasRelationManager extends RelationManager
                     $results = $query->limit(100)->get();
 
                     if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(function ($item) use ($semester) {
-                            if (!$item->tanggal_mulai) return false;
-                            $start = \Carbon\Carbon::parse($item->tanggal_mulai);
-                            $now = \Carbon\Carbon::now();
-                            $diffInMonths = $start->diffInMonths($now);
-                            $calculatedSemester = floor($diffInMonths / 6) + 1;
-                            return $calculatedSemester == $semester;
-                        });
+                        $results = $results->filter(fn($item) => $item->getSemester() == $semester);
                     }
 
                     return $results
                         ->take(20)
                         ->mapWithKeys(fn($item) => [
-                            $item->id => $item->siswa?->nama . ' (Sem ' . $this->calculateSemester($item->tanggal_mulai) . ')' ?? '-'
+                            $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
                         ])
                         ->toArray();
                 })
@@ -223,8 +173,8 @@ class SiswaKelasRelationManager extends RelationManager
                     ->label('Nama Siswa/Mahasiswa')
                     ->searchable(),
                 TextColumn::make('riwayatPendidikan.tanggal_mulai')
-                    ->label('Semester')
-                    ->formatStateUsing(fn($state) => $this->calculateSemester($state)),
+                    ->label('Semester Saat Ini')
+                    ->formatStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester()),
             ])
             ->headerActions([
                 CreateAction::make()
@@ -244,9 +194,44 @@ class SiswaKelasRelationManager extends RelationManager
                         $kelas = $livewire->getOwnerRecord();
 
                         foreach ($jurusan as $idjurusan) {
+                            // Hitung IPS dari LJK data terakhir mahasiswa
+                            $latestKrs = AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
+                                ->where('status_aktif', 'Y')
+                                ->latest()
+                                ->first()
+                                ?? AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
+                                ->latest()
+                                ->first();
+
+                            $ips = 0;
+                            if ($latestKrs) {
+                                $ips = \App\Models\SiswaDataLJK::where('id_akademik_krs', $latestKrs->id)
+                                    ->avg('Nilai_Akhir') ?? 0;
+                            }
+
+                            // Tentukan jumlah SKS berdasarkan IPS
+                            // Aturan: 3 -> 24 SKS, 2 -> 18 SKS, <2 -> 12 SKS
+                            $sks = 12;
+                            if ($ips >= 3.0) {
+                                $sks = 24;
+                            } elseif ($ips >= 2.0) {
+                                $sks = 18;
+                            }
+
+                            // Nonaktifkan semua KRS lama untuk riwayat pendidikan ini
+                            AkademikKrs::where('id_riwayat_pendidikan', $idjurusan)
+                                ->update(['status_aktif' => 'N']);
+
                             $kelas->akademikKrs()->create([
                                 'id_riwayat_pendidikan' => $idjurusan,
-                                // 'semester' => $data['semester'],
+                                'jumlah_sks' => $sks,
+                                'tgl_krs' => now(),
+                                'status_aktif' => 'Y',
+                                'kode_tahun' => $kelas->tahunAkademik?->nama,
+                                'status_bayar' => 'N',
+                                'syarat_uts' => 'N',
+                                'syarat_uas' => 'N',
+                                'syarat_krs' => 'N',
                             ]);
                         }
 
@@ -288,14 +273,5 @@ class SiswaKelasRelationManager extends RelationManager
     public function isReadOnly(): bool
     {
         return false;
-    }
-
-    protected function calculateSemester($tanggalMulai)
-    {
-        if (!$tanggalMulai) return '?';
-        $start = \Carbon\Carbon::parse($tanggalMulai);
-        $now = \Carbon\Carbon::now();
-        $diffInMonths = $start->diffInMonths($now);
-        return floor($diffInMonths / 6) + 1;
     }
 }

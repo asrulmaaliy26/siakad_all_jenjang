@@ -111,14 +111,18 @@ class AkademikKRSRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('semester')
                     ->label('Semester'),
 
-                // Tables\Columns\TextColumn::make('tahun_akademik')
-                //     ->label('Tahun Akademik'),
-
-                Tables\Columns\TextColumn::make('jumlah_sks')
-                    ->label('SKS'),
+                Tables\Columns\TextColumn::make('tahunAkademik.nama')
+                    ->label('Tahun Akademik')
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : '-')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
 
                 // Tables\Columns\TextColumn::make('kode_ta')
                 //     ->label('Kode TA'),
+
+                Tables\Columns\TextColumn::make('jumlah_sks')
+                    ->label('SKS'),
 
                 Tables\Columns\BadgeColumn::make('status_bayar')
                     ->label('Status Bayar')
@@ -156,7 +160,11 @@ class AkademikKRSRelationManager extends RelationManager
             ->filters([
                 // Bisa tambahkan filter semester, tahun akademik, atau status_bayar
                 Tables\Filters\SelectFilter::make('semester'),
-                Tables\Filters\SelectFilter::make('tahun_akademik'),
+                Tables\Filters\SelectFilter::make('kode_tahun')
+                    ->label('Tahun Akademik')
+                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"])->toArray())
+                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('status_bayar')
                     ->options([
                         'Y' => 'Lunas',

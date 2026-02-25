@@ -136,4 +136,32 @@ class RiwayatPendidikan extends Model
     {
         return $this->hasMany(TaSkripsi::class, 'id_riwayat_pendidikan');
     }
+
+    /**
+     * Centralized Semester Calculation Logic
+     * @param mixed $date Reference date (optional, defaults to now)
+     * @return int|null
+     */
+    public function getSemester($date = null)
+    {
+        if (!$this->tanggal_mulai) return null;
+
+        $startDate = \Carbon\Carbon::parse($this->tanggal_mulai);
+        $refDate = $date ? \Carbon\Carbon::parse($date) : now();
+
+        if ($refDate->lessThan($startDate)) return 1;
+
+        $diffInMonths = $startDate->diffInMonths($refDate);
+        return (int) floor($diffInMonths / 6) + 1;
+    }
+
+    /**
+     * Dynamic Attribute for Current Semester
+     */
+    protected function currentSemester(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn() => $this->getSemester()
+        );
+    }
 }
