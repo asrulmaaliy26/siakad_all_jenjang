@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\SiswaData;
 use App\Models\Jurusan;
-use App\Models\JenjangPendidikan;
 use App\Models\AkademikKrs;
 use App\Models\RefOption\ProgramSekolah;
 use App\Models\RefOption\JenisPendaftaran;
@@ -15,15 +14,7 @@ use App\Models\RefOption\JenisKeluar;
 
 class RiwayatPendidikan extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
-
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path: riwayat_pendidikan -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
+    use HasFactory;
 
     protected $table = 'riwayat_pendidikan';
 
@@ -51,13 +42,12 @@ class RiwayatPendidikan extends Model
         'ro_program_sekolah',
         'nomor_induk',
         'ro_status_siswa',
-        'angkatan',
+        'id_tahun_akademik',
         'tanggal_mulai',
         'tanggal_selesai',
         'foto_profil',
         'mulai_smt',
         'smt_aktif',
-        'th_masuk',
         'dosen_wali',
         'no_seri_ijazah',
         'sks_diakui',
@@ -153,6 +143,32 @@ class RiwayatPendidikan extends Model
     public function skripsi()
     {
         return $this->hasMany(TaSkripsi::class, 'id_riwayat_pendidikan');
+    }
+
+    public function tahunAkademik()
+    {
+        return $this->belongsTo(TahunAkademik::class, 'id_tahun_akademik');
+    }
+
+    protected function angkatan(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function () {
+                if ($this->tahunAkademik) {
+                    $nama = $this->tahunAkademik->nama;
+                    $periode = $this->tahunAkademik->periode;
+                    if (str_contains($nama, '/')) {
+                        // Hilangkan suffix periode jika ada, misalnya "2024/2025 Genap" -> "2024/2025"
+                        $namaClean = explode(' ', $nama)[0];
+                        $parts = explode('/', $namaClean);
+                        return strtolower($periode) === 'genap' ? $parts[1] : $parts[0];
+                    }
+                    // Jika tidak ada garis miring, hilangkan saja periodenya
+                    return explode(' ', $nama)[0];
+                }
+                return null;
+            }
+        );
     }
 
     /**

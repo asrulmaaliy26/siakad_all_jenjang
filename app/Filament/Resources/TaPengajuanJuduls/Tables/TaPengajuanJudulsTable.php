@@ -7,6 +7,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -81,15 +82,25 @@ class TaPengajuanJudulsTable
                     ->sortable()
                     ->toggleable(),
 
-                BadgeColumn::make('status')
+                TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'gray'    => 'pending',
-                        'success' => 'disetujui',
-                        'danger'  => 'ditolak',
-                        'warning' => 'revisi',
-                        'info'    => 'selesai',
-                    ]),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'pending' => 'gray',
+                        'disetujui' => 'success',
+                        'ditolak' => 'danger',
+                        'revisi' => 'warning',
+                        'selesai' => 'info',
+                        default => 'gray',
+                    })
+                    ->icon(fn(string $state): string => match ($state) {
+                        'pending' => 'heroicon-m-clock',
+                        'disetujui' => 'heroicon-m-check-circle',
+                        'ditolak' => 'heroicon-m-x-circle',
+                        'revisi' => 'heroicon-m-arrow-path',
+                        'selesai' => 'heroicon-m-flag',
+                        default => 'heroicon-m-question-mark-circle',
+                    }),
 
                 TextColumn::make('nilai_rata_rata')
                     ->label('Nilai Rata-rata')
@@ -115,12 +126,19 @@ class TaPengajuanJudulsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('cetak_kartu_bimbingan')
+                    ->label('Cetak Kartu Bimbingan Sempro')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->url(fn($record) => route('cetak.kartu-bimbingan.judul', $record->id))
+                    ->openUrlInNewTab(),
                 EditAction::make()
                     // Dosen pengajar tidak bisa edit — hanya admin
                     ->visible(!$isPengajar),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make()
                         ->visible(!$isPengajar)
                         ->disabled(fn() => auth()->user() && auth()->user()->isMurid()),

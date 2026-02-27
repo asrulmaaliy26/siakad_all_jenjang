@@ -32,6 +32,7 @@ class CreateDosenData extends CreateRecord
             'name' => $userName,
             'email' => $email,
             'password' => \Illuminate\Support\Facades\Hash::make($password),
+            'view_password' => $password,
         ]);
 
         // Assign Role 'pengajar'

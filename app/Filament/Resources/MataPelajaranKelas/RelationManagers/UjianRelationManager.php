@@ -54,6 +54,7 @@ class UjianRelationManager extends RelationManager
                             }), // full width,,
                         RichEditor::make('ctt_uts')
                             ->label('Catatan / Jawaban UTS')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uts'))
                             ->columnSpanFull(),
                     ])
                     ->columns(1),
@@ -83,6 +84,7 @@ class UjianRelationManager extends RelationManager
                             }), // full width,,
                         RichEditor::make('ctt_uas')
                             ->label('Catatan / Jawaban UAS')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uas'))
                             ->columnSpanFull(),
                     ])
                     ->columns(1),

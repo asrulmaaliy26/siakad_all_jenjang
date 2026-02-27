@@ -1,4 +1,43 @@
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import "tailwindcss";
+@import "../../../../vendor/filament/filament/resources/css/index.css";
+@import "../../../../vendor/filament/schemas/resources/css/index.css";
 
-@source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
+@source "../../../../app/**/*.php";
+@source "../../../../resources/**/*.blade.php";
+@source "../../../../vendor/filament/**/*.blade.php";
+
+/* Custom Login Page Styling */
+body.fi-simple-layout {
+    background-image: assets("/campus_bg.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    position: relative;
+    z-index: 0;
+}
+body.fi-simple-layout::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: -1;
+}
+
+body.fi-simple-layout main {
+    z-index: 10;
+}
+
+body.fi-simple-layout .fi-simple-main {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark body.fi-simple-layout .fi-simple-main {
+    background: rgba(15, 23, 42, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}

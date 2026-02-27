@@ -27,7 +27,7 @@ class SiswaDataLjkRelationManager extends RelationManager
                 Select::make('id_mata_pelajaran_kelas')
                     ->label('Mata Pelajaran Kelas')
                     ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function (Builder $query) {
-                        $query->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas']);
+                        $query->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas', 'kelas.programKelas']);
 
                         $user = auth()->user();
                         if ($user && $user->isPengajar()) {
@@ -42,7 +42,9 @@ class SiswaDataLjkRelationManager extends RelationManager
                         $jam = $record->jam ?? '-';
                         $dosen = $record->dosenData->nama ?? 'Belum ada Dosen';
                         $ruang = $record->ruangKelas->nama ?? '-';
-                        return "{$namaMatkul} - {$hari}, {$jam} ({$ruang}) - {$dosen}";
+                        $program = $record->kelas->programKelas->nilai ?? '-';
+                        $semester = $record->kelas->semester ?? '-';
+                        return "Smt {$semester} | {$program} | {$namaMatkul} - {$hari}, {$jam} ({$ruang}) - {$dosen}";
                     })
                     ->searchable()
                     ->preload()
@@ -93,9 +95,12 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false)
                     ->closeModalByClickingAway(false)
+                    ->modalWidth('7xl')
                     ->disabled(function () {
                         $krs  = $this->getOwnerRecord();
-                        $user = auth()->user();
+
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
 
                         // Cek role user
                         $isMurid = $user && $user->isMurid();
@@ -110,7 +115,9 @@ class SiswaDataLjkRelationManager extends RelationManager
                     })
                     ->tooltip(function () {
                         $krs = $this->getOwnerRecord();
-                        $user = auth()->user();
+
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
 
                         // Tooltip hanya untuk murid jika KRS terkunci
                         if ($user && $user->isMurid() && ($krs->syarat_krs ?? 'N') === 'Y') {
@@ -120,7 +127,8 @@ class SiswaDataLjkRelationManager extends RelationManager
                         return null;
                     })
                     ->before(function ($record, \Filament\Actions\Action $action) {
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
 
                         // Validasi pembayaran hanya untuk role murid
                         if ($user?->isMurid() && ($record->status_bayar ?? 'N') === 'N') {

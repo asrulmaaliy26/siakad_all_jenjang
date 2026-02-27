@@ -22,8 +22,7 @@ class RiwayatPendidikansTable
     {
         return $table
             ->columns([
-                TextColumn::make('angkatan')
-                    ->sortable(),
+                TextColumn::make('angkatan'),
                 TextColumn::make('semester')
                     ->label('Smt')
                     ->badge()
@@ -38,9 +37,7 @@ class RiwayatPendidikansTable
                     ->label('NIM')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('jurusan.jenjangPendidikan.nama')
-                    // ->numeric()
-                    ->sortable(),
+
                 TextColumn::make('jurusan.nama')
                     // ->numeric()
                     ->sortable(),

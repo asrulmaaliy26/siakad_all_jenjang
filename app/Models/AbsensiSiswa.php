@@ -7,17 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AbsensiSiswa extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
     protected $table = 'absensi_siswa';
 
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path: absensi_siswa -> krs -> riwayat_pendidikan -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('krs.riwayatPendidikan.jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
     protected $fillable = [
         'id_krs',
         'status',

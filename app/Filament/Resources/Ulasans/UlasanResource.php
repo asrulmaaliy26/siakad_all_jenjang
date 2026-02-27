@@ -23,10 +23,9 @@ class UlasanResource extends Resource
     protected static ?string $model = Ulasan::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-bottom-center-text';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Feedback';
     protected static ?string $navigationLabel = 'Ulasan & Bintang';
-    protected static ?int $navigationSort = 100;
+    protected static string|UnitEnum|null $navigationGroup = 'Layanan Mahasiswa';
+    protected static ?int $navigationSort = 50;
 
     public static function form(Schema $schema): Schema
     {

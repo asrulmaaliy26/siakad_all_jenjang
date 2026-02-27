@@ -37,6 +37,11 @@ class JurusanPolicy
         return $authUser->can('Delete:Jurusan');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:Jurusan');
+    }
+
     public function restore(AuthUser $authUser, Jurusan $jurusan): bool
     {
         return $authUser->can('Restore:Jurusan');

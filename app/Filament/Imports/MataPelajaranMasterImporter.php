@@ -46,9 +46,8 @@ class MataPelajaranMasterImporter extends Importer
             ImportColumn::make('referensi_jurusan')
                 ->label('Referensi Jurusan (ID - Nama)')
                 ->fillRecordUsing(fn() => null) // Ignore when saving
-                ->examples(fn() => \App\Models\Jurusan::withoutGlobalScopes()->with('jenjangPendidikan')->get()->map(function ($item) {
-                    $jenjang = $item->jenjangPendidikan ? ' - ' . $item->jenjangPendidikan->nama : '';
-                    return $item->id . ' - ' . $item->nama . $jenjang;
+                ->examples(fn() => \App\Models\Jurusan::withoutGlobalScopes()->get()->map(function ($item) {
+                    return $item->id . ' - ' . $item->nama;
                 })->toArray()),
 
             ImportColumn::make('referensi_jenis')

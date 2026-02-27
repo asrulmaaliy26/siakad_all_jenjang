@@ -11,7 +11,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class SiswaDataPendaftarPolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:SiswaDataPendaftar');
@@ -71,4 +71,5 @@ class SiswaDataPendaftarPolicy
     {
         return $authUser->can('Reorder:SiswaDataPendaftar');
     }
+
 }

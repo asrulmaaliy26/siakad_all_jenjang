@@ -11,6 +11,16 @@ class TahunAkademik extends Model
     protected $table = 'tahun_akademik';
     protected $fillable = ['nama', 'periode', 'status'];
 
+    public function getNamaAttribute($value)
+    {
+        if (!$value) return $value;
+        // Tampilkan format: 2024/2025 Genap
+        if (str_contains($value, ' ' . $this->periode)) {
+            return $value;
+        }
+        return $value . ' ' . $this->periode;
+    }
+
     public function pengaturanPendaftaran()
     {
         return $this->hasMany(PengaturanPendaftaran::class, 'id_tahun_akademik');

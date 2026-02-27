@@ -28,12 +28,11 @@ class UlasanForm
                     ->dehydrated()
                     ->required(),
 
-                TextInput::make('reviewable_type')
-                    ->label('Tipe Objek (e.g. App\Models\Kelas)'),
-
-                TextInput::make('reviewable_id')
-                    ->label('ID Objek')
-                    ->numeric(),
+                TextInput::make('objek')
+                    ->label('Objek / Tujuan Ulasan')
+                    ->placeholder('Misal: Kelas 10A, Guru Budi, atau Sarana Prasarana')
+                    ->maxLength(255)
+                    ->required(),
 
                 Select::make('bintang')
                     ->label('Rating Bintang')

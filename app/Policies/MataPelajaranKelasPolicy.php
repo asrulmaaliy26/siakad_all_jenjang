@@ -11,7 +11,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class MataPelajaranKelasPolicy
 {
     use HandlesAuthorization;
-
+    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:MataPelajaranKelas');
@@ -71,4 +71,5 @@ class MataPelajaranKelasPolicy
     {
         return $authUser->can('Reorder:MataPelajaranKelas');
     }
+
 }

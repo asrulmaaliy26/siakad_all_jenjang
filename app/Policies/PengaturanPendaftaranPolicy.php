@@ -37,6 +37,11 @@ class PengaturanPendaftaranPolicy
         return $authUser->can('Delete:PengaturanPendaftaran');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:PengaturanPendaftaran');
+    }
+
     public function restore(AuthUser $authUser, PengaturanPendaftaran $pengaturanPendaftaran): bool
     {
         return $authUser->can('Restore:PengaturanPendaftaran');

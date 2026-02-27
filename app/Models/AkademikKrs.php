@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class AkademikKrs extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
     protected $table = 'akademik_krs';
 
@@ -23,13 +23,6 @@ class AkademikKrs extends Model
         });
     }
 
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path: akademik_krs -> riwayat_pendidikan -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('riwayatPendidikan.jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
     protected $fillable = [
         'id_riwayat_pendidikan',
         // 'id_kelas',

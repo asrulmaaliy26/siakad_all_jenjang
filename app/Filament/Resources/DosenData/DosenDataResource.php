@@ -25,11 +25,11 @@ class DosenDataResource extends Resource
     protected static ?int $navigationSort = 15;
 
     protected static ?string $recordTitleAttribute = 'nama';
-    // protected static ?string $navigationLabel = 'Guru  ✓';
+    // protected static ?string $navigationLabel = 'Guru ';
 
     public static function getNavigationLabel(): string
     {
-        return \App\Helpers\SiakadTerm::pengajar() . ' ✓';
+        return \App\Helpers\SiakadTerm::pengajar() . '';
     }
 
     public static function getModelLabel(): string
@@ -51,6 +51,11 @@ class DosenDataResource extends Resource
     {
         return [
             \App\Filament\Resources\DosenData\RelationManagers\DosenDokumenRelationManager::class,
+            \App\Filament\Resources\DosenData\RelationManagers\DosenRiwayatPendidikanDosenRelationManager::class,
+            \App\Filament\Resources\DosenData\RelationManagers\DosenBukuRelationManager::class,
+            \App\Filament\Resources\DosenData\RelationManagers\DosenPenelitianRelationManager::class,
+            \App\Filament\Resources\DosenData\RelationManagers\DosenPengabdianRelationManager::class,
+            \App\Filament\Resources\DosenData\RelationManagers\DosenPenghargaanRelationManager::class,
         ];
     }
 

@@ -37,6 +37,11 @@ class DosenDataPolicy
         return $authUser->can('Delete:DosenData');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:DosenData');
+    }
+
     public function restore(AuthUser $authUser, DosenData $dosenData): bool
     {
         return $authUser->can('Restore:DosenData');

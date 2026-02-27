@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register observer untuk auto-create RiwayatPendidikan saat status kelulusan = Lulus
         \App\Models\SiswaDataPendaftar::observe(\App\Observers\SiswaDataPendaftarObserver::class);
-        \App\Models\JenjangPendidikan::observe(\App\Observers\JenjangObserver::class);
+
 
         // -- Global Configuration untuk mempercantik Filament --
 
@@ -44,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
 
         \Filament\Forms\Components\DatePicker::configureUsing(function (\Filament\Forms\Components\DatePicker $date): void {
             $date->displayFormat('d M Y'); // Format tanggal lebih enak dibaca (contoh: 01 Jan 2025)
+        });
+
+        // Membuat semua kolom di tabel bisa di-toggle (disembunyikan/ditampilkan) secara default
+        \Filament\Tables\Columns\Column::configureUsing(function (\Filament\Tables\Columns\Column $column): void {
+            $column->toggleable();
         });
     }
 }

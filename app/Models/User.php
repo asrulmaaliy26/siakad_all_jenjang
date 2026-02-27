@@ -10,61 +10,38 @@ use Spatie\Permission\Traits\HasRoles;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
-class User extends Authenticatable implements FilamentUser
+use Filament\Models\Contracts\HasAvatar;
+use Illuminate\Support\Facades\Storage;
+
+/**
+ * @method bool isMurid()
+ * @method bool isPendaftar()
+ * @method bool isPengajar()
+ * @method bool isAdmin()
+ */
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, \App\Traits\HasJenjangScope;
-
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        $jenjang = \App\Models\JenjangPendidikan::find($jenjangId);
-        $activeSlug = $jenjang ? \Illuminate\Support\Str::slug($jenjang->nama) : 'unknown';
-
-        return $query->where(function ($q) use ($jenjangId, $activeSlug) {
-            // Case 1: User has SiswaData -> check jenjang in SiswaData
-            $q->whereHas('siswaData', function ($sub) use ($jenjangId) {
-                // We use withoutGlobalScopes to ensure we are filtering accurately here
-                $sub->withoutGlobalScopes()->where(function ($ss) use ($jenjangId) {
-                    $ss->whereHas('pendaftar.jurusan', function ($j) use ($jenjangId) {
-                        $j->where('id_jenjang_pendidikan', $jenjangId);
-                    })
-                        ->orWhereHas('riwayatPendidikan.jurusan', function ($j) use ($jenjangId) {
-                            $j->where('id_jenjang_pendidikan', $jenjangId);
-                        });
-                });
-            })
-                // Case 2: User has DosenData -> check jenjang in DosenData
-                ->orWhereHas('dosenData', function ($sub) use ($jenjangId) {
-                    $sub->withoutGlobalScopes()->whereHas('jurusan', function ($subJurusan) use ($jenjangId) {
-                        $subJurusan->where('id_jenjang_pendidikan', $jenjangId);
-                    });
-                })
-                // Case 3: User has NEITHER SiswaData nor DosenData record at all (Universal User like Admin)
-                ->orWhere(function ($sub) use ($activeSlug) {
-                    $sub->whereDoesntHave('siswaData', function ($sq) {
-                        $sq->withoutGlobalScopes();
-                    })
-                        ->whereDoesntHave('dosenData', function ($dq) {
-                            $dq->withoutGlobalScopes();
-                        })
-                        ->where(function ($adminCheck) use ($activeSlug) {
-                            // If they have any "admin_jenjang_" role, it MUST match the active slug
-                            $adminCheck->whereDoesntHave('roles', function ($rq) {
-                                $rq->where('name', 'like', 'admin_jenjang_%');
-                            })
-                                ->orWhereHas('roles', function ($rq) use ($activeSlug) {
-                                    $rq->where('name', 'admin_jenjang_' . $activeSlug);
-                                });
-                        });
-                });
-        });
-    }
+    use HasFactory, Notifiable, HasRoles;
 
     public function canAccessPanel(Panel $panel): bool
     {
         // Logic akses panel, biasanya true untuk development 
         // atau cek role tertentu
         return true;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if ($this->isMurid() && $this->siswaData && $this->siswaData->foto_profil) {
+            return Storage::url($this->siswaData->foto_profil);
+        }
+
+        if ($this->isPengajar() && $this->dosenData && $this->dosenData->foto_profil) {
+            return Storage::url($this->dosenData->foto_profil);
+        }
+
+        return null;
     }
 
     /**
@@ -76,6 +53,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'view_password',
     ];
 
     /**
@@ -114,7 +92,12 @@ class User extends Authenticatable implements FilamentUser
     public function isMurid(): bool
     {
         return $this->hasRole('murid')
-            && !$this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
+    }
+
+    public function isPendaftar(): bool
+    {
+        return $this->hasRole('pendaftar');
     }
 
     /**
@@ -123,7 +106,7 @@ class User extends Authenticatable implements FilamentUser
     public function isPengajar(): bool
     {
         return $this->hasRole('pengajar')
-            && !$this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
     }
 
     /**
@@ -131,7 +114,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function isAdmin(): bool
     {
-        return $this->hasAnyRole(['super_admin', 'admin', 'admin_jenjang', 'kaprodi']);
+        return $this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
     }
 
     /**

@@ -11,6 +11,22 @@ class ListSiswaDataPendaftars extends ListRecords
 {
     protected static string $resource = SiswaDataPendaftarResource::class;
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        /** @var \App\Models\User|null $user */
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && ($user->isPendaftar() || $user->isMurid()) && !$user->isAdmin()) {
+            $pendaftar = \App\Models\SiswaDataPendaftar::where('id_siswa_data', $user->siswaData?->id)->first();
+            if ($pendaftar) {
+                redirect()->to(SiswaDataPendaftarResource::getUrl('edit', ['record' => $pendaftar]));
+            } else {
+                redirect()->to(SiswaDataPendaftarResource::getUrl('create'));
+            }
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [

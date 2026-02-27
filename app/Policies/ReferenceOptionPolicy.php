@@ -37,6 +37,11 @@ class ReferenceOptionPolicy
         return $authUser->can('Delete:ReferenceOption');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:ReferenceOption');
+    }
+
     public function restore(AuthUser $authUser, ReferenceOption $referenceOption): bool
     {
         return $authUser->can('Restore:ReferenceOption');

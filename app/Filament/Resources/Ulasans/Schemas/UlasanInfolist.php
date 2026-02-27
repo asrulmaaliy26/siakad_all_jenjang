@@ -13,10 +13,7 @@ class UlasanInfolist
             ->components([
                 TextEntry::make('user.name')
                     ->label('Pengulas'),
-                TextEntry::make('reviewable_type')
-                    ->label('Tipe Objek')
-                    ->formatStateUsing(fn($state) => str_replace('App\\Models\\', '', $state)),
-                TextEntry::make('reviewable.nama')
+                TextEntry::make('objek')
                     ->label('Objek Spesifik'),
                 TextEntry::make('bintang')
                     ->label('Rating Bintang')

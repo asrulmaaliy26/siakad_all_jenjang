@@ -37,6 +37,11 @@ class TahunAkademikPolicy
         return $authUser->can('Delete:TahunAkademik');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:TahunAkademik');
+    }
+
     public function restore(AuthUser $authUser, TahunAkademik $tahunAkademik): bool
     {
         return $authUser->can('Restore:TahunAkademik');

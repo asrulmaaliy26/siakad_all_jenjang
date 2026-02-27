@@ -37,6 +37,11 @@ class AkademikKrsPolicy
         return $authUser->can('Delete:AkademikKrs');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:AkademikKrs');
+    }
+
     public function restore(AuthUser $authUser, AkademikKrs $akademikKrs): bool
     {
         return $authUser->can('Restore:AkademikKrs');

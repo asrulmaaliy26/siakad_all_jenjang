@@ -21,6 +21,9 @@ class TaSeminarProposal extends Model
         'ruangan_ujian',
         'tgl_acc_judul',
         'file',
+        'file_kwitansi',
+        'file_surat',
+        'file_plagiasi',
         'id_dosen_pembimbing_1',
         'id_dosen_pembimbing_2',
         'id_dosen_pembimbing_3',
@@ -46,6 +49,13 @@ class TaSeminarProposal extends Model
         'nilai_dosen_1' => 'decimal:2',
         'nilai_dosen_2' => 'decimal:2',
         'nilai_dosen_3' => 'decimal:2',
+        'file'          => 'array',
+        'file_kwitansi' => 'array',
+        'file_surat'    => 'array',
+        'file_plagiasi' => 'array',
+        'file_revisi_1' => 'array',
+        'file_revisi_2' => 'array',
+        'file_revisi_3' => 'array',
     ];
 
     // ── Relasi ke tahun akademik ──────────────────────────────────────────

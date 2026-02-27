@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -23,6 +24,10 @@ class DosenDataTable
     {
         return $table
             ->columns([
+                ImageColumn::make('foto_profil')
+                    ->label('Foto')
+                    ->circular()
+                    ->defaultImageUrl(url('https://ui-avatars.com/api/?name=' . urlencode('Dosen'))),
                 TextColumn::make('nama')
                     ->label('Nama')
                     ->searchable()

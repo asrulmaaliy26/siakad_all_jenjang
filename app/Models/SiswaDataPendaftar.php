@@ -7,20 +7,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SiswaDataPendaftar extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
-    protected $table = 'siswa_data_pendaftar';
+    protected static $isDeletingRelated = false;
 
-    public function scopeByJenjang($query, $jenjangId)
+    protected static function booted()
     {
-        // Path: siswa_data_pendaftar -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
+        static::deleting(function ($pendaftar) {
+            if (static::$isDeletingRelated) {
+                return;
+            }
+
+            try {
+                static::$isDeletingRelated = true;
+                if ($pendaftar->siswa && !$pendaftar->siswa->riwayatPendidikan()->exists()) {
+                    $pendaftar->siswa->delete();
+                }
+            } finally {
+                static::$isDeletingRelated = false;
+            }
         });
     }
 
+    protected $table = 'siswa_data_pendaftar';
+
+
     protected $attributes = [
-        'Status_Kelulusan' => 'B', // Default Proses
+        'Status_Kelulusan_Seleksi' => 'B', // Default Proses
         'Status_Pendaftaran' => 'B', // Default Proses
     ];
 
@@ -30,7 +43,7 @@ class SiswaDataPendaftar extends Model
         // Data Dasar Pendaftaran
         'Nama_Lengkap',
         'No_Pendaftaran',
-        'Tahun_Masuk',
+        'id_tahun_akademik',
         'Tgl_Daftar',
         'ro_program_sekolah', // ID dari reference_option (nama_grup: program_sekolah)
         // 'id_jenjang_pendidikan', // FK ke jenjang_pendidikan, dikelola via Jurusan
@@ -85,7 +98,7 @@ class SiswaDataPendaftar extends Model
         // Kelulusan
         'Jumlah_Nilai',
         'Rata_Rata',
-        'Status_Kelulusan',
+        'Status_Kelulusan_Seleksi',
         'Rekomendasi_1',
         'Rekomendasi_2',
         'No_SK_Kelulusan',
@@ -97,8 +110,23 @@ class SiswaDataPendaftar extends Model
         'Bukti_Biaya_Daftar',
         'status_valid',
         'verifikator',
-        'reff'
+        'id_referal_code'
     ];
+
+    protected $casts = [
+        'Legalisir_Ijazah'   => 'array',
+        'Legalisir_SKHU'     => 'array',
+        'Copy_KTP'           => 'array',
+        'Foto_BW_3x3'        => 'array',
+        'Foto_BW_3x4'        => 'array',
+        'Foto_Warna_5x6'     => 'array',
+        'File_Foto_Berwarna' => 'array',
+    ];
+
+    public function referalCode()
+    {
+        return $this->belongsTo(ReferalCode::class, 'id_referal_code');
+    }
 
     public function siswa()
     {
@@ -123,15 +151,19 @@ class SiswaDataPendaftar extends Model
         return $this->belongsTo(ReferenceOption::class, 'Jalur_PMB', 'id');
     }
 
-    // Relasi ke Jenjang Pendidikan
-    // public function jenjangPendidikan()
-    // {
-    //     return $this->belongsTo(JenjangPendidikan::class, 'id_jenjang_pendidikan');
-    // }
-
     // Relasi ke Jurusan
     public function jurusan()
     {
         return $this->belongsTo(Jurusan::class, 'id_jurusan');
+    }
+
+    public function seleksi()
+    {
+        return $this->hasMany(SiswaSeleksiPendaftar::class, 'id_siswa_data_pendaftar');
+    }
+
+    public function tahunAkademik()
+    {
+        return $this->belongsTo(TahunAkademik::class, 'id_tahun_akademik');
     }
 }

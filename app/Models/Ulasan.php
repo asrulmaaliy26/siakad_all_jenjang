@@ -8,8 +8,7 @@ class Ulasan extends Model
 {
     protected $fillable = [
         'user_id',
-        'reviewable_id',
-        'reviewable_type',
+        'objek',
         'bintang',
         'komentar',
     ];
@@ -17,10 +16,5 @@ class Ulasan extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function reviewable()
-    {
-        return $this->morphTo();
     }
 }

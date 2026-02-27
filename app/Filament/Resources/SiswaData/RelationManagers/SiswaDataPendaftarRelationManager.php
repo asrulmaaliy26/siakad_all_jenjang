@@ -48,9 +48,11 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                     ->searchable()
                                     ->preload()
                                     ->disabled(fn() => auth()->user()->isMurid()),
-                                TextInput::make('Tahun_Masuk')
-                                    ->numeric()
-                                    ->default(date('Y'))
+                                Select::make('id_tahun_akademik')
+                                    ->label('Tahun Akademik')
+                                    ->relationship('tahunAkademik', 'nama')
+                                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                                    ->required()
                                     ->disabled(fn() => auth()->user()->isMurid()),
                                 Forms\Components\DatePicker::make('Tgl_Daftar')
                                     ->default(now())
@@ -94,13 +96,79 @@ class SiswaDataPendaftarRelationManager extends RelationManager
 
                         Tabs\Tab::make('Dokumen & Foto')
                             ->schema([
-                                Forms\Components\FileUpload::make('Legalisir_Ijazah')->directory('pendaftaran/dokumen'),
-                                Forms\Components\FileUpload::make('Legalisir_SKHU')->directory('pendaftaran/dokumen'),
-                                Forms\Components\FileUpload::make('Copy_KTP')->directory('pendaftaran/dokumen'),
-                                Forms\Components\FileUpload::make('Foto_BW_3x3')->directory('pendaftaran/foto'),
-                                Forms\Components\FileUpload::make('Foto_BW_3x4')->directory('pendaftaran/foto'),
-                                Forms\Components\FileUpload::make('Foto_Warna_5x6')->directory('pendaftaran/foto'),
-                                Forms\Components\FileUpload::make('File_Foto_Berwarna')->directory('pendaftaran/foto'),
+                                Forms\Components\FileUpload::make('Legalisir_Ijazah')
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Legalisir_Ijazah'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('Legalisir_SKHU')
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Legalisir_SKHU'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('Copy_KTP')
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Copy_KTP'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('Foto_BW_3x3')
+                                    ->image()
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Foto_BW_3x3'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('Foto_BW_3x4')
+                                    ->image()
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Foto_BW_3x4'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('Foto_Warna_5x6')
+                                    ->image()
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Foto_Warna_5x6'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
+
+                                Forms\Components\FileUpload::make('File_Foto_Berwarna')
+                                    ->image()
+                                    ->disk('public')
+                                    ->multiple()
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'File_Foto_Berwarna'))
+                                    ->visibility('public')
+                                    ->preserveFilenames()
+                                    ->maxSize(10240)
+                                    ->downloadable()
+                                    ->openable(),
                             ])->columns(2),
 
                         Tabs\Tab::make('Tes Tulis')
@@ -143,10 +211,14 @@ class SiswaDataPendaftarRelationManager extends RelationManager
 
                         Tabs\Tab::make('Pembayaran')
                             ->schema([
-                                TextInput::make('Biaya_Pendaftaran')->numeric()->prefix('Rp')->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 0),
+                                TextInput::make('Biaya_Pendaftaran')->numeric()->prefix('Rp'),
                                 Forms\Components\FileUpload::make('Bukti_Biaya_Daftar')->directory('pendaftaran/pembayaran'),
                                 Forms\Components\Toggle::make('status_valid')->label('Valid')
-                                    ->disabled(fn() => auth()->user()->isMurid()),
+                                    ->disabled(function () {
+                                        /** @var \App\Models\User|null $user */
+                                        $user = \Illuminate\Support\Facades\Auth::user();
+                                        return $user?->isMurid();
+                                    }),
                                 TextInput::make('verifikator'),
                                 TextInput::make('reff'),
                             ])->columns(2),

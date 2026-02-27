@@ -37,6 +37,11 @@ class KelasPolicy
         return $authUser->can('Delete:Kelas');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:Kelas');
+    }
+
     public function restore(AuthUser $authUser, Kelas $kelas): bool
     {
         return $authUser->can('Restore:Kelas');

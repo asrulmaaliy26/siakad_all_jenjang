@@ -37,6 +37,11 @@ class AbsensiSiswaPolicy
         return $authUser->can('Delete:AbsensiSiswa');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:AbsensiSiswa');
+    }
+
     public function restore(AuthUser $authUser, AbsensiSiswa $absensiSiswa): bool
     {
         return $authUser->can('Restore:AbsensiSiswa');

@@ -207,6 +207,7 @@ class MataPelajaranKelasDistribusisTable
                 ]),
             ])
             ->headerActions([
+                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make(),
                 // Export semua data (dengan filter aktif) — pilih kolom
                 ExportMataPelajaranKelasAction::make(),
 

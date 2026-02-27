@@ -28,6 +28,15 @@ class UsersTable
                     ->badge()
                     ->label('Role')
                     ->searchable(),
+                TextColumn::make('view_password')
+                    ->label('Password Asli')
+                    ->searchable()
+                    ->visible(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = auth()->user();
+                        return $user ? $user->hasRole('super_admin') : false;
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

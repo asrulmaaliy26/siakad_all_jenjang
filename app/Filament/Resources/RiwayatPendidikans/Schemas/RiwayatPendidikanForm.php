@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\RiwayatPendidikans\Schemas;
 
-use App\Models\JenjangPendidikan;
 use App\Models\Jurusan;
 use App\Models\RefOption\StatusSiswa;
 use App\Models\SiswaData;
@@ -21,10 +20,6 @@ class RiwayatPendidikanForm
                     ->label('Data Siswa')
                     ->options(SiswaData::pluck('nama', 'id'))
                     ->searchable(),
-                Select::make('id_jenjang_pendidikan')
-                    ->label('Jenjang Pendidikan')
-                    ->options(JenjangPendidikan::pluck('nama', 'id'))
-                    ->searchable(),
                 Select::make('id_jurusan')
                     ->label('Jurusan')
                     ->options(Jurusan::pluck('nama', 'id'))
@@ -34,7 +29,11 @@ class RiwayatPendidikanForm
                     ->label('Status Siswa')
                     ->options(StatusSiswa::pluck('nilai', 'id'))
                     ->searchable(),
-                TextInput::make('angkatan'),
+                Select::make('id_tahun_akademik')
+                    ->label('Tahun Akademik')
+                    ->relationship('tahunAkademik', 'nama')
+                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    ->required(),
                 TextInput::make('nomor_induk'),
                 DatePicker::make('tanggal_mulai'),
                 DatePicker::make('tanggal_selesai'),

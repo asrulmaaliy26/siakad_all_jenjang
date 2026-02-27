@@ -11,17 +11,10 @@ use App\Models\RefOption\StatusDosen;
 
 class DosenData extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
     protected $table = 'dosen_data';
 
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path: dosen_data -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
     protected $fillable = [
         'foto_profil',
         'nama',
@@ -42,6 +35,7 @@ class DosenData extends Model
         'ro_status_dosen',
         'ro_agama',
         'user_id',
+        'id_staff',
     ];
 
     public function user()
@@ -53,6 +47,32 @@ class DosenData extends Model
     {
         return $this->hasMany(MataPelajaranKelas::class, 'id_dosen_data');
     }
+
+    public function buku()
+    {
+        return $this->hasMany(DosenBuku::class, 'id_dosen');
+    }
+
+    public function penelitian()
+    {
+        return $this->hasMany(DosenPenelitian::class, 'id_dosen');
+    }
+
+    public function pengabdian()
+    {
+        return $this->hasMany(DosenPengabdian::class, 'id_dosen');
+    }
+
+    public function penghargaan()
+    {
+        return $this->hasMany(DosenPenghargaan::class, 'id_dosen');
+    }
+
+    public function riwayatPendidikanDosen()
+    {
+        return $this->hasMany(DosenRiwayatPendidikan::class, 'id_dosen');
+    }
+
     public function jurusan()
     {
         return $this->belongsTo(Jurusan::class, 'id_jurusan');

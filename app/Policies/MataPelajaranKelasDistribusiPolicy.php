@@ -37,6 +37,11 @@ class MataPelajaranKelasDistribusiPolicy
         return $authUser->can('Delete:MataPelajaranKelasDistribusi');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:MataPelajaranKelasDistribusi');
+    }
+
     public function restore(AuthUser $authUser, MataPelajaranKelasDistribusi $mataPelajaranKelasDistribusi): bool
     {
         return $authUser->can('Restore:MataPelajaranKelasDistribusi');

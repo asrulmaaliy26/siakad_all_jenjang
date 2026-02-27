@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateTaPengajuanJudul extends CreateRecord
 {
     protected static string $resource = TaPengajuanJudulResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

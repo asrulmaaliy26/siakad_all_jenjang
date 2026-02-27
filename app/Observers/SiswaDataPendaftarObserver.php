@@ -14,8 +14,8 @@ class SiswaDataPendaftarObserver
      */
     public function updated(SiswaDataPendaftar $pendaftar): void
     {
-        // Cek apakah Status_Kelulusan berubah menjadi 'Y' (Lulus)
-        if ($pendaftar->isDirty('Status_Kelulusan') && $pendaftar->Status_Kelulusan === 'Y') {
+        // Cek apakah Status_Pendaftaran berubah menjadi 'Y' (Diterima / Aktif)
+        if ($pendaftar->isDirty('Status_Pendaftaran') && $pendaftar->Status_Pendaftaran === 'Y') {
             $this->buatRiwayatPendidikan($pendaftar);
         }
     }
@@ -27,12 +27,11 @@ class SiswaDataPendaftarObserver
     {
         try {
             // Cek apakah sudah ada riwayat pendidikan
-            $existingRiwayat = RiwayatPendidikan::where('id_siswa_data', $pendaftar->id_siswa_data)
-                ->where('id_jenjang_pendidikan', $pendaftar->id_jenjang_pendidikan)
-                ->first();
+            $existingRiwayat = RiwayatPendidikan::where('id_siswa_data', $pendaftar->id_siswa_data)->first();
 
             if ($existingRiwayat) {
                 Log::info("Riwayat pendidikan sudah ada untuk pendaftar ID: {$pendaftar->id}");
+                $this->assignMuridRole($pendaftar);
                 return;
             }
 
@@ -57,13 +56,11 @@ class SiswaDataPendaftarObserver
             // Buat Riwayat Pendidikan
             $riwayatPendidikan = RiwayatPendidikan::create([
                 'id_siswa_data' => $pendaftar->id_siswa_data,
-                'id_jenjang_pendidikan' => $pendaftar->id_jenjang_pendidikan,
                 'id_jurusan' => $jurusan?->id,
                 'nomor_induk' => $nomorInduk,
                 'ro_status_siswa' => 1, // Status Aktif
-                'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
+                'id_tahun_akademik' => $pendaftar->id_tahun_akademik,
                 'tanggal_mulai' => now(),
-                'th_masuk' => $pendaftar->Tahun_Masuk ?? date('Y'),
                 'mulai_smt' => 1, // Semester 1
                 'smt_aktif' => 1,
                 'pembiayaan' => $this->getPembiayaan($pendaftar),
@@ -72,10 +69,8 @@ class SiswaDataPendaftarObserver
 
             Log::info("Riwayat pendidikan berhasil dibuat untuk pendaftar ID: {$pendaftar->id}, Riwayat ID: {$riwayatPendidikan->id}");
 
-            // Update status pendaftar
-            $pendaftar->update([
-                'Status_Pendaftaran' => 'Y',
-            ]);
+            // Assign role
+            $this->assignMuridRole($pendaftar);
         } catch (\Exception $e) {
             Log::error("Gagal membuat riwayat pendidikan untuk pendaftar ID: {$pendaftar->id}. Error: " . $e->getMessage());
         }
@@ -86,20 +81,17 @@ class SiswaDataPendaftarObserver
      */
     protected function generateNomorInduk(SiswaDataPendaftar $pendaftar): string
     {
-        $tahun = $pendaftar->Tahun_Masuk ?? date('Y');
-        $jenjang = $pendaftar->jenjangPendidikan?->nama ?? 'XX';
+        $tahun = $pendaftar->tahunAkademik ? substr($pendaftar->tahunAkademik->nama, 0, 4) : date('Y');
 
-        // Hitung jumlah mahasiswa di tahun dan jenjang yang sama
-        $count = RiwayatPendidikan::where('th_masuk', $tahun)
-            ->where('id_jenjang_pendidikan', $pendaftar->id_jenjang_pendidikan)
+        // Hitung jumlah mahasiswa di tahun yang sama
+        $count = RiwayatPendidikan::where('id_tahun_akademik', $pendaftar->id_tahun_akademik)
             ->count() + 1;
 
-        // Format: TAHUN + KODE_JENJANG + URUTAN
-        // Contoh: 2024S10001, 2024MA0001
-        $kodeJenjang = strtoupper(substr($jenjang, 0, 2));
-        $urutan = str_pad($count, 4, '0', STR_PAD_LEFT);
+        // Format: TAHUN + URUTAN
+        // Contoh: 20240001
+        $urutan = str_pad($count, 6, '0', STR_PAD_LEFT);
 
-        return $tahun . $kodeJenjang . $urutan;
+        return $tahun . $urutan;
     }
 
     /**
@@ -118,5 +110,22 @@ class SiswaDataPendaftarObserver
         }
 
         return 'Mandiri';
+    }
+
+    protected function assignMuridRole(SiswaDataPendaftar $pendaftar): void
+    {
+        try {
+            $siswaData = $pendaftar->siswa;
+            if ($siswaData && $siswaData->user_id) {
+                $user = User::find($siswaData->user_id);
+                if ($user) {
+                    $user->assignRole('murid');
+                    $user->removeRole('pendaftar');
+                    Log::info("Role murid (Aktif) berhasil ditambahkan dan role pendaftar dihapus untuk user ID: {$user->id}");
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Gagal mengubah role untuk pendaftar ID: {$pendaftar->id}. Error: " . $e->getMessage());
+        }
     }
 }

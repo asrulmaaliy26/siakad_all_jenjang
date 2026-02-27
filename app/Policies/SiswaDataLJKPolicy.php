@@ -37,6 +37,11 @@ class SiswaDataLJKPolicy
         return $authUser->can('Delete:SiswaDataLJK');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:SiswaDataLJK');
+    }
+
     public function restore(AuthUser $authUser, SiswaDataLJK $siswaDataLJK): bool
     {
         return $authUser->can('Restore:SiswaDataLJK');

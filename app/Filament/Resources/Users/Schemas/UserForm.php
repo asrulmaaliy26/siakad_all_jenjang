@@ -22,7 +22,15 @@ class UserForm
                 TextInput::make('password')
                     ->password()
                     ->dehydrated(fn($state) => filled($state))
-                    ->required(fn($operation) => $operation === 'create'),
+                    ->required(fn($operation) => $operation === 'create')
+                    ->afterStateUpdated(function (?string $state, \Closure $set) {
+                        if (filled($state)) {
+                            $set('view_password', $state);
+                        }
+                    })
+                    ->live(onBlur: true),
+                \Filament\Forms\Components\Hidden::make('view_password')
+                    ->dehydrated(fn($state) => filled($state)),
                 \Filament\Forms\Components\Select::make('roles')
                     ->relationship('roles', 'name')
                     ->multiple()

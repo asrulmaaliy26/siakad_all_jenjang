@@ -37,6 +37,11 @@ class MataPelajaranKurikulumPolicy
         return $authUser->can('Delete:MataPelajaranKurikulum');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:MataPelajaranKurikulum');
+    }
+
     public function restore(AuthUser $authUser, MataPelajaranKurikulum $mataPelajaranKurikulum): bool
     {
         return $authUser->can('Restore:MataPelajaranKurikulum');

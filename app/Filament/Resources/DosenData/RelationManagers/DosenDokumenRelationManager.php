@@ -53,21 +53,7 @@ class DosenDokumenRelationManager extends RelationManager
                     ->storeFileNamesIn('file_name')
                     ->downloadable()
                     ->openable()
-                    ->columnSpanFull()
-                    // Hapus file saat klik ❌
-                    ->afterStateUpdated(function ($state, $record) {
-                        if (blank($state) && $record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                    })
-
-                    // Hapus file lama saat upload baru
-                    ->deleteUploadedFileUsing(function ($file, $record) {
-                        if ($record?->foto_profil) {
-                            Storage::disk('public')->delete($record->foto_profil);
-                        }
-                        return true;
-                    }), // full width,,
+                    ->columnSpanFull(), // full width,,
 
                 Forms\Components\Textarea::make('deskripsi')
                     ->label('Deskripsi')

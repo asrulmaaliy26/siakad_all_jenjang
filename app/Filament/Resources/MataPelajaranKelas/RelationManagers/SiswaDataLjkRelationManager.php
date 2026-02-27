@@ -50,26 +50,13 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->step(0.01)
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('Nilai_TGS_1')
-                    ->label('Nilai TGS 1')
+                ...array_map(fn($i) => TextInputColumn::make("Nilai_TGS_{$i}")
+                    ->label("Nilai TGS $i")
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
-                    ->disabled(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('Nilai_TGS_2')
-                    ->label('Nilai TGS 2')
-                    ->type('number')
-                    ->step(0.01)
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->disabled(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('Nilai_TGS_3')
-                    ->label('Nilai TGS 3')
-                    ->type('number')
-                    ->step(0.01)
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->toggleable(isToggledHiddenByDefault: $i > 1)
+                    ->disabled(fn() => auth()->user()?->isMurid()), range(1, 12)),
                 TextInputColumn::make('Nilai_UAS')
                     ->label('Nilai UAS')
                     ->type('number')
@@ -92,44 +79,20 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->label('Nilai Huruf')
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
-                TextColumn::make('ljk_tugas_1')
-                    ->label('File Tugas 1')
-                    ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
-                    ->url(fn($record) => $record->ljk_tugas_1 ? asset('storage/' . $record->ljk_tugas_1) : null)
-                    ->openUrlInNewTab()
-                    ->color(fn($state) => $state ? 'primary' : 'gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('ctt_tugas_1')
-                    ->label('Catatan Tugas 1')
-                    ->html()
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('ljk_tugas_2')
-                    ->label('File Tugas 2')
-                    ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
-                    ->url(fn($record) => $record->ljk_tugas_2 ? asset('storage/' . $record->ljk_tugas_2) : null)
-                    ->openUrlInNewTab()
-                    ->color(fn($state) => $state ? 'primary' : 'gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('ctt_tugas_2')
-                    ->label('Catatan Tugas 2')
-                    ->html()
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('ljk_tugas_3')
-                    ->label('File Tugas 3')
-                    ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
-                    ->url(fn($record) => $record->ljk_tugas_3 ? asset('storage/' . $record->ljk_tugas_3) : null)
-                    ->openUrlInNewTab()
-                    ->color(fn($state) => $state ? 'primary' : 'gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('ctt_tugas_3')
-                    ->label('Catatan Tugas 3')
-                    ->html()
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                ...array_merge(...array_map(fn($i) => [
+                    TextColumn::make("ljk_tugas_{$i}")
+                        ->label("File Tugas $i")
+                        ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
+                        ->url(fn($record) => $record->{"ljk_tugas_$i"} ? asset('storage/' . $record->{"ljk_tugas_$i"}) : null)
+                        ->openUrlInNewTab()
+                        ->color(fn($state) => $state ? 'primary' : 'gray')
+                        ->toggleable(isToggledHiddenByDefault: true),
+                    TextColumn::make("ctt_tugas_{$i}")
+                        ->label("Catatan Tugas $i")
+                        ->html()
+                        ->limit(30)
+                        ->toggleable(isToggledHiddenByDefault: true),
+                ], range(1, 12))),
 
                 SelectColumn::make('Status_Nilai')
                     ->label('Status Nilai')

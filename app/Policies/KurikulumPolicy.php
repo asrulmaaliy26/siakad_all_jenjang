@@ -37,6 +37,11 @@ class KurikulumPolicy
         return $authUser->can('Delete:Kurikulum');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:Kurikulum');
+    }
+
     public function restore(AuthUser $authUser, Kurikulum $kurikulum): bool
     {
         return $authUser->can('Restore:Kurikulum');

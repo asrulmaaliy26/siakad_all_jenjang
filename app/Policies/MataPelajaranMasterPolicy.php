@@ -37,6 +37,11 @@ class MataPelajaranMasterPolicy
         return $authUser->can('Delete:MataPelajaranMaster');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:MataPelajaranMaster');
+    }
+
     public function restore(AuthUser $authUser, MataPelajaranMaster $mataPelajaranMaster): bool
     {
         return $authUser->can('Restore:MataPelajaranMaster');

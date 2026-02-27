@@ -37,6 +37,11 @@ class SiswaDataOrangTuaPolicy
         return $authUser->can('Delete:SiswaDataOrangTua');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:SiswaDataOrangTua');
+    }
+
     public function restore(AuthUser $authUser, SiswaDataOrangTua $siswaDataOrangTua): bool
     {
         return $authUser->can('Restore:SiswaDataOrangTua');

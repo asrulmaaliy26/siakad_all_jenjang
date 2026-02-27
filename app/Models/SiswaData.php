@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SiswaData extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
     protected $table = 'siswa_data';
 
@@ -42,19 +42,6 @@ class SiswaData extends Model
         });
     }
 
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path A: siswa_data -> pendaftar -> jurusan -> jenjang
-        // Path B: siswa_data -> riwayatPendidikan -> jurusan -> jenjang
-        return $query->where(function ($q) use ($jenjangId) {
-            $q->whereHas('pendaftar.jurusan', function ($sub) use ($jenjangId) {
-                $sub->where('id_jenjang_pendidikan', $jenjangId);
-            })
-                ->orWhereHas('riwayatPendidikan.jurusan', function ($sub) use ($jenjangId) {
-                    $sub->where('id_jenjang_pendidikan', $jenjangId);
-                });
-        });
-    }
     protected $fillable = [
         'nama',
         'nama_lengkap',

@@ -21,7 +21,7 @@ class TahunAkademikResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
     protected static string | UnitEnum | null $navigationGroup = 'Master Data';
-    protected static ?string $navigationLabel = 'Tahun Akademik ✓';
+    protected static ?string $navigationLabel = 'Tahun Akademik';
     protected static ?int $navigationSort = 11;
 
     public static function form(Schema $schema): Schema

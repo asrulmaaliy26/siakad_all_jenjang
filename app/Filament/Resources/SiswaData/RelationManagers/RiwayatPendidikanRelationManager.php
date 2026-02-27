@@ -29,12 +29,8 @@ class RiwayatPendidikanRelationManager extends RelationManager
     {
         return $form->schema([
             // Relasi dan pilihan
-            // Select::make('id_jenjang_pendidikan')
-            //     ->label('Jenjang Pendidikan')
-            //     ->relationship('jenjangPendidikan', 'nama'), // kolom display dari JenjangPendidikan
-
-
             Select::make('id_jurusan')
+
                 ->label('Jurusan')
                 ->relationship('jurusan', 'nama')
                 ->reactive(),
@@ -51,15 +47,14 @@ class RiwayatPendidikanRelationManager extends RelationManager
             TextInput::make('nomor_induk')
                 ->label('Nomor Induk'),
 
-            TextInput::make('angkatan')
-                ->label('Angkatan'),
+            Select::make('id_tahun_akademik')
+                ->relationship('tahunAkademik', 'nama')
+                ->label('Tahun Akademik')
+                ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id),
 
             TextInput::make('smt_aktif')
                 ->numeric()
                 ->label('Semester Aktif'),
-
-            TextInput::make('th_masuk')
-                ->label('Tahun Masuk'),
 
             Select::make('id_wali_dosen')
                 ->label('Dosen Wali')

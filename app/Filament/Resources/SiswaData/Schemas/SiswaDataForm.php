@@ -68,7 +68,7 @@ class SiswaDataForm
                             ->revealable()
                             ->placeholder('Default: password'),
                     ])
-                    ->columns(2) // Membuat section ini 2 kolom
+                    ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                     ->collapsible(),
 
 
@@ -76,7 +76,7 @@ class SiswaDataForm
                 Tabs::make('SiswaDataTabs')
                     ->tabs([
                         Tabs\Tab::make('Data Pribadi')
-                            ->columns(2) // 2 kolom untuk layout yang rapi
+                            ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                             ->schema([
                                 Select::make('jenis_kelamin')
                                     ->options(['L' => 'Laki-laki', 'P' => 'Perempuan']),
@@ -93,7 +93,7 @@ class SiswaDataForm
                                     ->columnSpanFull(), // Textarea full width
                             ]),
                         Tabs\Tab::make('Alamat & Domisili')
-                            ->columns(2) // 2 kolom untuk layout yang rapi
+                            ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                             ->schema([
                                 TextInput::make('nomor_rumah'),
                                 TextInput::make('dusun'),
@@ -110,7 +110,7 @@ class SiswaDataForm
                                 TextInput::make('no_telepon_wa'),
                             ]),
                         Tabs\Tab::make('Sekolah')
-                            ->columns(2) // 2 kolom untuk layout yang rapi
+                            ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                             ->schema([
                                 TextInput::make('status_asal_sekolah'),
                                 TextInput::make('asal_slta'),
@@ -123,7 +123,7 @@ class SiswaDataForm
                                 TextInput::make('nisn'),
                             ]),
                         Tabs\Tab::make('Lainnya')
-                            ->columns(2) // 2 kolom untuk layout yang rapi
+                            ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                             ->schema([
                                 TextInput::make('anak_ke'),
                                 TextInput::make('jumlah_saudara'),
@@ -162,23 +162,12 @@ class SiswaDataForm
                             ->required()
                             ->disabled(fn() => auth()->user()->isMurid()),
 
-                        // TAHUN MASUK
-                        Select::make('Tahun_Masuk')
-                            ->label('Tahun Masuk')
-                            ->options(function () {
-                                $tahunSekarang = date('Y');
-                                $tahunMulai = $tahunSekarang - 5; // 5 tahun ke belakang
-                                $tahunAkhir = $tahunSekarang + 5; // 5 tahun ke depan
-
-                                $tahun = [];
-                                for ($i = $tahunMulai; $i <= $tahunAkhir; $i++) {
-                                    $tahun[$i] = $i;
-                                }
-                                return $tahun;
-                            })
-                            ->default(date('Y')) // Default tahun sekarang
+                        // TAHUN AKADEMIK
+                        Select::make('id_tahun_akademik')
+                            ->label('Tahun Akademik')
+                            ->relationship('tahunAkademik', 'nama')
+                            ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                             ->searchable()
-                            ->required()
                             ->disabled(fn() => auth()->user()->isMurid()),
 
                         // TANGGAL DAFTAR
@@ -199,7 +188,7 @@ class SiswaDataForm
                             ->label('No Pendaftaran (Opsional)')
                             ->disabled(fn() => auth()->user()->isMurid()),
                     ])
-                    ->columns(2) // Membuat section ini 2 kolom
+                    ->columns(['sm' => 1, 'md' => 2]) // Responsive columns
                     ->collapsible(),
             ]);
     }

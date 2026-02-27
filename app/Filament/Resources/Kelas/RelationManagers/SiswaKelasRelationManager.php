@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Kelas\RelationManagers;
 
 use App\Models\AkademikKrs;
-use App\Models\JenjangPendidikan;
+
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
@@ -93,12 +93,12 @@ class SiswaKelasRelationManager extends RelationManager
                     $results = $query->limit(100)->get();
 
                     if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(fn($item) => $item->getSemester() == $semester);
+                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semester);
                     }
 
                     return $results
                         ->take(20)
-                        ->mapWithKeys(fn($item) => [
+                        ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
                             $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
                         ])
                         ->toArray();
@@ -136,12 +136,12 @@ class SiswaKelasRelationManager extends RelationManager
                     $results = $query->limit(100)->get();
 
                     if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(fn($item) => $item->getSemester() == $semester);
+                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semester);
                     }
 
                     return $results
                         ->take(20)
-                        ->mapWithKeys(fn($item) => [
+                        ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
                             $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
                         ])
                         ->toArray();

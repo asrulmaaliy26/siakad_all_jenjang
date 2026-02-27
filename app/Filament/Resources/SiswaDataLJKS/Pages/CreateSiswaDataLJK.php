@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateSiswaDataLJK extends CreateRecord
 {
     protected static string $resource = SiswaDataLJKResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

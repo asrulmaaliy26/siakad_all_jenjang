@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\SelectColumn;
@@ -20,23 +21,32 @@ class SiswaDataTable
     {
         return $table
             ->columns([
+                ImageColumn::make('foto_profil')
+                    ->label('Foto')
+                    ->circular()
+                    ->defaultImageUrl(url('https://ui-avatars.com/api/?name=' . urlencode('Siswa'))),
                 TextColumn::make('riwayatPendidikanAktif.angkatan')
                     ->label('Angkatan')
-                    ->searchable(),
+                    ->toggleable(),
                 TextColumn::make('nama')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.nomor_induk')
                     ->label('Nomor Induk')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.programSekolah.nilai')
                     ->searchable()
-                    ->label('Program Sekolah'),
+                    ->label('Program Sekolah')
+                    ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.jurusan.nama')
                     ->searchable()
-                    ->label('Jurusan'),
+                    ->label('Jurusan')
+                    ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.statusSiswa.nilai')
                     ->label('Status Pendidikan')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 SelectColumn::make('status_siswa')
                     ->label('Status Siswa')
                     ->options([
@@ -85,8 +95,7 @@ class SiswaDataTable
                                     'id_siswa_data' => $record->id,
                                     'id_jurusan' => $pendaftar->id_jurusan,
                                     'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
-                                    'th_masuk' => $pendaftar->Tahun_Masuk ?? date('Y'),
-                                    'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
+                                    'id_tahun_akademik' => $pendaftar->id_tahun_akademik ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id,
                                     'tanggal_mulai' => now(),
                                     'status' => 'Aktif',
                                     'ro_status_siswa' => $idStatusSiswa, // Set status siswa di riwayat pendidikan
@@ -106,9 +115,17 @@ class SiswaDataTable
                                     'status_aktif' => 'Y',
                                 ]);
 
+                                if ($record->user_id) {
+                                    $userTarget = \App\Models\User::find($record->user_id);
+                                    if ($userTarget) {
+                                        $userTarget->assignRole('murid');
+                                        $userTarget->removeRole('pendaftar');
+                                    }
+                                }
+
                                 \Filament\Notifications\Notification::make()
                                     ->title('Aktivasi Berhasil')
-                                    ->body('Riwayat pendidikan dan KRS pertama (24 SKS) berhasil dibuat otomatis.')
+                                    ->body('Riwayat Pendidikan, Akademik KRS dan Role Murid berhasil ditambahkan.')
                                     ->success()
                                     ->send();
                             } else {
@@ -125,8 +142,8 @@ class SiswaDataTable
                         return $state;
                     })
                     ->disabled(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         return $user && $user->isMurid();
                     }),
                 TextColumn::make('created_at')
@@ -145,13 +162,32 @@ class SiswaDataTable
                         'aktif' => 'Aktif',
                         'tidak aktif' => 'Tidak Aktif',
                     ]),
-                SelectFilter::make('jenjang_pendidikan')
-                    ->label('Jenjang Pendidikan')
-                    ->relationship('riwayatPendidikanAktif.jurusan.jenjangPendidikan', 'nama')
-                    ->searchable()
-                    ->preload(),
             ])
             ->recordActions([
+                Action::make('cetak_ktm')
+                    ->label('KTM')
+                    ->icon('heroicon-o-identification')
+                    ->color('warning')
+                    ->url(fn($record) => route('cetak.ktm', $record->id))
+                    ->openUrlInNewTab()
+                    ->visible(fn($record) => $record->status_siswa === 'aktif' && $record->riwayatPendidikanAktif !== null),
+                Action::make('cetak_transkrip')
+                    ->label('Transkrip')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->url(fn($record) => route('cetak.transkrip', $record->id))
+                    ->openUrlInNewTab(),
+                Action::make('view_grades')
+                    ->label('Nilai')
+                    ->icon('heroicon-o-academic-cap')
+                    ->color('info')
+                    ->url(fn($record) => \App\Filament\Resources\SiswaDataLJKS\SiswaDataLJKResource::getUrl('index', [
+                        'tableFilters' => [
+                            'id_akademik_krs' => [
+                                'value' => $record->akademikKrs->first()?->id,
+                            ],
+                        ],
+                    ])),
                 ViewAction::make(),
                 EditAction::make(),
             ])
@@ -189,8 +225,7 @@ class SiswaDataTable
                                         'id_siswa_data' => $record->id,
                                         'id_jurusan' => $pendaftar->id_jurusan,
                                         'ro_program_sekolah' => $pendaftar->ro_program_sekolah,
-                                        'th_masuk' => $pendaftar->Tahun_Masuk ?? date('Y'),
-                                        'angkatan' => $pendaftar->Tahun_Masuk ?? date('Y'),
+                                        'id_tahun_akademik' => $pendaftar->id_tahun_akademik ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id,
                                         'tanggal_mulai' => now(),
                                         'status' => 'Aktif',
                                     ]);
@@ -209,19 +244,28 @@ class SiswaDataTable
                                         'status_aktif' => 'Y',
                                         'created_at' => now(),
                                     ]);
+
+                                    if ($record->user_id) {
+                                        $userTarget = \App\Models\User::find($record->user_id);
+                                        if ($userTarget) {
+                                            $userTarget->assignRole('murid');
+                                            $userTarget->removeRole('pendaftar');
+                                        }
+                                    }
+
                                     $successCount++;
                                 }
                             }
 
                             \Filament\Notifications\Notification::make()
                                 ->title('Aktivasi Massal Selesai')
-                                ->body("{$successCount} siswa diaktifkan. {$skippedCount} dilewati (data tidak lengkap).")
+                                ->body("{$successCount} siswa diaktifkan (Riwayat Pendidikan, KRS, dan Role Murid ditambahkan). {$skippedCount} dilewati (data tidak lengkap).")
                                 ->success()
                                 ->send();
                         })
                         ->disabled(function () {
-                            /** @var \App\Models\User $user */
-                            $user = auth()->user();
+                            /** @var \App\Models\User|null $user */
+                            $user = \Illuminate\Support\Facades\Auth::user();
                             return $user && $user->isMurid();
                         }),
                 ]),

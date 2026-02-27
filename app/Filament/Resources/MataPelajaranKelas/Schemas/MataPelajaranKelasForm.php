@@ -13,6 +13,7 @@ use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 
 
 
@@ -24,7 +25,7 @@ class MataPelajaranKelasForm
             ->components([
                 Section::make('Informasi Dasar')
                     ->collapsed()
-                    ->columns(2)
+                    ->columns(['sm' => 1, 'md' => 2])
                     ->schema([
                         Select::make('id_mata_pelajaran_kurikulum')
                             ->label('Mata Kuliah')
@@ -69,7 +70,7 @@ class MataPelajaranKelasForm
 
                 Section::make('Jadwal Rutin')
                     // ->collapsed()
-                    ->columns(2)
+                    ->columns(['sm' => 1, 'md' => 2])
                     ->schema([
                         Select::make('hari')
                             ->options([
@@ -96,7 +97,7 @@ class MataPelajaranKelasForm
                 Section::make('Ujian Tengah Semester (UTS)')
                     ->label('Jadwal UTS')
                     ->collapsed()
-                    ->columns(2)
+                    ->columns(['sm' => 1, 'md' => 2])
                     ->schema([
                         Toggle::make('status_uts')
                             ->label('Aktifkan UTS')
@@ -105,7 +106,7 @@ class MataPelajaranKelasForm
                             ->inline(false),
                         DateTimePicker::make('uts')
                             ->label('Waktu Pelaksanaan UTS')
-                            ->visible(fn() => !auth()->user()?->isMurid()),
+                            ->visible(fn() => ($user = auth()->user()) instanceof User && !$user->isMurid()),
 
                         TextInput::make('ruang_uts')
                             ->label('Ruang UTS'),
@@ -113,36 +114,24 @@ class MataPelajaranKelasForm
                             ->label('Upload File Soal UTS')
                             ->disk('public')
                             ->visibility('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uts'))
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uts'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->preserveFilenames()
                             ->maxSize(10240)
                             ->downloadable()
                             ->openable()
-                            ->columnSpanFull()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->columnSpanFull(), // full width,,
                         RichEditor::make('ctt_soal_uts')
                             ->label('Soal UTS (Rich Text)')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uts'))
                             ->columnSpanFull(),
                     ]),
 
                 Section::make('Ujian Akhir Semester (UAS)')
                     ->label('Jadwal UAS')
                     ->collapsed()
-                    ->columns(2)
+                    ->columns(['sm' => 1, 'md' => 2])
                     ->schema([
                         Toggle::make('status_uas')
                             ->label('Aktifkan UAS')
@@ -151,7 +140,7 @@ class MataPelajaranKelasForm
                             ->inline(false),
                         DateTimePicker::make('uas')
                             ->label('Waktu Pelaksanaan UAS')
-                            ->visible(fn() => !auth()->user()?->isMurid()),
+                            ->visible(fn() => ($user = auth()->user()) instanceof User && !$user->isMurid()),
 
                         TextInput::make('ruang_uas')
                             ->label('Ruang UAS'),
@@ -163,31 +152,18 @@ class MataPelajaranKelasForm
                         FileUpload::make('soal_uas')
                             ->label('Upload File Soal UAS')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uas'))
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uas'))
                             ->visibility('public')
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->preserveFilenames()
                             ->maxSize(10240)
                             ->downloadable()
                             ->openable()
-
-                            ->columnSpanFull()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->columnSpanFull(), // full width,,
                         RichEditor::make('ctt_soal_uas')
                             ->label('Soal UAS (Rich Text)')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uas'))
                             ->columnSpanFull(),
                     ]),
             ]);

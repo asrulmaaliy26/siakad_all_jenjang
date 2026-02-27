@@ -67,7 +67,7 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
         return $table
             ->query(
                 MataPelajaranKelas::query()
-                    ->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas'])
+                    ->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas', 'kelas.programKelas'])
             )
             ->modifyQueryUsing(function (Builder $query) {
                 if ($this->excludeTaken && !empty($this->takenSubjectIds)) {
@@ -112,6 +112,18 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('kelas.programKelas.nilai')
+                    ->label('Program Kelas')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('kelas.semester')
+                    ->label('Semester')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+
                 TextColumn::make('hari')
                     ->label('Jadwal')
                     ->formatStateUsing(fn(MataPelajaranKelas $record) => "{$record->hari}, {$record->jam}")
@@ -155,6 +167,35 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                             });
                         }
                     }),
+                SelectFilter::make('ro_program_kelas')
+                    ->label('Program Kelas')
+                    ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['value'])) {
+                            $query->whereHas('kelas', function (Builder $q) use ($data) {
+                                $q->where('ro_program_kelas', $data['value']);
+                            });
+                        }
+                    }),
+                SelectFilter::make('semester')
+                    ->label('Semester')
+                    ->options([
+                        '1' => 'Semester 1',
+                        '2' => 'Semester 2',
+                        '3' => 'Semester 3',
+                        '4' => 'Semester 4',
+                        '5' => 'Semester 5',
+                        '6' => 'Semester 6',
+                        '7' => 'Semester 7',
+                        '8' => 'Semester 8',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['value'])) {
+                            $query->whereHas('kelas', function (Builder $q) use ($data) {
+                                $q->where('semester', $data['value']);
+                            });
+                        }
+                    }),
             ])
             ->actions([
                 Action::make('add')
@@ -163,8 +204,8 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                     ->button()
                     ->color('primary')
                     ->action(function (MataPelajaranKelas $record) {
-                        // Cek pembayaran untuk murid
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         if ($user && $user->isMurid() && ! $this->isBayarLunas) {
                             Notification::make()
                                 ->title('Pembayaran Belum Lunas')

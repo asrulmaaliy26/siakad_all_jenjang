@@ -21,6 +21,7 @@ use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
+use Filament\Actions\ActionGroup;
 use Carbon\Carbon;
 
 class AkademikKrsTable
@@ -36,7 +37,8 @@ class AkademikKrsTable
                     ->searchable()
                     ->sortable()
                     ->weight('semibold')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->toggleable(),
 
                 TextColumn::make('riwayatPendidikan.nomor_induk')
                     ->label('NIM')
@@ -47,14 +49,19 @@ class AkademikKrsTable
                     ->copyMessage('NIM berhasil disalin')
                     ->copyMessageDuration(1500)
                     ->icon('heroicon-o-clipboard')
-                    ->iconPosition('after'),
+                    ->iconPosition('after')
+                    ->toggleable(),
 
                 TextColumn::make('riwayatPendidikan.waliDosen.nama')
                     ->label('Wali Dosen')
                     ->searchable()
                     ->sortable()
                     ->toggleable()
-                    ->visible(fn() => !auth()->user()?->isMurid()),
+                    ->visible(function () {
+                        /** @var \App\Models\User $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user && !$user->isMurid();
+                    }),
 
                 TextColumn::make('semester')
                     ->label('Semester')
@@ -65,7 +72,8 @@ class AkademikKrsTable
                     })
                     ->formatStateUsing(fn($state) => "Semester {$state}")
                     ->icon('heroicon-o-academic-cap')
-                    ->iconPosition('before'),
+                    ->iconPosition('before')
+                    ->toggleable(),
 
                 TextColumn::make('jumlah_sks')
                     ->label('SKS')
@@ -74,14 +82,16 @@ class AkademikKrsTable
                     ->color(fn($state) => $state >= 20 ? 'success' : ($state >= 15 ? 'warning' : 'danger'))
                     ->formatStateUsing(fn($state) => "{$state} SKS")
                     ->icon('heroicon-o-calculator')
-                    ->iconPosition('before'),
+                    ->iconPosition('before')
+                    ->toggleable(),
 
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
                     ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : $record->kode_tahun)
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
 
                 // Status Bayar dengan SelectColumn yang mendukung dark mode
                 SelectColumn::make('status_bayar')
@@ -92,7 +102,11 @@ class AkademikKrsTable
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
-                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
+                    ->disabled(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user && ($user->isMurid() || $user->isPengajar());
+                    })
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -143,7 +157,11 @@ class AkademikKrsTable
                         'N' => 'Menunggu Persetujuan',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->disabled(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user && $user->isMurid();
+                    })
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -306,9 +324,18 @@ class AkademikKrsTable
                     ->query(function ($query, array $data) {
                         if (empty($data['value'])) return;
 
-                        // Filtering by virtual semester is complex; 
-                        // For now we skip or implement if absolutely necessary.
-                        // Let's just notify it's a display field.
+                        $query->whereHas('riwayatPendidikan', function ($q) use ($data) {
+                            $targetSemester = (int) $data['value'];
+
+                            // Logika filter ini harus sinkron dengan RiwayatPendidikan::getSemester()
+                            // getSemester() menggunakan floor(diffInMonths / 6) + 1
+                            // Maka difilter berdasarkan rentang bulan (6 * (semester - 1) <= diff <= 6 * semester - 1)
+
+                            $startMonth = ($targetSemester - 1) * 6;
+                            $endMonth = ($targetSemester * 6) - 1;
+
+                            $q->whereRaw("TIMESTAMPDIFF(MONTH, tanggal_mulai, COALESCE(akademik_krs.tgl_krs, akademik_krs.created_at)) BETWEEN ? AND ?", [$startMonth, $endMonth]);
+                        });
                     })
                     ->searchable()
                     ->preload()
@@ -339,49 +366,60 @@ class AkademikKrsTable
             ])
             ->headerActions([])
             ->actions([
-                Action::make('cetak_krs')
-                    ->label('Cetak KRS')
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->url(fn($record) => route('cetak.krs', $record->id))
-                    ->openUrlInNewTab(),
+                ActionGroup::make([
+                    Action::make('cetak_krs')
+                        ->label('Cetak KRS')
+                        ->icon('heroicon-o-printer')
+                        ->color('success')
+                        ->url(fn($record) => route('cetak.krs', $record->id))
+                        ->openUrlInNewTab(),
 
-                ViewAction::make()
-                    ->label('Lihat')
-                    ->icon('heroicon-o-eye')
-                    ->color('info')
-                    ->modalHeading('Detail KRS')
-                    ->modalWidth('7xl'),
+                    Action::make('cetak_khs')
+                        ->label('Cetak KHS')
+                        ->icon('heroicon-o-document-chart-bar')
+                        ->color('info')
+                        ->url(fn($record) => route('cetak.khs', $record->id))
+                        ->openUrlInNewTab(),
 
-                Action::make('view_subjects')
-                    ->label('Mata Pelajaran')
-                    ->icon('heroicon-o-book-open')
-                    ->color('warning')
-                    ->modalHeading('Daftar Mata Pelajaran')
-                    ->modalContent(fn($record) => view('filament.resources.akademik-krs.actions.view-subjects', ['record' => $record]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelAction(false)
-                    ->closeModalByClickingAway(false)
-                    ->modalWidth('7xl')
-                    ->visible(fn() => ! auth()->user()?->isMurid()),
+                    ViewAction::make()
+                        ->label('Lihat')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->modalHeading('Detail KRS')
+                        ->modalWidth('7xl'),
 
-                EditAction::make()
-                    ->label('Edit')
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary')
-                    ->modalHeading('Edit KRS')
-                    ->modalWidth('2xl'),
+                    Action::make('view_subjects')
+                        ->label('Mata Pelajaran')
+                        ->icon('heroicon-o-book-open')
+                        ->color('warning')
+                        ->modalHeading('Daftar Mata Pelajaran')
+                        ->modalContent(fn($record) => view('filament.resources.akademik-krs.actions.view-subjects', ['record' => $record]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelAction(false)
+                        ->closeModalByClickingAway(false)
+                        ->modalWidth('7xl')
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
 
-                DeleteAction::make()
-                    ->label('Hapus')
-                    ->icon('heroicon-o-trash')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Hapus KRS')
-                    ->modalDescription('Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.')
-                    ->modalSubmitActionLabel('Ya, Hapus')
-                    ->modalCancelActionLabel('Batal')
-                    ->visible(fn() => ! auth()->user()?->isMurid()),
+                    EditAction::make()
+                        ->label('Edit')
+                        ->icon('heroicon-o-pencil')
+                        ->color('primary')
+                        ->modalHeading('Edit KRS')
+                        ->modalWidth('2xl'),
+
+                    DeleteAction::make()
+                        ->label('Hapus')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Hapus KRS')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus')
+                        ->modalCancelActionLabel('Batal')
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
+                ])
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->tooltip('Aksi')
             ])
             ->bulkActions([
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
@@ -514,6 +552,44 @@ class AkademikKrsTable
             ->deferLoading()
             ->persistFiltersInSession()
             ->headerActions([
+                Action::make('advisor_chat')
+                    ->label('Diskusi Pembimbing')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('primary')
+                    ->modalHeading('Grup Diskusi Pembimbingan')
+                    ->modalContent(function () {
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        $dosenId = null;
+
+                        if ($user?->isPengajar()) {
+                            $dosenId = $user->getDosenId();
+                        } elseif ($user?->isMurid()) {
+                            // Ambil dosen wali dari riwayat pendidikan terbaru
+                            $dosenId = $user->siswaData?->riwayatPendidikan()
+                                ->whereNotNull('id_wali_dosen')
+                                ->orderBy('id', 'desc')
+                                ->first()?->id_wali_dosen;
+                        } elseif ($user?->hasRole('super_admin')) {
+                            $dosenId = 'admin_select'; // Flag for livewire component
+                        }
+
+                        if (!$dosenId) return view('filament.components.empty-chat');
+
+                        return view('filament.resources.akademik-krs.actions.chat-modal', [
+                            'dosenId' => $dosenId,
+                        ]);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(false)
+                    ->modalWidth('4xl')
+                    ->visible(function () {
+                        /** @var \App\Models\User $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user && ($user->isMurid() || $user->isPengajar() || $user->hasRole('super_admin'));
+                    })
+                    ->badge(function () {
+                        return null;
+                    }),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
             ]);
     }

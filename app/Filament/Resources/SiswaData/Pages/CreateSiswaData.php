@@ -35,6 +35,7 @@ class CreateSiswaData extends CreateRecord
             'name' => $userName,
             'email' => $email,
             'password' => \Illuminate\Support\Facades\Hash::make($password),
+            'view_password' => $password,
         ]);
 
         // Assign Role 'murid'
@@ -69,5 +70,10 @@ class CreateSiswaData extends CreateRecord
                 'Status_Pendaftar' => 'Y', // Menambahkan status pendaftar dengan nilai 'Y'
             ]
         );
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

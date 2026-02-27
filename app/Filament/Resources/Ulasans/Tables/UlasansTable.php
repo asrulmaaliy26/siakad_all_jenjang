@@ -20,15 +20,11 @@ class UlasansTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('reviewable_type')
-                    ->label('Tipe')
-                    ->formatStateUsing(fn($state) => str_replace('App\\Models\\', '', $state))
-                    ->badge(),
-
-                TextColumn::make('reviewable.nama')
-                    ->label('Objek')
-                    ->placeholder('N/A')
-                    ->searchable(),
+                TextColumn::make('objek')
+                    ->label('Objek Ulasan')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('Tidak ada'),
 
                 TextColumn::make('bintang')
                     ->label('Rating')
@@ -56,7 +52,8 @@ class UlasansTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
+                    DeleteBulkAction::make()->disabled(fn() => auth()->user()?->isMurid()),
                 ]),
             ]);
     }

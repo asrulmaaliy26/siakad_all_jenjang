@@ -8,17 +8,10 @@ use App\Models\RefOption\RuangKelas;
 
 class MataPelajaranKelas extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
+    use HasFactory;
 
     protected $table = 'mata_pelajaran_kelas';
 
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        // Path: mata_pelajaran_kelas -> kelas -> jurusan -> id_jenjang_pendidikan
-        return $query->whereHas('kelas.jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
     protected $fillable = [
         'id_mata_pelajaran_kurikulum',
         'id_kelas',
@@ -44,6 +37,11 @@ class MataPelajaranKelas extends Model
         'passcode',
         'ctt_soal_uts',
         'ctt_soal_uas',
+    ];
+
+    protected $casts = [
+        'soal_uts' => 'array',
+        'soal_uas' => 'array',
     ];
 
     public function mataPelajaranKurikulum()

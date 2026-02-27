@@ -126,32 +126,61 @@ class PengaturanPendaftaranResource extends Resource
                                             ->label('Deskripsi Pendaftaran')
                                             ->rows(4)
                                             ->helperText('Deskripsi yang ditampilkan di halaman pendaftaran'),
+
+                                        FileUpload::make('brosur_pendaftaran')
+                                            ->label('Brosur Pendaftaran')
+                                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                                            ->disk('public')
+                                            ->visibility('public')
+                                            ->directory('pendaftaran/brosur')
+                                            ->maxSize(5120)
+                                            ->helperText('Upload file brosur (PDF/Gambar) maksimal 5MB'),
                                     ])
                                     ->columns(1),
                             ]),
 
                         // Tab 3: Akses
-                        Tabs\Tab::make('Akses & Jadwal')
-                            ->icon('heroicon-o-lock-closed')
+                        Tabs\Tab::make('Periode & Gelombang')
+                            ->icon('heroicon-o-calendar')
                             ->schema([
-                                Section::make('Status Pendaftaran')
-                                    ->description('Atur akses dan jadwal pendaftaran')
+                                Section::make('Pengaturan Umum Pendaftaran')
+                                    ->description('Status utama pendaftaran')
                                     ->schema([
                                         Toggle::make('status_pendaftaran')
-                                            ->label('Buka Pendaftaran')
-                                            ->helperText('Aktifkan untuk membuka akses form pendaftaran')
-                                            ->default(true)
-                                            ->inline(false),
+                                            ->label('Buka Pendaftaran (Utama)')
+                                            ->helperText('Matikan ini untuk menutup paksa seluruh pendaftaran tanpa menghiraukan waktu gelombang.')
+                                            ->default(true),
+                                    ]),
 
-                                        DateTimePicker::make('tanggal_buka')
-                                            ->label('Tanggal Buka')
-                                            ->helperText('Pendaftaran otomatis dibuka pada tanggal ini'),
+                                Section::make('Gelombang 1')
+                                    ->schema([
+                                        Toggle::make('gelombang_1_aktif')
+                                            ->label('Aktifkan Gelombang 1'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_1_buka')
+                                            ->label('Tanggal Buka Gelombang 1'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_1_tutup')
+                                            ->label('Tanggal Tutup Gelombang 1'),
+                                    ])->columns(3),
 
-                                        DateTimePicker::make('tanggal_tutup')
-                                            ->label('Tanggal Tutup')
-                                            ->helperText('Pendaftaran otomatis ditutup pada tanggal ini'),
-                                    ])
-                                    ->columns(1),
+                                Section::make('Gelombang 2')
+                                    ->schema([
+                                        Toggle::make('gelombang_2_aktif')
+                                            ->label('Aktifkan Gelombang 2'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_2_buka')
+                                            ->label('Tanggal Buka Gelombang 2'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_2_tutup')
+                                            ->label('Tanggal Tutup Gelombang 2'),
+                                    ])->columns(3),
+
+                                Section::make('Gelombang 3')
+                                    ->schema([
+                                        Toggle::make('gelombang_3_aktif')
+                                            ->label('Aktifkan Gelombang 3'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_3_buka')
+                                            ->label('Tanggal Buka Gelombang 3'),
+                                        \Filament\Forms\Components\DatePicker::make('gelombang_3_tutup')
+                                            ->label('Tanggal Tutup Gelombang 3'),
+                                    ])->columns(3),
                             ]),
 
                         // Tab 4: Info Tambahan
@@ -226,17 +255,12 @@ class PengaturanPendaftaranResource extends Resource
                     ->circular()
                     ->toggleable(),
 
-                TextColumn::make('tanggal_buka')
-                    ->label('Tgl Buka')
-                    ->dateTime('d M Y H:i')
-                    ->sortable()
-                    ->toggleable(),
-
-                TextColumn::make('tanggal_tutup')
-                    ->label('Tgl Tutup')
-                    ->dateTime('d M Y H:i')
-                    ->sortable()
-                    ->toggleable(),
+                TextColumn::make('gelombang_aktif')
+                    ->label('Gelombang Saat Ini')
+                    ->getStateUsing(fn($record) => $record->getGelombangAktif())
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
 
                 TextColumn::make('updated_at')
                     ->label('Terakhir Update')
@@ -249,6 +273,13 @@ class PengaturanPendaftaranResource extends Resource
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('download_brosur')
+                    ->label('Brosur')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->url(fn($record) => $record->brosur_pendaftaran ? Storage::url($record->brosur_pendaftaran) : '#')
+                    ->openUrlInNewTab()
+                    ->visible(fn($record) => !empty($record->brosur_pendaftaran)),
                 \Filament\Actions\EditAction::make(),
             ])
             ->defaultSort('created_at', 'desc')

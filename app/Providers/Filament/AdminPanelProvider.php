@@ -7,7 +7,8 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\WisudaMahasiswaPage;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -38,6 +39,9 @@ class AdminPanelProvider extends PanelProvider
                 'success' => Color::Green,
                 'warning' => Color::Yellow,
             ])
+            // ->brandLogo(asset('logokampus.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('favicon.ico'))
             ->font('Outfit')
             ->sidebarCollapsibleOnDesktop()
             ->spa()
@@ -45,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
+                WisudaMahasiswaPage::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
@@ -61,7 +66,6 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-                \App\Http\Middleware\SetActiveJenjangMiddleware::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
@@ -78,18 +82,37 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->renderHook(
-                \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-                fn(): string => \Illuminate\Support\Facades\Blade::render('@livewire(\'global-jenjang-switch\')')
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn(): string => '
+                    <meta property="og:image" content="' . asset('logokampus.jpg') . '" />
+                    <link rel="manifest" href="/manifest.json">
+                    <meta name="apple-mobile-web-app-capable" content="yes">
+                    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+                    <meta name="apple-mobile-web-app-title" content="SIAKAD">
+                    <link rel="apple-touch-icon" href="/logokampus.jpg">
+                    <script>
+                        if ("serviceWorker" in navigator) {
+                            window.addEventListener("load", function() {
+                                navigator.serviceWorker.register("/sw.js").then(function(registration) {
+                                    console.log("ServiceWorker registration successful with scope: ", registration.scope);
+                                }, function(err) {
+                                    console.log("ServiceWorker registration failed: ", err);
+                                });
+                            });
+                        }
+                    </script>
+                '
             )
+
             ->renderHook(
                 \Filament\View\PanelsRenderHook::USER_MENU_BEFORE,
                 fn(): string => \Illuminate\Support\Facades\Blade::render('
                     <div class="hidden md:flex flex-col items-end justify-center px-3 text-right">
                         <span class="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                            {{ auth()->user()->name }} - |
+                            {{ auth()->user()->name }}
                         </span>
                         <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 tracking-wider">
-                            - {{ auth()->user()->getRoleNames()->implode(", ") }}
+                            {{ auth()->user()->getRoleNames()->implode(", ") }}
                         </span>
                     </div>
                 ')

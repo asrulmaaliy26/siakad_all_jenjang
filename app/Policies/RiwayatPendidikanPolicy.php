@@ -37,6 +37,11 @@ class RiwayatPendidikanPolicy
         return $authUser->can('Delete:RiwayatPendidikan');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:RiwayatPendidikan');
+    }
+
     public function restore(AuthUser $authUser, RiwayatPendidikan $riwayatPendidikan): bool
     {
         return $authUser->can('Restore:RiwayatPendidikan');

@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateTaSkripsi extends CreateRecord
 {
     protected static string $resource = TaSkripsiResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

@@ -6,7 +6,6 @@ use App\Models\SiswaData;
 use App\Models\SiswaDataOrangTua;
 use App\Models\SiswaDataPendaftar;
 use App\Models\User;
-use App\Models\JenjangPendidikan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -19,14 +18,21 @@ class PendaftaranController extends Controller
     /**
      * Display the registration form.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $jenjangs = JenjangPendidikan::all();
         $jurusans = \App\Models\Jurusan::all();
         $jalurPmbs = \App\Models\ReferenceOption::where('nama_grup', 'jalur_pmb')->where('status', 1)->get();
         // Ambil reference option untuk program sekolah
         $programSekolahs = \App\Models\ReferenceOption::where('nama_grup', 'program_sekolah')->where('status', 1)->get();
-        return view('pendaftaran.index', compact('jenjangs', 'jurusans', 'jalurPmbs', 'programSekolahs'));
+
+        $referalCode = null;
+        if ($request->has('ref')) {
+            $referalCode = \App\Models\ReferalCode::where('kode', $request->query('ref'))->first();
+        }
+
+        $pengaturanPendaftaran = \App\Models\PengaturanPendaftaran::getAktif();
+
+        return view('pendaftaran.index', compact('jurusans', 'jalurPmbs', 'programSekolahs', 'referalCode', 'pengaturanPendaftaran'));
     }
 
     /**
@@ -39,6 +45,11 @@ class PendaftaranController extends Controller
             'username' => $request->username,
             'nama' => $request->nama,
         ]);
+
+        $pengaturan = \App\Models\PengaturanPendaftaran::getAktif();
+        if (!$pengaturan->isPendaftaranBuka()) {
+            return back()->with('error', 'Pendaftaran sedang ditutup. Anda tidak dapat mengirim data.');
+        }
 
         // Validation rules - HANYA 3 FIELD WAJIB: nama, username, password
         $validator = Validator::make($request->all(), [
@@ -93,10 +104,11 @@ class PendaftaranController extends Controller
             // Pendaftar Data (Extended)
             'nama_pendaftar' => ['nullable', 'string', 'max:255'],
             'Kelas_Program_Kuliah' => ['nullable', 'string', 'max:255'],
-            'id_jurusan' => ['nullable', 'exists:jurusan,id'],
-            'ro_program_sekolah' => ['nullable', 'exists:reference_option,id'],
-            'Jalur_PMB' => ['nullable', 'exists:reference_option,id'], // ID Reference Option
+            'id_jurusan' => ['required', 'exists:jurusan,id'],
+            'ro_program_sekolah' => ['required', 'exists:reference_option,id'],
+            'Jalur_PMB' => ['required', 'exists:reference_option,id'], // ID Reference Option
             'Jenis_Pembiayaan' => ['nullable', 'string', 'max:255'],
+            'id_referal_code' => ['nullable', 'exists:referal_codes,id'],
             // Transfer Data
             'NIMKO_Asal' => ['nullable', 'string', 'max:255'],
             'PT_Asal' => ['nullable', 'string', 'max:255'],
@@ -107,14 +119,21 @@ class PendaftaranController extends Controller
             'Pengantar_Mutasi' => ['nullable', 'string'],
             'Transkip_Asal' => ['nullable', 'string'],
             // Documents
-            'Legalisir_Ijazah' => ['nullable', 'string'],
-            'Legalisir_SKHU' => ['nullable', 'string'],
-            'Copy_KTP' => ['nullable', 'string'],
+            'Legalisir_Ijazah' => ['nullable', 'array'],
+            'Legalisir_Ijazah.*' => ['file'],
+            'Legalisir_SKHU' => ['nullable', 'array'],
+            'Legalisir_SKHU.*' => ['file'],
+            'Copy_KTP' => ['nullable', 'array'],
+            'Copy_KTP.*' => ['file'],
             // Photos
-            'File_Foto_Berwarna' => ['nullable', 'string'],
-            'Foto_BW_3x3' => ['nullable', 'string'],
-            'Foto_BW_3x4' => ['nullable', 'string'],
-            'Foto_Warna_5x6' => ['nullable', 'string'],
+            'File_Foto_Berwarna' => ['nullable', 'array'],
+            'File_Foto_Berwarna.*' => ['file', 'image'],
+            'Foto_BW_3x3' => ['nullable', 'array'],
+            'Foto_BW_3x3.*' => ['file', 'image'],
+            'Foto_BW_3x4' => ['nullable', 'array'],
+            'Foto_BW_3x4.*' => ['file', 'image'],
+            'Foto_Warna_5x6' => ['nullable', 'array'],
+            'Foto_Warna_5x6.*' => ['file', 'image'],
             'Nama_File_Foto' => ['nullable', 'string', 'max:255'],
 
             // Additional Siswa Fields
@@ -142,9 +161,6 @@ class PendaftaranController extends Controller
             'tahun_lulus_slta' => ['nullable', 'integer'],
             'nisn' => ['nullable', 'string', 'max:20'],
             'nomor_seri_ijazah_slta' => ['nullable', 'string', 'max:50'],
-
-            // Jenjang Selection
-            'id_jenjang_pendidikan' => ['required', 'exists:jenjang_pendidikan,id'],
         ], [
             // Custom error messages in Indonesian
             'nama.required' => 'Nama wajib diisi.',
@@ -171,7 +187,11 @@ class PendaftaranController extends Controller
                     'name' => $request->nama,
                     'email' => $request->username, // Username disimpan di kolom email
                     'password' => Hash::make($request->password),
+                    'view_password' => $request->password,
                 ]);
+
+                // Berikan role 'pendaftar' agar bisa login sebagai pendaftar (belum jadi murid)
+                $user->assignRole('pendaftar');
                 Log::info('Step 1: User created', ['id' => $user->id, 'username' => $request->username]);
             } catch (\Exception $e) {
                 throw new \Exception('Gagal membuat akun user. Error: ' . $e->getMessage());
@@ -186,6 +206,7 @@ class PendaftaranController extends Controller
                 $siswaData = SiswaData::create([
                     'nama' => $request->nama, // Field wajib dari form
                     'nama_lengkap' => $namaLengkap,
+                    'user_id' => $user->id, // Tautkan ke akun login
                     'email' => $request->email, // Email opsional (berbeda dari username),
                     'jenis_kelamin' => $request->jenis_kelamin,
                     'kota_lahir' => $request->tempat_lahir,
@@ -279,19 +300,26 @@ class PendaftaranController extends Controller
             try {
                 $pendaftar = SiswaDataPendaftar::create([
                     'id_siswa_data' => $siswaData->id,
-                    'id_jenjang_pendidikan' => $request->id_jenjang_pendidikan,
+
 
                     // Registration Details
                     'Nama_Lengkap' => $namaLengkap,
                     'Tgl_Daftar' => now()->toDateString(),
-                    'Tahun_Masuk' => now()->month <= 7
-                        ? now()->year . 'genap'
-                        : now()->year . 'ganjil',
+                    'id_tahun_akademik' => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id,
                     'ro_program_sekolah' => $request->ro_program_sekolah,
                     'Kelas_Program_Kuliah' => $request->Kelas_Program_Kuliah,
                     'id_jurusan' => $request->id_jurusan,
                     'Jalur_PMB' => $request->Jalur_PMB, // Must be ID
                     'Jenis_Pembiayaan' => $request->Jenis_Pembiayaan,
+
+                    // Biaya Pendaftaran otomatis dari Jalur PMB
+                    'Biaya_Pendaftaran' => (function () use ($request) {
+                        $ref = \App\Models\ReferenceOption::find($request->Jalur_PMB);
+                        if ($ref && preg_match('/Rp\.\s*([\d.]+)/', $ref->deskripsi, $matches)) {
+                            return (int) str_replace('.', '', $matches[1]);
+                        }
+                        return 0;
+                    })(),
 
                     // Transfer Data
                     'NIMKO_Asal' => $request->NIMKO_Asal,
@@ -301,15 +329,69 @@ class PendaftaranController extends Controller
                     'IPK_Asal' => $request->IPK_Asal,
                     'Semester_Asal' => $request->Semester_Asal,
 
-                    // Documents & Photos
-                    'Legalisir_Ijazah' => $request->Legalisir_Ijazah,
-                    'Legalisir_SKHU' => $request->Legalisir_SKHU,
-                    'Copy_KTP' => $request->Copy_KTP,
-                    'File_Foto_Berwarna' => $request->File_Foto_Berwarna,
+                    // Referal
+                    'id_referal_code' => $request->id_referal_code,
+
+                    // Documents & Photos will be updated after creation
 
                     'status_valid' => '0',
                 ]);
                 Log::info('Step 4: SiswaDataPendaftar created', ['id' => $pendaftar->id]);
+
+                // 4.5 Process Multiple File Uploads
+                Log::info('Step 4.5: Processing File Uploads');
+                $fileFields = [
+                    'Legalisir_Ijazah',
+                    'Legalisir_SKHU',
+                    'Copy_KTP',
+                    'Foto_BW_3x3',
+                    'Foto_BW_3x4',
+                    'Foto_Warna_5x6',
+                    'File_Foto_Berwarna'
+                ];
+
+                $uploadedPaths = [];
+                foreach ($fileFields as $field) {
+                    if ($request->hasFile($field)) {
+                        $paths = [];
+                        $files = is_array($request->file($field)) ? $request->file($field) : [$request->file($field)];
+
+                        // We use the helper carefully, passing null for $get (since it's not a Filament context) and $pendaftar for record
+                        $dirPath = \App\Helpers\UploadPathHelper::uploadPendaftarPath(null, $pendaftar, $field);
+
+                        foreach ($files as $file) {
+                            $filename = time() . '_' . $file->getClientOriginalName();
+                            $path = $file->storeAs($dirPath, $filename, 'public');
+                            $paths[] = $path;
+                        }
+
+                        if (!empty($paths)) {
+                            $uploadedPaths[$field] = $paths;
+                        }
+                    }
+                }
+
+                if (!empty($uploadedPaths)) {
+                    $pendaftar->update($uploadedPaths);
+                    Log::info('Files uploaded and paths updated for Pendaftar', ['uploaded_fields' => array_keys($uploadedPaths)]);
+                }
+
+                // 5. Otomatis buat Program Seleksi (Tahap 1 & 2)
+                \App\Models\SiswaSeleksiPendaftar::create([
+                    'id_siswa_data_pendaftar' => $pendaftar->id,
+                    'nama_seleksi' => 'Verifikasi Administrasi & Tes Tulis',
+                    'tanggal_seleksi' => now()->addDays(2),
+                    'deskripsi_seleksi' => 'Silakan datang ke kampus sesuai jadwal untuk mengikuti tes tulis dan membawa dokumen fisik.',
+                    'status_seleksi' => 'B',
+                ]);
+
+                \App\Models\SiswaSeleksiPendaftar::create([
+                    'id_siswa_data_pendaftar' => $pendaftar->id,
+                    'nama_seleksi' => 'Wawancara & Portofolio',
+                    'tanggal_seleksi' => now()->addDays(4),
+                    'deskripsi_seleksi' => 'Wawancara dilakukan secara online/offline. Silakan siapkan berkas jurnal jika diminta.',
+                    'status_seleksi' => 'B',
+                ]);
             } catch (\Exception $e) {
                 throw new \Exception('Gagal menyimpan data pendaftaran ke database. Error: ' . $e->getMessage());
             }

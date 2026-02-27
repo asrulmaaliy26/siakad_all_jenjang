@@ -208,8 +208,7 @@
         <div class="kop-teks">
             <div class="nama-institusi">{{ config('app.name', 'Nama Institusi') }}</div>
             <div class="nama-prodi">
-                {{ $krs->riwayatPendidikan?->jurusan?->jenjangPendidikan?->nama ?? '' }}
-                – {{ $krs->riwayatPendidikan?->jurusan?->nama ?? 'Program Studi' }}
+                {{ $krs->riwayatPendidikan?->jurusan?->nama ?? 'Program Studi' }}
             </div>
             <div class="alamat">Alamat Institusi &nbsp;|&nbsp; Telepon &nbsp;|&nbsp; Email</div>
         </div>

@@ -11,7 +11,7 @@ class UjianHelper
      * @param string|null $notes    The database field for the rich text notes.
      * @return bool
      */
-    public static function hasSubmission(?string $ljkFile, ?string $notes): bool
+    public static function hasSubmission(string|array|null $ljkFile, ?string $notes): bool
     {
         // 1. Check if file exists (simple string check)
         if (!empty($ljkFile)) {

@@ -62,9 +62,7 @@ class SiswaDataLJKForm
                     ->schema([
                         TextInput::make('Nilai_UTS')->numeric()->maxValue(100)->label('Nilai UTS'),
                         TextInput::make('Nilai_UAS')->numeric()->maxValue(100)->label('Nilai UAS'),
-                        TextInput::make('Nilai_TGS_1')->numeric()->maxValue(100)->label('Nilai TGS 1'),
-                        TextInput::make('Nilai_TGS_2')->numeric()->maxValue(100)->label('Nilai TGS 2'),
-                        TextInput::make('Nilai_TGS_3')->numeric()->maxValue(100)->label('Nilai TGS 3'),
+                        ...array_map(fn($i) => TextInput::make("Nilai_TGS_{$i}")->numeric()->maxValue(100)->label("Nilai TGS $i"), range(1, 12)),
                         TextInput::make('Nilai_Performance')->numeric()->maxValue(100)->label('Nilai Performance'),
                         TextInput::make('Nilai_Akhir')->numeric()->label('Nilai Akhir')->readOnly(), // Biasanya calculated
                         TextInput::make('Nilai_Huruf')->label('Nilai Huruf'),
@@ -79,45 +77,21 @@ class SiswaDataLJKForm
                         FileUpload::make('ljk_uts')
                             ->label('Lembar Jawab UTS')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uts'))
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uts'))
                             ->visibility('public')
                             ->downloadable()
-                            ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->openable(), // full width,,
                         FileUpload::make('artikel_uts')
                             ->label('Artikel UTS')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'artikel_uts'))
-                            ->visibility('public')
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'artikel_uts'))
+                            ->visibility('public'), // full width,,
                         DatePicker::make('tgl_upload_ljk_uts')->label('Tgl Upload LJK UTS'),
-                        RichEditor::make('ctt_uts')->label('Catatan UTS'),
+                        RichEditor::make('ctt_uts')
+                            ->label('Catatan UTS')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uts')),
                     ]),
 
                 Section::make('Berkas UAS')
@@ -126,129 +100,39 @@ class SiswaDataLJKForm
                         FileUpload::make('ljk_uas')
                             ->label('Lembar Jawab UAS')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uas'))
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uas'))
                             ->visibility('public')
                             ->downloadable()
-                            ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->openable(), // full width,,
                         FileUpload::make('artikel_uas')
                             ->label('Artikel UAS')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'artikel_uas'))
-                            ->visibility('public')
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'artikel_uas'))
+                            ->visibility('public'), // full width,,
                         DatePicker::make('tgl_upload_ljk_uas')->label('Tgl Upload LJK UAS'),
                         DatePicker::make('tgl_upload_artikel_uas')->label('Tgl Upload Artikel UAS'),
-                        RichEditor::make('ctt_uas')->label('Catatan UAS'),
+                        RichEditor::make('ctt_uas')
+                            ->label('Catatan UAS')
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uas')),
                     ]),
 
-                Section::make('Tugas 1')
+                ...array_map(fn($i) => Section::make("Tugas {$i}")
                     ->collapsed()
                     ->schema([
-                        FileUpload::make('ljk_tugas_1')
-                            ->label('File Tugas 1')
+                        FileUpload::make("ljk_tugas_{$i}")
+                            ->label("File Tugas {$i}")
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '1'))
+                            ->multiple()
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $get, (string)$i))
                             ->visibility('public')
                             ->downloadable()
-                            ->openable() // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
-                        RichEditor::make('ctt_tugas_1')
-                            ->label('Catatan Tugas 1'),
-                        // DatePicker::make('tgl_upload_tugas')->label('Tgl Upload Tugas 1'), // Assuming generic date or specific column needed
-                    ]),
-                Section::make('Tugas 2')
-                    ->collapsed()
-                    ->schema([
-                        FileUpload::make('ljk_tugas_2')
-                            ->label('File Tugas 2')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '2'))
-                            ->visibility('public')
-                            ->downloadable()
-                            ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
-                        RichEditor::make('ctt_tugas_2')
-                            ->label('Catatan Tugas 2'),
-                    ]),
-                Section::make('Tugas 3')
-                    ->collapsed()
-                    ->schema([
-                        FileUpload::make('ljk_tugas_3')
-                            ->label('File Tugas 3')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $record, '3'))
-                            ->visibility('public')
-                            ->downloadable()
-                            ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
-                        RichEditor::make('ctt_tugas_3')
-                            ->label('Catatan Tugas 3'),
-                    ]),
+                            ->openable(),
+                        RichEditor::make("ctt_tugas_{$i}")
+                            ->label("Catatan Tugas {$i}")
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $get, (string)$i)),
+                    ]), range(1, 12)),
             ]);
     }
 }

@@ -24,9 +24,7 @@ class KurikulumsTable
                 TextColumn::make('tahunAkademik.nama')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('jurusan.jenjangPendidikan.nama')
-                    ->numeric()
-                    ->sortable(),
+
                 // TextColumn::make('status_aktif'),
                 ToggleColumn::make('status_aktif')
                     ->label('Status')

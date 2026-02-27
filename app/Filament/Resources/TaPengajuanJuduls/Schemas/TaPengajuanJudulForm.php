@@ -12,8 +12,14 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Components\Placeholder;
+use Illuminate\Support\HtmlString;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class TaPengajuanJudulForm
 {
@@ -22,58 +28,11 @@ class TaPengajuanJudulForm
         return $schema
             ->columns(1)
             ->components([
-                // ── INFORMASI UTAMA ──────────────────────────────────────────
-                Section::make('Informasi Pengajuan')
-                    ->columns(2)
+                Section::make('Status Pengajuan')
+                    ->compact()
                     ->schema([
-                        Select::make('id_tahun_akademik')
-                            ->label('Tahun Akademik')
-                            ->options(TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
-                            ->searchable()
-                            ->default(fn() => \App\Models\TahunAkademik::latest('id')->value('id'))
-                            ->required()
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        Select::make('id_riwayat_pendidikan')
-                            ->label('Mahasiswa')
-                            ->options(
-                                RiwayatPendidikan::with('siswa')
-                                    ->get()
-                                    ->mapWithKeys(fn($rp) => [
-                                        $rp->id => ($rp->siswa?->nama ?? '-') . ' (' . ($rp->nomor_induk ?? 'N/A') . ')',
-                                    ])
-                            )
-                            ->searchable()
-                            ->default(function () {
-                                $user = auth()->user();
-                                if ($user && $user->isMurid()) {
-                                    $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
-                                    return $siswa?->riwayatPendidikanAktif?->id ?? \App\Models\RiwayatPendidikan::where('id_siswa', $siswa?->id)->latest('id')->value('id');
-                                }
-                                return null;
-                            })
-                            ->required()
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        TextInput::make('judul')
-                            ->label('Judul Penelitian')
-                            ->columnSpanFull()
-                            ->maxLength(500)
-                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
-
-                        Textarea::make('abstrak')
-                            ->label('Abstrak')
-                            ->columnSpanFull()
-                            ->rows(4)
-                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
-
-                        DatePicker::make('tgl_pengajuan')
-                            ->label('Tanggal Pengajuan')
-                            ->default(now())
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        Select::make('status')
-                            ->label('Status')
+                        ToggleButtons::make('status')
+                            ->label('Status Saat Ini')
                             ->options([
                                 'pending'   => 'Pending',
                                 'disetujui' => 'Disetujui',
@@ -81,171 +40,414 @@ class TaPengajuanJudulForm
                                 'revisi'    => 'Perlu Revisi',
                                 'selesai'   => 'Selesai',
                             ])
-                            ->default('pending')
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-                    ]),
-
-                // ── JADWAL UJIAN ───────────────────────────────────────────
-                Section::make('Jadwal Ujian')
-                    ->columns(2)
-                    ->schema([
-                        DatePicker::make('tgl_ujian')
-                            ->label('Tanggal Sidang/Ujian')
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        Select::make('ruangan_ujian')
-                            ->label('Ruangan Ujian')
-                            ->options(\App\Models\RefOption\RuangKelas::pluck('nilai', 'nilai'))
-                            ->searchable()
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        DatePicker::make('tgl_acc_judul')
-                            ->label('Tanggal ACC Judul')
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        FileUpload::make('file')
-                            ->label('File Proposal')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul'))
-                            ->acceptedFileTypes([
-                                'application/pdf',
-                                'application/msword',
-                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                            ->colors([
+                                'pending'   => 'gray',
+                                'disetujui' => 'success',
+                                'ditolak'   => 'danger',
+                                'revisi'    => 'warning',
+                                'selesai'   => 'info',
                             ])
-                            ->columnSpanFull()
-                            ->openable()
-                            ->required()
-                            ->disabled(fn($record) => auth()->user()?->isPengajar() || (auth()->user()?->isMurid() && $record !== null)),
-                    ]),
-
-                // ── PEMBIMBING ───────────────────────────────────────────────
-                Section::make('Dosen Pembimbing')
-                    ->columns(3)
-                    ->schema([
-                        // Pembimbing 1 — admin: select bebas | dosen: tampil jika dia ada di slot ini
-                        Select::make('id_dosen_pembimbing_1')
-                            ->label('Pembimbing 1')
-                            ->options(DosenData::pluck('nama', 'id'))
-                            ->searchable()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        // Pembimbing 2
-                        Select::make('id_dosen_pembimbing_2')
-                            ->label('Pembimbing 2')
-                            ->options(DosenData::pluck('nama', 'id'))
-                            ->searchable()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-
-                        // Pembimbing 3
-                        Select::make('id_dosen_pembimbing_3')
-                            ->label('Pembimbing 3')
-                            ->options(DosenData::pluck('nama', 'id'))
-                            ->searchable()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => auth()->user()?->isPengajar() || auth()->user()?->isMurid()),
-                    ]),
-
-                // ── PENILAIAN DOSEN ──────────────────────────────────────────
-                Section::make('Penilaian Dosen Pembimbing')
-                    ->columns(3)
-                    // ->collapsed()
-                    ->visible(fn($record) => self::isVisibleForSlot($record, 1) || self::isVisibleForSlot($record, 2) || self::isVisibleForSlot($record, 3))
-                    ->schema([
-                        // ── SLOT DOSEN 1 ─────────────────────────────────────
-                        Select::make('status_dosen_1')
-                            ->label('Status Dosen 1')
-                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
+                            ->icons([
+                                'pending'   => 'heroicon-m-clock',
+                                'disetujui' => 'heroicon-m-check-circle',
+                                'ditolak'   => 'heroicon-m-x-circle',
+                                'revisi'    => 'heroicon-m-arrow-path',
+                                'selesai'   => 'heroicon-m-flag',
+                            ])
+                            ->inline()
                             ->default('pending')
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        TextInput::make('nilai_dosen_1')
-                            ->label('Nilai Dosen 1')
-                            ->numeric()->minValue(0)->maxValue(100)
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        FileUpload::make('file_revisi_dosen_1')
-                            ->label('File Revisi Dosen 1')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(
-                                fn($record) =>
-                                in_array($record?->status_dosen_1, ['setuju', 'ditolak'])
-                            ),
-
-                        RichEditor::make('ctt_revisi_dosen_1')
-                            ->label('Catatan Revisi Dosen 1')
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
-                            ->columnSpanFull()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        // ── SLOT DOSEN 2 ─────────────────────────────────────
-                        Select::make('status_dosen_2')
-                            ->label('Status Dosen 2')
-                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
-                            ->default('pending')
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        TextInput::make('nilai_dosen_2')
-                            ->label('Nilai Dosen 2')
-                            ->numeric()->minValue(0)->maxValue(100)
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        FileUpload::make('file_revisi_dosen_2')
-                            ->label('File Revisi Dosen 2')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(
-                                fn($record) =>
-                                in_array($record?->status_dosen_2, ['setuju', 'ditolak'])
-                            ),
-
-                        RichEditor::make('ctt_revisi_dosen_2')
-                            ->label('Catatan Revisi Dosen 2')
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
-                            ->columnSpanFull()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        // ── SLOT DOSEN 3 ─────────────────────────────────────
-                        Select::make('status_dosen_3')
-                            ->label('Status Dosen 3')
-                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
-                            ->default('pending')
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        TextInput::make('nilai_dosen_3')
-                            ->label('Nilai Dosen 3')
-                            ->numeric()->minValue(0)->maxValue(100)
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
-
-                        FileUpload::make('file_revisi_dosen_3')
-                            ->label('File Revisi Dosen 3')
-                            ->disk('public')
-                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul-revisi'))
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(
-                                fn($record) =>
-                                in_array($record?->status_dosen_3, ['setuju', 'ditolak'])
-                            ),
-
-                        RichEditor::make('ctt_revisi_dosen_3')
-                            ->label('Catatan Revisi Dosen 3')
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'redo', 'undo'])
-                            ->columnSpanFull()
-                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
-                            ->disabled(fn() => auth()->user()?->isMurid()),
+                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid()))
+                            ->dehydrated(),
                     ]),
+                Tabs::make('Form Pengajuan Judul')
+                    ->tabs([
+                        // Tab 1: Informasi & Jadwal
+                        Tabs\Tab::make('Informasi & Jadwal')
+                            ->schema([
+                                // ── INFORMASI UTAMA ──────────────────────────────────────────
+                                Section::make('Informasi Pengajuan')
+                                    ->columns(2)
+                                    ->schema([
+                                        Select::make('id_tahun_akademik')
+                                            ->label('Tahun Akademik')
+                                            ->options(TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
+                                            ->searchable()
+                                            ->default(fn() => \App\Models\TahunAkademik::latest('id')->value('id'))
+                                            ->required()
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid()))
+                                            ->dehydrated(),
+
+                                        Select::make('id_riwayat_pendidikan')
+                                            ->label('Mahasiswa')
+                                            ->options(
+                                                RiwayatPendidikan::with('siswa')
+                                                    ->get()
+                                                    ->mapWithKeys(fn($rp) => [
+                                                        $rp->id => ($rp->siswa?->nama ?? '-') . ' (' . ($rp->nomor_induk ?? 'N/A') . ')',
+                                                    ])
+                                            )
+                                            ->searchable()
+                                            ->default(function () {
+                                                if (($user = Auth::user()) instanceof User && $user->isMurid()) {
+                                                    $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+                                                    return $siswa?->riwayatPendidikanAktif?->id ?? \App\Models\RiwayatPendidikan::where('id_siswa', $siswa?->id)->latest('id')->value('id');
+                                                }
+                                                return null;
+                                            })
+                                            ->required()
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid()))
+                                            ->dehydrated(),
+
+                                        TextInput::make('judul')
+                                            ->label('Judul Penelitian')
+                                            ->columnSpanFull()
+                                            ->maxLength(500)
+                                            ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
+
+                                        Textarea::make('abstrak')
+                                            ->label('Abstrak')
+                                            ->columnSpanFull()
+                                            ->rows(4)
+                                            ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
+
+                                        DatePicker::make('tgl_pengajuan')
+                                            ->label('Tanggal Pengajuan')
+                                            ->default(now())
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid()))
+                                            ->dehydrated(),
+
+                                    ]),
+
+                                // ── JADWAL UJIAN ───────────────────────────────────────────
+                                Section::make('Jadwal Ujian')
+                                    ->columns(2)
+                                    ->schema([
+                                        DatePicker::make('tgl_ujian')
+                                            ->label('Tanggal Sidang/Ujian')
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                        Select::make('ruangan_ujian')
+                                            ->label('Ruangan Ujian')
+                                            ->options(\App\Models\RefOption\RuangKelas::pluck('nilai', 'nilai'))
+                                            ->searchable()
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
+
+                                        DatePicker::make('tgl_acc_judul')
+                                            ->label('Tanggal ACC Judul')
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                        FileUpload::make('file')
+                                            ->label('Outline / File Judul')
+                                            ->disk('public')
+                                            ->multiple()
+                                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $record, 'ta-pengajuan-judul'))
+                                            ->acceptedFileTypes([
+                                                'application/pdf',
+                                                'application/msword',
+                                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                            ])
+                                            ->columnSpanFull()
+                                            ->openable()
+                                            ->required()
+                                            ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
+                                    ]),
+                            ]),
+
+                        // Tab 2: Bimbingan & Nilai
+                        Tabs\Tab::make('Bimbingan & Nilai')
+                            ->schema([
+                                // ── PEMBIMBING ───────────────────────────────────────────────
+                                Section::make('Dosen Pembimbing')
+                                    ->columns(3)
+                                    ->schema([
+                                        // Pembimbing 1 — admin: select bebas | dosen: tampil jika dia ada di slot ini
+                                        Select::make('id_dosen_pembimbing_1')
+                                            ->label('Pembimbing 1')
+                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->searchable()
+                                            ->visible(fn($record) => self::isVisibleForSlot($record, 1))
+                                            ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
+
+                                        // Pembimbing 2
+                                        Select::make('id_dosen_pembimbing_2')
+                                            ->label('Pembimbing 2')
+                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->searchable()
+                                            ->visible(fn($record) => self::isVisibleForSlot($record, 2))
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
+
+                                        // Pembimbing 3
+                                        Select::make('id_dosen_pembimbing_3')
+                                            ->label('Pembimbing 3')
+                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->searchable()
+                                            ->visible(fn($record) => self::isVisibleForSlot($record, 3))
+                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
+                                    ]),
+
+                                // ── PENILAIAN DOSEN ──────────────────────────────────────────
+                                // ── PENILAIAN DOSEN PEMBIMBING ──────────────────────────────────────────
+                                Section::make('Penilaian Dosen Pembimbing')
+                                    ->visible(fn($record) => ($user = Auth::user()) instanceof User && ($user->isAdmin() || ($user->isMurid() && $record !== null) || (!$user->isMurid() && (self::isVisibleForSlot($record, 1) || self::isVisibleForSlot($record, 2) || self::isVisibleForSlot($record, 3)))))
+                                    ->schema([
+                                        // Buat grid untuk menampung 3 kolom dosen
+                                        \Filament\Schemas\Components\Grid::make(1)
+                                            ->schema([
+                                                // ── SLOT DOSEN 1 ─────────────────────────────────────
+                                                \Filament\Schemas\Components\Grid::make(1) // Grid internal untuk vertical stacking
+                                                    ->visible(fn($record) => self::isVisibleForSlot($record, 1))
+                                                    ->schema([
+                                                        ToggleButtons::make('status_dosen_1')
+                                                            ->label('Status Dosen 1')
+                                                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
+                                                            ->colors([
+                                                                'pending' => 'gray',
+                                                                'setuju'  => 'success',
+                                                                'ditolak' => 'danger',
+                                                                'revisi'  => 'warning',
+                                                            ])
+                                                            ->icons([
+                                                                'pending' => 'heroicon-m-clock',
+                                                                'setuju'  => 'heroicon-m-check-circle',
+                                                                'ditolak' => 'heroicon-m-x-circle',
+                                                                'revisi'  => 'heroicon-m-arrow-path',
+                                                            ])
+                                                            ->inline()
+                                                            ->default('pending')
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        TextInput::make('nilai_dosen_1')
+                                                            ->label('Nilai')
+                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        FileUpload::make('file_revisi_dosen_1')
+                                                            ->label('File Revisi')
+                                                            ->disk('public')
+                                                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->multiple()
+                                                            ->disabled(fn($record) => in_array($record?->status_dosen_1, ['setuju', 'ditolak'])),
+
+                                                        Placeholder::make('history_dosen_1')
+                                                            ->label('Riwayat Diskusi')
+                                                            ->visible(fn($record) => $record?->ctt_revisi_dosen_1)
+                                                            ->content(fn($record) => new HtmlString("
+                                                                <div class='max-h-[250px] overflow-y-auto p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm custom-scrollbar'>
+                                                                    <div class='prose prose-sm dark:prose-invert max-w-none'>
+                                                                        {$record->ctt_revisi_dosen_1}
+                                                                    </div>
+                                                                </div>
+                                                            ")),
+
+                                                        RichEditor::make('ctt_revisi_dosen_1')
+                                                            ->label('Tambah Catatan / Balasan')
+                                                            ->fileAttachmentsDirectory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList'])
+                                                            ->placeholder('Ketik balasan atau catatan baru...')
+                                                            ->formatStateUsing(fn() => null)
+                                                            ->dehydrateStateUsing(function ($state, $record) {
+                                                                $isActuallyEmpty = !$state || trim(strip_tags($state)) === '';
+                                                                if ($isActuallyEmpty) return $record?->ctt_revisi_dosen_1;
+
+                                                                $user = Auth::user();
+                                                                if (!$user instanceof User) return $state . '<hr>' . $record?->ctt_revisi_dosen_1;
+
+                                                                $role = $user->isPengajar() ? 'Pengajar' : ($user->isMurid() ? 'Murid' : 'Admin');
+                                                                $name = $user->isPengajar() ? ($user->dosenData?->nama ?? $user->name) : ($user->isMurid() ? ($user->siswaData?->nama ?? $user->name) : $user->name);
+
+                                                                $badgeColor = match ($role) {
+                                                                    'Pengajar' => 'background: #0ea5e9; color: white;',
+                                                                    'Murid'    => 'background: #10b981; color: white;',
+                                                                    default    => 'background: #6366f1; color: white;',
+                                                                };
+
+                                                                $header = "
+                                                                    <div style='margin-bottom: 10px; padding: 10px; border-left: 4px solid #6366f1; background: rgba(99, 102, 241, 0.05); border-radius: 4px;'>
+                                                                        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 5px;'>
+                                                                            <span style='font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; {$badgeColor}'>{$role}</span>
+                                                                            <span style='font-size: 12px; font-weight: bold;'>{$name}</span>
+                                                                            <span style='font-size: 10px; color: #94a3b8;'>(" . now()->format('d/m/Y H:i') . ")</span>
+                                                                        </div>
+                                                                        <div style='font-size: 13px; line-height: 1.5;'>{$state}</div>
+                                                                    </div>
+                                                                ";
+                                                                $divider = $record?->ctt_revisi_dosen_1 ? '<hr style="margin: 15px 0; border: 0; border-top: 1px dashed #e2e8f0;">' : '';
+                                                                return $header . $divider . $record?->ctt_revisi_dosen_1;
+                                                            }),
+                                                    ]),
+
+                                                // ── SLOT DOSEN 2 ─────────────────────────────────────
+                                                \Filament\Schemas\Components\Grid::make(1)
+                                                    ->visible(fn($record) => self::isVisibleForSlot($record, 2))
+                                                    ->schema([
+                                                        // ... komponen yang sama untuk dosen 2
+                                                        ToggleButtons::make('status_dosen_2')
+                                                            ->label('Status Dosen 2')
+                                                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
+                                                            ->colors([
+                                                                'pending' => 'gray',
+                                                                'setuju'  => 'success',
+                                                                'ditolak' => 'danger',
+                                                                'revisi'  => 'warning',
+                                                            ])
+                                                            ->icons([
+                                                                'pending' => 'heroicon-m-clock',
+                                                                'setuju'  => 'heroicon-m-check-circle',
+                                                                'ditolak' => 'heroicon-m-x-circle',
+                                                                'revisi'  => 'heroicon-m-arrow-path',
+                                                            ])
+                                                            ->inline()
+                                                            ->default('pending')
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        TextInput::make('nilai_dosen_2')
+                                                            ->label('Nilai')
+                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        FileUpload::make('file_revisi_dosen_2')
+                                                            ->label('File Revisi')
+                                                            ->disk('public')
+                                                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->multiple()
+                                                            ->disabled(fn($record) => in_array($record?->status_dosen_2, ['setuju', 'ditolak'])),
+
+                                                        Placeholder::make('history_dosen_2')
+                                                            ->label('Riwayat Diskusi')
+                                                            ->visible(fn($record) => $record?->ctt_revisi_dosen_2)
+                                                            ->content(fn($record) => new HtmlString("
+                                                                <div class='max-h-[250px] overflow-y-auto p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm custom-scrollbar'>
+                                                                    <div class='prose prose-sm dark:prose-invert max-w-none'>
+                                                                        {$record->ctt_revisi_dosen_2}
+                                                                    </div>
+                                                                </div>
+                                                            ")),
+
+                                                        RichEditor::make('ctt_revisi_dosen_2')
+                                                            ->label('Tambah Catatan / Balasan')
+                                                            ->fileAttachmentsDirectory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList'])
+                                                            ->placeholder('Ketik balasan atau catatan baru...')
+                                                            ->formatStateUsing(fn() => null)
+                                                            ->dehydrateStateUsing(function ($state, $record) {
+                                                                $isActuallyEmpty = !$state || trim(strip_tags($state)) === '';
+                                                                if ($isActuallyEmpty) return $record?->ctt_revisi_dosen_2;
+
+                                                                $user = Auth::user();
+                                                                if (!$user instanceof User) return $state . '<hr>' . $record?->ctt_revisi_dosen_2;
+
+                                                                $role = $user->isPengajar() ? 'Pengajar' : ($user->isMurid() ? 'Murid' : 'Admin');
+                                                                $name = $user->isPengajar() ? ($user->dosenData?->nama ?? $user->name) : ($user->isMurid() ? ($user->siswaData?->nama ?? $user->name) : $user->name);
+
+                                                                $badgeColor = match ($role) {
+                                                                    'Pengajar' => 'background: #0ea5e9; color: white;',
+                                                                    'Murid'    => 'background: #10b981; color: white;',
+                                                                    default    => 'background: #6366f1; color: white;',
+                                                                };
+
+                                                                $header = "
+                                                                    <div style='margin-bottom: 10px; padding: 10px; border-left: 4px solid #6366f1; background: rgba(99, 102, 241, 0.05); border-radius: 4px;'>
+                                                                        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 5px;'>
+                                                                            <span style='font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; {$badgeColor}'>{$role}</span>
+                                                                            <span style='font-size: 12px; font-weight: bold;'>{$name}</span>
+                                                                            <span style='font-size: 10px; color: #94a3b8;'>(" . now()->format('d/m/Y H:i') . ")</span>
+                                                                        </div>
+                                                                        <div style='font-size: 13px; line-height: 1.5;'>{$state}</div>
+                                                                    </div>
+                                                                ";
+                                                                $divider = $record?->ctt_revisi_dosen_2 ? '<hr style="margin: 15px 0; border: 0; border-top: 1px dashed #e2e8f0;">' : '';
+                                                                return $header . $divider . $record?->ctt_revisi_dosen_2;
+                                                            }),
+                                                    ]),
+
+                                                // ── SLOT DOSEN 3 ─────────────────────────────────────
+                                                \Filament\Schemas\Components\Grid::make(1)
+                                                    ->visible(fn($record) => self::isVisibleForSlot($record, 3))
+                                                    ->schema([
+                                                        // ... komponen yang sama untuk dosen 3
+                                                        ToggleButtons::make('status_dosen_3')
+                                                            ->label('Status Dosen 3')
+                                                            ->options(['pending' => 'Pending', 'setuju' => 'Setuju', 'ditolak' => 'Ditolak', 'revisi' => 'Revisi'])
+                                                            ->colors([
+                                                                'pending' => 'gray',
+                                                                'setuju'  => 'success',
+                                                                'ditolak' => 'danger',
+                                                                'revisi'  => 'warning',
+                                                            ])
+                                                            ->icons([
+                                                                'pending' => 'heroicon-m-clock',
+                                                                'setuju'  => 'heroicon-m-check-circle',
+                                                                'ditolak' => 'heroicon-m-x-circle',
+                                                                'revisi'  => 'heroicon-m-arrow-path',
+                                                            ])
+                                                            ->inline()
+                                                            ->default('pending')
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        TextInput::make('nilai_dosen_3')
+                                                            ->label('Nilai')
+                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
+
+                                                        FileUpload::make('file_revisi_dosen_3')
+                                                            ->label('File Revisi')
+                                                            ->disk('public')
+                                                            ->directory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->multiple()
+                                                            ->disabled(fn($record) => in_array($record?->status_dosen_3, ['setuju', 'ditolak'])),
+
+                                                        Placeholder::make('history_dosen_3')
+                                                            ->label('Riwayat Diskusi')
+                                                            ->visible(fn($record) => $record?->ctt_revisi_dosen_3)
+                                                            ->content(fn($record) => new HtmlString("
+                                                                <div class='max-h-[250px] overflow-y-auto p-4 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm custom-scrollbar'>
+                                                                    <div class='prose prose-sm dark:prose-invert max-w-none'>
+                                                                        {$record->ctt_revisi_dosen_3}
+                                                                    </div>
+                                                                </div>
+                                                            ")),
+
+                                                        RichEditor::make('ctt_revisi_dosen_3')
+                                                            ->label('Tambah Catatan / Balasan')
+                                                            ->fileAttachmentsDirectory(fn($get, $record) => UploadPathHelper::uploadTaPath($get, $get, 'ta-pengajuan-judul-revisi'))
+                                                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList'])
+                                                            ->placeholder('Ketik balasan atau catatan baru...')
+                                                            ->formatStateUsing(fn() => null)
+                                                            ->dehydrateStateUsing(function ($state, $record) {
+                                                                $isActuallyEmpty = !$state || trim(strip_tags($state)) === '';
+                                                                if ($isActuallyEmpty) return $record?->ctt_revisi_dosen_3;
+
+                                                                $user = Auth::user();
+                                                                if (!$user instanceof User) return $state . '<hr>' . $record?->ctt_revisi_dosen_3;
+
+                                                                $role = $user->isPengajar() ? 'Pengajar' : ($user->isMurid() ? 'Murid' : 'Admin');
+                                                                $name = $user->isPengajar() ? ($user->dosenData?->nama ?? $user->name) : ($user->isMurid() ? ($user->siswaData?->nama ?? $user->name) : $user->name);
+
+                                                                $badgeColor = match ($role) {
+                                                                    'Pengajar' => 'background: #0ea5e9; color: white;',
+                                                                    'Murid'    => 'background: #10b981; color: white;',
+                                                                    default    => 'background: #6366f1; color: white;',
+                                                                };
+
+                                                                $header = "
+                                                                    <div style='margin-bottom: 10px; padding: 10px; border-left: 4px solid #6366f1; background: rgba(99, 102, 241, 0.05); border-radius: 4px;'>
+                                                                        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 5px;'>
+                                                                            <span style='font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; {$badgeColor}'>{$role}</span>
+                                                                            <span style='font-size: 12px; font-weight: bold;'>{$name}</span>
+                                                                            <span style='font-size: 10px; color: #94a3b8;'>(" . now()->format('d/m/Y H:i') . ")</span>
+                                                                        </div>
+                                                                        <div style='font-size: 13px; line-height: 1.5;'>{$state}</div>
+                                                                    </div>
+                                                                ";
+                                                                $divider = $record?->ctt_revisi_dosen_3 ? '<hr style="margin: 15px 0; border: 0; border-top: 1px dashed #e2e8f0;">' : '';
+                                                                return $header . $divider . $record?->ctt_revisi_dosen_3;
+                                                            }),
+                                                    ]),
+                                            ]),
+                                    ]),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -255,21 +457,29 @@ class TaPengajuanJudulForm
      */
     protected static function isVisibleForSlot($record, int $slot): bool
     {
-        $user = \Filament\Facades\Filament::auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user instanceof User) return false;
 
-        // Murid selalu lihat semua slot (agar bisa upload file revisi)
-        if ($user && $user->isMurid()) {
+        // Admin selalu lihat semua
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Admin / super_admin selalu lihat semua slot
-        if (!$user || !$user->isPengajar()) {
-            return true;
+        // Murid hanya lihat jika sudah ada record (edit mode) ATAU jika slot 1 (saat create)
+        if ($user->isMurid()) {
+            return $record !== null || $slot === 1;
         }
 
+        // Jika bukan pengajar (dan sdh cek admin/murid diatas), sembunyikan
+        if (!$user->isPengajar()) {
+            return false;
+        }
+
+        // Pengajar: jangan tampilkan jika record belum ada (mode create)
         if (!$record) return false;
 
-        $dosenId  = \App\Models\DosenData::where('user_id', $user->id)->value('id');
+        $dosenId  = $user->getDosenId();
         $fieldMap = [
             1 => $record->id_dosen_pembimbing_1,
             2 => $record->id_dosen_pembimbing_2,

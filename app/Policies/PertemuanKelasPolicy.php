@@ -37,6 +37,11 @@ class PertemuanKelasPolicy
         return $authUser->can('Delete:PertemuanKelas');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:PertemuanKelas');
+    }
+
     public function restore(AuthUser $authUser, PertemuanKelas $pertemuanKelas): bool
     {
         return $authUser->can('Restore:PertemuanKelas');

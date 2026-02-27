@@ -17,8 +17,9 @@ class TaSkripsisTable
 {
     public static function configure(Table $table): Table
     {
-        $user    = Filament::auth()->user();
-        $isPengajar = $user && $user->isPengajar();
+        $user    = auth()->user();
+        if (!$user instanceof \App\Models\User) return $table;
+        $isPengajar = $user->isPengajar();
         $dosenId = $isPengajar ? $user->getDosenId() : null;
 
         return $table
@@ -79,15 +80,25 @@ class TaSkripsisTable
                     ->sortable()
                     ->toggleable(),
 
-                BadgeColumn::make('status')
+                TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'gray'    => 'pending',
-                        'success' => 'disetujui',
-                        'danger'  => 'ditolak',
-                        'warning' => 'revisi',
-                        'info'    => 'selesai',
-                    ]),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'pending' => 'gray',
+                        'disetujui' => 'success',
+                        'ditolak' => 'danger',
+                        'revisi' => 'warning',
+                        'selesai' => 'info',
+                        default => 'gray',
+                    })
+                    ->icon(fn(string $state): string => match ($state) {
+                        'pending' => 'heroicon-m-clock',
+                        'disetujui' => 'heroicon-m-check-circle',
+                        'ditolak' => 'heroicon-m-x-circle',
+                        'revisi' => 'heroicon-m-arrow-path',
+                        'selesai' => 'heroicon-m-flag',
+                        default => 'heroicon-m-question-mark-circle',
+                    }),
 
                 TextColumn::make('nilai_rata_rata')
                     ->label('Nilai Rata-rata')
@@ -119,6 +130,7 @@ class TaSkripsisTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make()
                         ->visible(!$isPengajar)
                         ->disabled(fn() => auth()->user() && auth()->user()->isMurid()),

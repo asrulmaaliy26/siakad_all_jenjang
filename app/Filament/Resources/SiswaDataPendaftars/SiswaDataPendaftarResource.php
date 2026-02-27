@@ -59,8 +59,8 @@ class SiswaDataPendaftarResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Jika user memiliki role 'murid' dan bukan super_admin/admin
-        if ($user && $user->isMurid()) {
+        // Jika user memiliki role 'murid' atau 'pendaftar' dan bukan super_admin/admin
+        if ($user && ($user->isMurid() || $user->isPendaftar())) {
             $query->whereHas('siswa', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });

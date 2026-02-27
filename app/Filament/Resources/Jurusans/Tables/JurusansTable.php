@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Jurusans\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -19,9 +22,7 @@ class JurusansTable
                 TextColumn::make('fakultas.nama')
                     ->label('Fakultas')
                     ->sortable(),
-                TextColumn::make('jenjangPendidikan.nama')
-                    ->label('Jenjang')
-                    ->sortable(),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -34,10 +35,14 @@ class JurusansTable
             ->filters([
                 //
             ])
-            ->recordActions([
-                EditAction::make(),
+            ->actions([
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ])
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make(),

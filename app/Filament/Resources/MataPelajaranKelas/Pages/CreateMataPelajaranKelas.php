@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateMataPelajaranKelas extends CreateRecord
 {
     protected static string $resource = MataPelajaranKelasResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

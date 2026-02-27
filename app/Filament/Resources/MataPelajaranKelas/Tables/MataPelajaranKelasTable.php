@@ -16,47 +16,88 @@ class MataPelajaranKelasTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(function ($record) {
+                /** @var \App\Models\User|null $user */
+                $user = \Illuminate\Support\Facades\Auth::user();
+
+                if ($user?->isMurid() && empty($record->id_dosen_data)) {
+                    return null; // Mematikan tautan klik pada baris ini
+                }
+
+                // Gunakan default navigasi ke halaman view untuk baris yang diizinkan
+                return \App\Filament\Resources\MataPelajaranKelas\MataPelajaranKelasResource::getUrl('view', ['record' => $record]);
+            })
             ->columns([
                 TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('kelas.semester')
                     ->label('Semester')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('dosenData.nama')
                     ->label('Dosen')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('hari')
-                    ->searchable(),
-                TextColumn::make('jam'),
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('jam')
+                    ->toggleable(),
                 TextColumn::make('ruangKelas.nilai')
-                    ->label('Ruang'),
+                    ->label('Ruang')
+                    ->toggleable(),
                 TextColumn::make('jumlah')
                     ->label('Kapasitas')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 IconColumn::make('status_uts')
                     ->label('UTS')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 IconColumn::make('status_uas')
                     ->label('UAS')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                ViewAction::make(),
+                ViewAction::make()
+                    ->disabled(function ($record) {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->isMurid() && empty($record->id_dosen_data);
+                    })
+                    ->tooltip(function ($record) {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        if ($user?->isMurid() && empty($record->id_dosen_data)) {
+                            return 'Belum dapat diakses, Dosen pengajar belum ditentukan.';
+                        }
+                        return null;
+                    }),
                 EditAction::make()
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->isMurid();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make()
-                        ->disabled(fn() => auth()->user()?->isMurid()),
+                        ->disabled(function () {
+                            /** @var \App\Models\User|null $user */
+                            $user = \Illuminate\Support\Facades\Auth::user();
+                            return $user?->isMurid();
+                        }),
                 ]),
             ])
             ->headerActions([

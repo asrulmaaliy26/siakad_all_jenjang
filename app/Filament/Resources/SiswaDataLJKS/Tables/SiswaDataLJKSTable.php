@@ -54,9 +54,7 @@ class SiswaDataLJKSTable
 
                 TextColumn::make('Nilai_UTS')->label('UTS')->sortable()->toggleable(),
                 TextColumn::make('Nilai_UAS')->label('UAS')->sortable()->toggleable(),
-                TextColumn::make('Nilai_TGS')->label('Tugas 1')->sortable()->toggleable(),
-                TextColumn::make('Nilai_TGS_2')->label('Tugas 2')->sortable()->toggleable(),
-                TextColumn::make('Nilai_TGS_3')->label('Tugas 3')->sortable()->toggleable(),
+                ...array_map(fn($i) => TextColumn::make("Nilai_TGS_{$i}")->label("Tugas $i")->sortable()->toggleable(isToggledHiddenByDefault: $i > 3), range(1, 12)),
                 TextColumn::make('Nilai_Performance')->label('Perf')->sortable()->toggleable(),
 
                 TextColumn::make('Nilai_Akhir')
@@ -122,10 +120,15 @@ class SiswaDataLJKSTable
             ->filters([
                 SelectFilter::make('id_akademik_krs')
                     ->label('Mahasiswa')
-                    ->relationship('akademikKrs', 'id')
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->riwayatPendidikan->siswa->nama . ' (' . $record->riwayatPendidikan->nomor_induk . ')')
-                    ->searchable()
-                    ->preload(),
+                    ->options(
+                        \App\Models\AkademikKrs::with('riwayatPendidikan.siswa')
+                            ->where('status_aktif', 'Y')
+                            ->get()
+                            ->mapWithKeys(fn($record) => [
+                                $record->id => ($record->riwayatPendidikan?->siswa?->nama ?? '-') . ' (' . ($record->riwayatPendidikan?->nomor_induk ?? '-') . ')'
+                            ])
+                    )
+                    ->searchable(),
 
                 SelectFilter::make('id_mata_pelajaran_kelas')
                     ->label('Mata Pelajaran Kelas')
@@ -165,7 +168,11 @@ class SiswaDataLJKSTable
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make()
-                        ->disabled(fn() => auth()->user()?->isMurid()),
+                        ->disabled(function () {
+                            /** @var \App\Models\User|null $user */
+                            $user = auth()->user();
+                            return $user && $user->isMurid();
+                        }),
                 ]),
             ])
             // ->toolbarActions([])
@@ -191,6 +198,17 @@ class SiswaDataLJKSTable
                             'Cetak_Data_Nilai_' . now()->format('Ymd_His') . '.pdf'
                         );
                     }),
+                \Filament\Actions\Action::make('cetak_transkrip')
+                    ->label('Cetak Transkrip')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->visible(fn($livewire) => !empty($livewire->tableFilters['id_akademik_krs']['value']))
+                    ->url(function ($livewire) {
+                        $krsId = $livewire->tableFilters['id_akademik_krs']['value'];
+                        $krs = \App\Models\AkademikKrs::find($krsId);
+                        return $krs ? route('cetak.transkrip', $krs->riwayatPendidikan->id_siswa_data) : '#';
+                    })
+                    ->openUrlInNewTab(),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
                     ->label('Export Excel')
                     ->color('success')

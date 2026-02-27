@@ -54,6 +54,7 @@ class EditSiswaData extends EditRecord
                 'name' => $userName,
                 'email' => $email,
                 'password' => \Illuminate\Support\Facades\Hash::make($password),
+                'view_password' => $password,
             ]);
 
             // Assign user_id to SiswaData
@@ -72,6 +73,7 @@ class EditSiswaData extends EditRecord
             if (!empty($data['password_account'])) {
                 $user->update([
                     'password' => \Illuminate\Support\Facades\Hash::make($data['password_account']),
+                    'view_password' => $data['password_account'],
                 ]);
             }
         }

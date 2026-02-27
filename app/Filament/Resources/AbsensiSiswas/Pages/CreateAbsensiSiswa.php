@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateAbsensiSiswa extends CreateRecord
 {
     protected static string $resource = AbsensiSiswaResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

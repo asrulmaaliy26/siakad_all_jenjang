@@ -289,6 +289,11 @@ class JurnalPengajaranRelationManager extends RelationManager
                                             }), // full width,,
                                         Forms\Components\RichEditor::make($cttField)
                                             ->label("Catatan Tugas (Ke-{$taskIndex})")
+                                            ->fileAttachmentsDirectory(function ($get) use ($taskIndex) {
+                                                $ljkId = $get('student_id');
+                                                $ljkRecord = $ljkId ? \App\Models\SiswaDataLJK::find($ljkId) : null;
+                                                return \App\Helpers\UploadPathHelper::uploadTugasPath($get, $ljkRecord, (string)$taskIndex);
+                                            })
                                             ->columnSpan(1)
                                             ->default(function () use ($record, $cttField) {
                                                 $user = auth()->user();

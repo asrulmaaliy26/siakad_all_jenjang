@@ -7,16 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Kurikulum extends Model
 {
-    use HasFactory, \App\Traits\HasJenjangScope;
-
-    public function scopeByJenjang($query, $jenjangId)
-    {
-        return $query->whereHas('jurusan', function ($q) use ($jenjangId) {
-            $q->where('id_jenjang_pendidikan', $jenjangId);
-        });
-    }
+    use HasFactory;
 
     protected $table = 'kurikulum';
+
     protected $fillable = [
         'nama',
         'id_jurusan',
@@ -32,11 +26,6 @@ class Kurikulum extends Model
     {
         return $this->belongsTo(TahunAkademik::class, 'id_tahun_akademik');
     }
-    // public function jenjangPendidikan()
-    // {
-    //     return $this->belongsTo(JenjangPendidikan::class, 'id_jenjang_pendidikan');
-    // }
-
     public function mataPelajaranKurikulum()
     {
         return $this->hasMany(MataPelajaranKurikulum::class, 'id_kurikulum');

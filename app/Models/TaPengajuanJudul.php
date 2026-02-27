@@ -40,12 +40,16 @@ class TaPengajuanJudul extends Model
     ];
 
     protected $casts = [
-        'tgl_pengajuan'  => 'date',
-        'tgl_ujian'      => 'date',
-        'tgl_acc_judul'  => 'date',
-        'nilai_dosen_1'  => 'decimal:2',
-        'nilai_dosen_2'  => 'decimal:2',
-        'nilai_dosen_3'  => 'decimal:2',
+        'tgl_pengajuan'       => 'date',
+        'tgl_ujian'           => 'date',
+        'tgl_acc_judul'       => 'date',
+        'nilai_dosen_1'       => 'decimal:2',
+        'nilai_dosen_2'       => 'decimal:2',
+        'nilai_dosen_3'       => 'decimal:2',
+        'file'                => 'array',
+        'file_revisi_dosen_1' => 'array',
+        'file_revisi_dosen_2' => 'array',
+        'file_revisi_dosen_3' => 'array',
     ];
 
     // ── Relasi ke tahun akademik ──────────────────────────────────────────

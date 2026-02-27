@@ -47,11 +47,7 @@ class SiswaDataPendaftarsTable
                     ->sortable()
                     ->searchable(),
 
-                TextColumn::make('jurusan.jenjangPendidikan.nama')
-                    ->label('Jenjang')
-                    ->badge()
-                    ->color('primary')
-                    ->toggleable(),
+
 
                 TextColumn::make('Tgl_Daftar')
                     ->label('Tgl Daftar')
@@ -60,8 +56,8 @@ class SiswaDataPendaftarsTable
                     ->icon('heroicon-o-calendar')
                     ->iconColor('success'),
 
-                TextColumn::make('Tahun_Masuk')
-                    ->label('Tahun Masuk')
+                TextColumn::make('tahunAkademik.nama')
+                    ->label('Tahun Akademik')
                     ->badge()
                     ->color('info')
                     ->sortable(),
@@ -82,13 +78,15 @@ class SiswaDataPendaftarsTable
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                    ->disabled(fn() => Auth::user()?->isMurid() || Auth::user()?->isPendaftar()),
 
-                TextColumn::make('reff')
-                    ->label('Referral')
+
+
+                TextColumn::make('referalCode.kode')
+                    ->label('Kode Referal')
                     ->badge()
                     ->color('purple')
-                    ->icon('heroicon-o-link')
+                    ->icon('heroicon-o-gift')
                     ->default('-')
                     ->toggleable(),
 
@@ -100,18 +98,42 @@ class SiswaDataPendaftarsTable
                         'N' => '❌ Ditolak',
                     ])
                     ->sortable()
+                    ->updateStateUsing(function ($record, $state) {
+                        if ($state === 'Y') {
+                            if ($record->status_valid != 1 || $record->Status_Kelulusan_Seleksi !== 'Y') {
+                                \Filament\Notifications\Notification::make()
+                                    ->danger()
+                                    ->title('Aksi Ditolak')
+                                    ->body('Tidak dapat diterima: Pastikan Status Validasi "Sudah" dan Kelulusan Seleksi "Lulus" terlebih dahulu.')
+                                    ->send();
 
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                                // Kembalikan nilai ke asalnya agar tampilan kembali seperti semula
+                                return $record->Status_Pendaftaran;
+                            }
+                        }
 
-                SelectColumn::make('Status_Kelulusan')
-                    ->label('Status Kelulusan')
+                        $record->update(['Status_Pendaftaran' => $state]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('Status berhasil diperbarui')
+                            ->send();
+
+                        return $state;
+                    })
+                    ->disabled(fn() => Auth::user()?->isMurid() || Auth::user()?->isPendaftar()),
+
+
+                SelectColumn::make('Status_Kelulusan_Seleksi')
+                    ->label('Status Kelulusan Seleksi')
                     ->options([
                         'B' => '⏳ Proses',
                         'Y' => '🎓 Lulus',
                         'N' => '❌ Tidak Lulus',
                     ])
                     ->sortable()
-                    ->disabled(fn() => auth()->user()->isMurid()),
+                    ->disabled(fn() => Auth::user()?->isMurid() || Auth::user()?->isPendaftar()),
+
 
                 TextColumn::make('Diterima_di_Prodi')
                     ->label('Diterima di Prodi')
@@ -174,8 +196,8 @@ class SiswaDataPendaftarsTable
                     ])
                     ->multiple(),
 
-                SelectFilter::make('Status_Kelulusan')
-                    ->label('Status Kelulusan')
+                SelectFilter::make('Status_Kelulusan_Seleksi')
+                    ->label('Status Kelulusan Seleksi')
                     ->options([
                         'B' => 'Proses',
                         'Y' => 'Lulus',
@@ -189,16 +211,10 @@ class SiswaDataPendaftarsTable
                     ->preload()
                     ->multiple(),
 
-                SelectFilter::make('Tahun_Masuk')
-                    ->label('Tahun Masuk')
-                    ->options(function () {
-                        $currentYear = date('Y');
-                        $years = [];
-                        for ($i = $currentYear; $i >= $currentYear - 5; $i--) {
-                            $years[$i] = $i;
-                        }
-                        return $years;
-                    })
+                SelectFilter::make('id_tahun_akademik')
+                    ->label('Tahun Akademik')
+                    ->relationship('tahunAkademik', 'nama')
+                    ->preload()
                     ->multiple(),
             ])
             ->recordActions([

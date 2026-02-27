@@ -37,6 +37,11 @@ class FakultasPolicy
         return $authUser->can('Delete:Fakultas');
     }
 
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:Fakultas');
+    }
+
     public function restore(AuthUser $authUser, Fakultas $fakultas): bool
     {
         return $authUser->can('Restore:Fakultas');
