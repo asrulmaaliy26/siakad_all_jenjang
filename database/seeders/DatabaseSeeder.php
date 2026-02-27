@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('🧹 Membersihkan data yang ada jika diperlukan...');
 
-        $this->command->info('🚀 Memulai seeding profil default...');
+        // 0. Menjalankan Reference Option Seeder (Penting untuk data master)
+        $this->command->info('📚 Memuat data Master Reference Options...');
+        $this->call(ReferenceOptionSeeder::class);
 
         // 1. Menjalankan Shield Seeder untuk Men-generate Role & Permission (termasuk super_admin)
         $this->command->info('⚙️ Memuat dan Menulis Roles & Permissions (Shield)...');

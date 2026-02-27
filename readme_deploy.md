@@ -112,22 +112,54 @@ Aplikasi kini bisa diakses melalui URL: `http://localhost:8000` atau `http://loc
 
 ---
 
+## 🛠️ Memperbaiki Error `bootstrap/cache`
+
+Jika Anda menemui error saat akses aplikasi (blank page atau error terkait routing/config), biasanya disebabkan oleh cache yang korup atau tidak sinkron. Jalankan perintah berikut:
+
+### 1. Hapus Semua Cache
+
+```bash
+php artisan optimize:clear
+```
+
+Perintah ini akan menghapus:
+
+- Cache aplikasi (`cache:clear`)
+- Cache rute (`route:clear`)
+- Cache konfigurasi (`config:clear`)
+- Cache file view (`view:clear`)
+
+### 2. Cara Manual (Jika cara di atas gagal)
+
+Hapus secara manual semua file di dalam folder `bootstrap/cache/` **kecuali** file `.gitignore`.
+
+```powershell
+# Untuk Windows (PowerShell)
+Remove-Item -Path "bootstrap/cache/*.php" -Exclude ".gitignore"
+```
+
+---
+
 ## 🛡️ Mengelola Roles & Permissions (Filament Shield)
 
-Aplikasi ini menggunakan **Filament Shield** untuk menangani otorisasi, hak akses (permissions), dan peran (roles). Jika Anda menambah _Modul/Resource_ baru (contoh menambah Halaman Laporan, dsb) di Filament, maka Anda wajib meregenerate ulang permission-nya.
+Aplikasi ini menggunakan **Filament Shield** untuk menangani otorisasi, hak akses (permissions), dan peran (roles).
+
+### Penting: Agar Tidak "Centang Ulang" Role Murid/Pengajar
+
+Agar Anda tidak perlu menceklis ulang hak akses di menu Roles setiap kali melakukan deployment atau seeder ulang:
+
+1. Atur semua permission di Panel Admin (Menu Roles -> Edit).
+2. Setelah selesai, jalankan perintah ini di terminal:
+    ```bash
+    php artisan shield:seed
+    ```
+    Perintah ini akan memperbarui file `database/seeders/ShieldSeeder.php` dengan pilihan centang (permissions) yang baru saja Anda buat.
+3. Commit dan push file `ShieldSeeder.php` tersebut ke repository.
 
 **Perintah untuk men-generate/update seluruh permission (Otomatis deteksi module baru):**
 
 ```bash
 php artisan shield:generate --all
 ```
-
-**Untuk memperbarui / mengekspor seeder Shield Role saat ini (sebagai cadangan):**
-
-```bash
-php artisan shield:seed
-```
-
-_Seluruh hak akses dapat dikelola / dicentang penuh secara visual melalui Panel Admin -> Menu Roles._
 
 🎉 **Selesai! Aplikasi sudah siap dioperasikan dengan bersih hanya menyisakan Super Admin.**

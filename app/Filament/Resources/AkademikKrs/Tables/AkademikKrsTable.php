@@ -178,7 +178,7 @@ class AkademikKrsTable
                         'N' => 'Tidak Aktif',
                     ])
                     ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
+                    ->disabled(fn() => auth()->user()?->isMurid())
                     ->extraAttributes(function ($state) {
                         $classes = [
                             'Y' => 'status-badge status-success',
@@ -434,28 +434,32 @@ class AkademikKrsTable
                                 'Y' => 'Aktif',
                                 'N' => 'Tidak Aktif',
                             ])
-                            ->placeholder('Pilih Status Aktif...'),
+                            ->placeholder('Pilih Status Aktif...')
+                            ->disabled(fn() => auth()->user()?->isPengajar()),
                         Select::make('status_bayar')
                             ->label('Status Bayar')
                             ->options([
                                 'Y' => 'Lunas',
                                 'N' => 'Belum Lunas',
                             ])
-                            ->placeholder('Pilih Status Bayar...'),
+                            ->placeholder('Pilih Status Bayar...')
+                            ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
                         Select::make('syarat_uts')
                             ->label('Syarat UTS')
                             ->options([
                                 'Y' => 'Terpenuhi',
                                 'N' => 'Belum Terpenuhi',
                             ])
-                            ->placeholder('Pilih Syarat UTS...'),
+                            ->placeholder('Pilih Syarat UTS...')
+                            ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
                         Select::make('syarat_uas')
                             ->label('Syarat UAS')
                             ->options([
                                 'Y' => 'Terpenuhi',
                                 'N' => 'Belum Terpenuhi',
                             ])
-                            ->placeholder('Pilih Syarat UAS...'),
+                            ->placeholder('Pilih Syarat UAS...')
+                            ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar()),
                         Select::make('syarat_krs')
                             ->label('Syarat KRS')
                             ->options([
