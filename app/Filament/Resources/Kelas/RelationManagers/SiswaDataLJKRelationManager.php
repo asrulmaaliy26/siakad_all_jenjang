@@ -35,10 +35,50 @@ class SiswaDataLJKRelationManager extends RelationManager
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nama')
                     ->label('Nama Siswa')
                     ->searchable()
-                    ->sortable(),
-                TextColumn::make('akademikKrs.riwayatPendidikan.tanggal_mulai')
+                    ->sortable()
+                    ->weight('semibold'),
+
+                TextColumn::make('akademikKrs.riwayatPendidikan.nomor_induk')
+                    ->label('NIM')
+                    ->searchable(),
+
+                TextColumn::make('akademikKrs.riwayatPendidikan.programKelas.nilai')
+                    ->label('Program Kelas')
+                    ->badge()
+                    ->color('info'),
+
+                TextColumn::make('semester_now')
                     ->label('Semester')
-                    ->formatStateUsing(fn($record) => $record->akademikKrs?->riwayatPendidikan?->getSemester()),
+                    ->badge()
+                    ->color('gray')
+                    ->getStateUsing(fn($record) => 'Sem ' . ($record->akademikKrs?->riwayatPendidikan?->getSemester() ?? '-')),
+
+                TextColumn::make('mapel_progress')
+                    ->label('Mapel Diikuti')
+                    ->badge()
+                    ->getStateUsing(function ($record, RelationManager $livewire) {
+                        $kelas      = $livewire->getOwnerRecord();
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk  = SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return "{$jumlahLjk} / {$totalMapel} Mapel";
+                    })
+                    ->color(function ($record, RelationManager $livewire) {
+                        $kelas      = $livewire->getOwnerRecord();
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk  = SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return $jumlahLjk >= $totalMapel ? 'success' : 'warning';
+                    }),
+
                 TextColumn::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
                     ->searchable()
@@ -90,9 +130,10 @@ class SiswaDataLJKRelationManager extends RelationManager
                                 // Default ke filter yang sedang aktif jika ada
                                 return MataPelajaranKelas::where('id_kelas', $livewire->getOwnerRecord()->id)->first()?->id;
                             }),
-                        Select::make('ro_program_sekolah')
+                        Select::make('ro_program_kelas')
                             ->label('Filter Program Kelas')
-                            ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                            ->options(\App\Models\RefOption\ProgramKelas::aktif()->pluck('nilai', 'id'))
+                            ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->ro_program_kelas)
                             ->reactive()
                             ->afterStateUpdated(fn($set) => $set('id_akademik_krs_ids', [])),
 
@@ -103,8 +144,8 @@ class SiswaDataLJKRelationManager extends RelationManager
                                 return AkademikKrs::query()
                                     ->whereHas('riwayatPendidikan', function ($q) use ($kelas, $get) {
                                         $q->where('id_jurusan', $kelas->id_jurusan);
-                                        if ($programId = $get('ro_program_sekolah')) {
-                                            $q->where('ro_program_sekolah', $programId);
+                                        if ($programKelasId = $get('ro_program_kelas')) {
+                                            $q->where('ro_program_kelas', $programKelasId);
                                         }
                                     })
                                     ->where('status_aktif', 'Y')

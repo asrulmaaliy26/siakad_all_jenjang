@@ -27,7 +27,12 @@ class CetakController extends Controller
         })
             ->with('riwayatPendidikan.siswaData')
             ->get()
-            ->sortBy(fn($krs) => $krs->riwayatPendidikan->siswaData->nama ?? '');
+            ->sortBy([
+                ['riwayatPendidikan.siswaData.nomor_induk', 'asc'],
+                ['riwayatPendidikan.siswaData.nama', 'asc'],
+            ])
+            ->values();
+
 
         return view('cetak.absensi-kosong', compact('kelas', 'krsList'));
     }
@@ -40,7 +45,11 @@ class CetakController extends Controller
         })
             ->with('riwayatPendidikan.siswaData')
             ->get()
-            ->sortBy(fn($krs) => $krs->riwayatPendidikan->siswaData->nama ?? '');
+            ->sortBy([
+                ['riwayatPendidikan.siswaData.nomor_induk', 'asc'],
+                ['riwayatPendidikan.siswaData.nama', 'asc'],
+            ])
+            ->values();
 
         $sesiAbsensi = AbsensiSiswa::where('id_mata_pelajaran_kelas', $id)
             ->selectRaw('DATE(waktu_absen) as tanggal')

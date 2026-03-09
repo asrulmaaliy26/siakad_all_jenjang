@@ -168,7 +168,8 @@ class SiswaDataForm
                             ->relationship('tahunAkademik', 'nama')
                             ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                             ->searchable()
-                            ->disabled(fn() => auth()->user()->isMurid()),
+                            ->disabled(fn() => auth()->user()->isMurid())
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->nama} - {$record->periode}"),
 
                         // TANGGAL DAFTAR
                         DatePicker::make('Tgl_Daftar')

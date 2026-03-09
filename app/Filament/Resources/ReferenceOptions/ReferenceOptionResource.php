@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ReferenceOptionResource extends Resource
 {
@@ -21,6 +22,7 @@ class ReferenceOptionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-queue-list';
 
     protected static ?string $recordTitleAttribute = 'nama';
+    protected static string | UnitEnum | null $navigationGroup = 'Temp';
 
     public static function form(Schema $schema): Schema
     {

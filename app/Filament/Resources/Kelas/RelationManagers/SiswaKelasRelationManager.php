@@ -43,12 +43,22 @@ class SiswaKelasRelationManager extends RelationManager
             Select::make('filter_semester')
                 ->label('Semester (Filter)')
                 ->options(array_combine(range(1, 8), range(1, 8)))
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->semester)
                 ->reactive()
                 ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
 
-            Select::make('ro_program_sekolah')
+            Select::make('id_jurusan')
+                ->label('Jurusan (Filter)')
+                ->options(\App\Models\Jurusan::pluck('nama', 'id'))
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->id_jurusan)
+                ->reactive()
+                ->searchable()
+                ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
+
+            Select::make('ro_program_kelas')
                 ->label('Program Kelas (Filter)')
-                ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                ->options(\App\Models\RefOption\ProgramKelas::aktif()->pluck('nilai', 'id'))
+                ->default(fn(RelationManager $livewire) => $livewire->getOwnerRecord()->ro_program_kelas)
                 ->reactive()
                 ->afterStateUpdated(fn($set) => $set('riwayat_pendidikan_ids', [])),
 
@@ -64,14 +74,15 @@ class SiswaKelasRelationManager extends RelationManager
                 ->options(function (callable $get, RelationManager $livewire) {
                     $kelas = $livewire->getOwnerRecord();
                     $jurusanId = $get('id_jurusan') ?? $kelas->id_jurusan;
-                    $programId = $get('ro_program_sekolah');
+                    $programKelasId = $get('ro_program_kelas') ?? $kelas->ro_program_kelas;
+                    $semesterFilter = $get('filter_semester') ?? $kelas->semester;
 
                     $query = RiwayatPendidikan::query()
                         ->where('id_jurusan', $jurusanId)
-                        ->with('siswa');
+                        ->with(['siswa', 'programKelas']);
 
-                    if ($programId) {
-                        $query->where('ro_program_sekolah', $programId);
+                    if ($programKelasId) {
+                        $query->where('ro_program_kelas', $programKelasId);
                     }
 
                     // Hanya yang punya KRS aktif
@@ -79,70 +90,80 @@ class SiswaKelasRelationManager extends RelationManager
                         $q->where('status_aktif', 'Y');
                     });
 
-                    // Hanya yang belum punya LJK di kelas ini sama sekali (kecuali statusnya 'TL')
-                    $query->whereDoesntHave('akademikKrs.siswaDataLjk', function ($q) use ($kelas) {
-                        $q->whereHas('mataPelajaranKelas', function ($sub) use ($kelas) {
-                            $sub->where('id_kelas', $kelas->id);
-                        })
-                            ->where(function ($sub) {
-                                $sub->where('Status_Nilai', '!=', 'TL')
-                                    ->orWhereNull('Status_Nilai');
-                            });
-                    });
+                    // Sembunyikan mahasiswa yang sudah terdaftar SEMUA mata pelajaran di kelas ini
+                    $totalMapel = $kelas->mataPelajaranKelas()->count();
+                    if ($totalMapel > 0) {
+                        $query->whereHas('akademikKrs', function ($q) use ($kelas, $totalMapel) {
+                            $q->where('status_aktif', 'Y')
+                                ->whereRaw(
+                                    '(SELECT COUNT(*) FROM siswa_data_ljk sdl
+                                    INNER JOIN mata_pelajaran_kelas mpk ON sdl.id_mata_pelajaran_kelas = mpk.id
+                                    WHERE sdl.id_akademik_krs = akademik_krs.id
+                                    AND mpk.id_kelas = ?) < ?',
+                                    [$kelas->id, $totalMapel]
+                                );
+                        });
+                    }
 
                     $results = $query->limit(100)->get();
 
-                    if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semester);
+                    if ($semesterFilter) {
+                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semesterFilter);
                     }
 
                     return $results
                         ->take(20)
                         ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
-                            $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
+                            $item->id => ($item->siswa?->nama ?? '-') . ' (Sem ' . $item->getSemester() . ') - ' . ($item->programKelas?->nilai ?? 'No Program')
                         ])
                         ->toArray();
                 })
                 ->getSearchResultsUsing(function (string $search, callable $get, RelationManager $livewire) {
                     $kelas = $livewire->getOwnerRecord();
                     $jurusanId = $get('id_jurusan') ?? $kelas->id_jurusan;
-                    $programId = $get('ro_program_sekolah');
+                    $programKelasId = $get('ro_program_kelas') ?? $kelas->ro_program_kelas;
+                    $semesterFilter = $get('filter_semester') ?? $kelas->semester;
 
                     $query = RiwayatPendidikan::query()
                         ->where('id_jurusan', $jurusanId)
-                        ->with('siswa')
+                        ->with(['siswa', 'programKelas'])
                         ->whereHas('siswa', function ($q) use ($search) {
                             $q->where('nama', 'like', "%{$search}%");
                         });
 
-                    if ($programId) {
-                        $query->where('ro_program_sekolah', $programId);
+                    if ($programKelasId) {
+                        $query->where('ro_program_kelas', $programKelasId);
                     }
 
                     $query->whereHas('akademikKrs', function ($q) {
                         $q->where('status_aktif', 'Y');
                     });
 
-                    $query->whereDoesntHave('akademikKrs.siswaDataLjk', function ($q) use ($kelas) {
-                        $q->whereHas('mataPelajaranKelas', function ($sub) use ($kelas) {
-                            $sub->where('id_kelas', $kelas->id);
-                        })
-                            ->where(function ($sub) {
-                                $sub->where('Status_Nilai', '!=', 'TL')
-                                    ->orWhereNull('Status_Nilai');
-                            });
-                    });
+                    // Sembunyikan mahasiswa yang sudah terdaftar SEMUA mata pelajaran di kelas ini
+                    $totalMapel = $kelas->mataPelajaranKelas()->count();
+                    if ($totalMapel > 0) {
+                        $query->whereHas('akademikKrs', function ($q) use ($kelas, $totalMapel) {
+                            $q->where('status_aktif', 'Y')
+                                ->whereRaw(
+                                    '(SELECT COUNT(*) FROM siswa_data_ljk sdl
+                                    INNER JOIN mata_pelajaran_kelas mpk ON sdl.id_mata_pelajaran_kelas = mpk.id
+                                    WHERE sdl.id_akademik_krs = akademik_krs.id
+                                    AND mpk.id_kelas = ?) < ?',
+                                    [$kelas->id, $totalMapel]
+                                );
+                        });
+                    }
 
                     $results = $query->limit(100)->get();
 
-                    if ($semester = $get('filter_semester')) {
-                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semester);
+                    if ($semesterFilter) {
+                        $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semesterFilter);
                     }
 
                     return $results
                         ->take(20)
                         ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
-                            $item->id => $item->siswa?->nama . ' (Sem ' . $item->getSemester() . ')' ?? '-'
+                            $item->id => ($item->siswa?->nama ?? '-') . ' (Sem ' . $item->getSemester() . ') - ' . ($item->programKelas?->nilai ?? 'No Program')
                         ])
                         ->toArray();
                 })
@@ -162,12 +183,47 @@ class SiswaKelasRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nomor_induk')
+                    ->label('Nomor Induk')
+                    ->searchable()
+                    ->weight('semibold'),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nama')
                     ->label('Nama Siswa/Mahasiswa')
-                    ->searchable(),
-                TextColumn::make('akademikKrs.riwayatPendidikan.tanggal_mulai')
-                    ->label('Semester Saat Ini')
-                    ->formatStateUsing(fn($record) => $record->akademikKrs?->riwayatPendidikan?->getSemester()),
+                    ->searchable()
+                    ->weight('semibold'),
+
+                TextColumn::make('semester')
+                    ->label('Semester')
+                    ->badge()
+                    ->color('info')
+                    ->getStateUsing(fn($record) => $record->akademikKrs?->riwayatPendidikan?->getSemester())
+                    ->formatStateUsing(fn($state) => 'Sem ' . $state),
+
+                TextColumn::make('mapel_status')
+                    ->label('Mapel Diikuti')
+                    ->badge()
+                    ->getStateUsing(function ($record, RelationManager $livewire) {
+                        $kelas      = $livewire->getOwnerRecord();
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk  = \App\Models\SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return "{$jumlahLjk} / {$totalMapel} Mapel";
+                    })
+                    ->color(function ($record, RelationManager $livewire) {
+                        $kelas      = $livewire->getOwnerRecord();
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk  = \App\Models\SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return $jumlahLjk >= $totalMapel ? 'success' : 'warning';
+                    }),
             ])
             ->headerActions([
                 CreateAction::make()

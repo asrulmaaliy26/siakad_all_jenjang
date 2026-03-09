@@ -16,10 +16,12 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('email')
                     ->label('Email address')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable()
@@ -27,6 +29,7 @@ class UsersTable
                 TextColumn::make('roles.name')
                     ->badge()
                     ->label('Role')
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('view_password')
                     ->label('Password Asli')
@@ -36,6 +39,7 @@ class UsersTable
                         $user = auth()->user();
                         return $user ? $user->hasRole('super_admin') : false;
                     })
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()

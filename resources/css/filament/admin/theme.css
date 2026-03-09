@@ -41,3 +41,119 @@ body.fi-simple-layout .fi-simple-main {
     background: rgba(15, 23, 42, 0.85) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+/* =========================================
+   Jadwal Bentrok: animasi kedip merah
+   ========================================= */
+@keyframes blink-red {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.blink-danger {
+    animation: blink-red 1s ease-in-out infinite;
+    color: rgb(220 38 38) !important; /* red-600 */
+    font-weight: 700 !important;
+}
+
+.dark .blink-danger {
+    color: rgb(248 113 113) !important; /* red-400 dark mode */
+}
+
+@utility font-inherit {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+}
+
+@utility status-badge {
+    @apply inline-flex items-center !w-fit min-w-[max-content] max-w-none min-h-[32px] justify-between px-3 py-1.5 rounded-md text-[10px] font-extrabold border transition-all duration-200 cursor-pointer shadow-sm !ring-0 !outline-none !ring-offset-0;
+    
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    
+
+    &:focus {
+        @apply !ring-0 !outline-none !ring-offset-0;
+        box-shadow: none !important;
+    }
+}
+
+@utility status-success {
+    @apply !bg-primary-50 !text-primary-700 !border-primary-200 hover:!border-primary-400;
+    .dark & {
+        @apply !bg-primary-500/20 !text-primary-400 !border-primary-500/40 hover:!bg-primary-500/60;
+    }
+}
+
+@utility status-danger {
+    @apply !bg-rose-50 !text-rose-700 !border-rose-200 hover:!border-rose-400;
+    .dark & {
+        @apply !bg-rose-500/10 !text-rose-400 !border-rose-500/30 hover:!border-rose-500/50;
+    }
+}
+
+@utility status-warning {
+    @apply !bg-amber-50 !text-amber-700 !border-amber-200 hover:!border-amber-400;
+    .dark & {
+        @apply !bg-amber-500/10 !text-amber-400 !border-amber-500/30 hover:!border-amber-500/50;
+    }
+}
+
+@utility status-default {
+    @apply !bg-slate-100/80 !text-slate-800 !border-slate-300;
+    .dark & {
+        @apply !bg-slate-500/20 !text-slate-400 !border-slate-500/40;
+    }
+}
+
+/* Tighten global Filament Table spacing */
+.fi-ta-content table {
+    --table-cell-horizontal-padding: 0.5rem !important;
+}
+
+.fi-ta-cell {
+    @apply !px-2;
+}
+
+.fi-ta-header-cell {
+    @apply !px-2 text-[11px] uppercase tracking-tighter;
+}
+
+.status-badge option {
+    @apply font-sans font-medium text-xs;
+    background-color: white !important;
+    color: #1e293b !important;
+}
+
+.dark .status-badge option {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+}
+
+/* Indicator colors in dropdown */
+.status-badge option[value="Y"] { color: #119605 !important; }
+.status-badge option[value="N"] { color: #e11d48 !important; }
+
+/* Global Fix for Filament fighting */
+.fi-ta-select select.status-badge {
+    @apply !shadow-none !ring-0 !h-auto !py-1 !min-w-[max-content];
+    background-image: none !important;
+    appearance: none !important;
+}
+
+.fi-ta-select {
+    @apply !overflow-visible;
+}

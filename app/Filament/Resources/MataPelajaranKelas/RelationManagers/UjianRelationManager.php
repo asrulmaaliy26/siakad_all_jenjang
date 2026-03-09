@@ -106,6 +106,34 @@ class UjianRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('cekal_kuliah')
+                    ->label('Status Cekal')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => $state === 'Y' ? 'Dicekal' : ($state === 'N' ? 'Aman' : 'Belum Diset'))
+                    ->color(fn($state) => $state === 'Y' ? 'danger' : 'success')
+                    ->visible(fn() => ! auth()->user()?->isMurid())
+                    ->action(
+                        Action::make('edit_cekal_col')
+                            ->modalHeading('Ubah Status Cekal')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('cekal_kuliah')
+                                    ->label('Status Cekal Ujian')
+                                    ->options([
+                                        'Y' => '🔴 Dicekal (Blokir Ujian)',
+                                        'N' => '🟢 Aman (Boleh Ujian)',
+                                    ])
+                                    ->default(fn(SiswaDataLJK $record) => $record->cekal_kuliah ?? 'N')
+                                    ->required(),
+                            ])
+                            ->action(function (SiswaDataLJK $record, array $data): void {
+                                $record->update(['cekal_kuliah' => $data['cekal_kuliah']]);
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Status cekal berhasil diperbarui')
+                                    ->success()
+                                    ->send();
+                            })
+                    ),
+
                 // Kolom LJK UTS (gabung dengan ctt_uts)
                 TextColumn::make('ctt_uts')
                     ->label('LJK UTS')
@@ -181,6 +209,28 @@ class UjianRelationManager extends RelationManager
             })
             ->headerActions([])
             ->actions([
+                Action::make('edit_cekal')
+                    ->label('Ubah Cekal')
+                    ->icon('heroicon-o-shield-exclamation')
+                    ->color('warning')
+                    ->visible(fn() => ! auth()->user()?->isMurid())
+                    ->form([
+                        \Filament\Forms\Components\Select::make('cekal_kuliah')
+                            ->label('Status Cekal Ujian')
+                            ->options([
+                                'Y' => '🔴 Dicekal (Blokir Ujian)',
+                                'N' => '🟢 Aman (Boleh Ujian)',
+                            ])
+                            ->default(fn(SiswaDataLJK $record) => $record->cekal_kuliah ?? 'N')
+                            ->required(),
+                    ])
+                    ->action(function (SiswaDataLJK $record, array $data): void {
+                        $record->update(['cekal_kuliah' => $data['cekal_kuliah']]);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Status cekal berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    }),
                 EditAction::make()
                     ->label('Upload')
                     ->visible(function (SiswaDataLJK $record) {

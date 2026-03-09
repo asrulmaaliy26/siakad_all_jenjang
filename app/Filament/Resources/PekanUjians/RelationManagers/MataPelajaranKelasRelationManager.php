@@ -188,6 +188,15 @@ class MataPelajaranKelasRelationManager extends RelationManager
                                 return false;
                             }
 
+                            // Cek status cekal dari tabel LJK
+                            $siswaLjk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
+                                ->whereHas('akademikKrs.riwayatPendidikan', fn($q) => $q->where('id_siswa_data', $siswa->id))
+                                ->first();
+
+                            if ($siswaLjk && $siswaLjk->cekal_kuliah === 'Y') {
+                                return false; // Disembunyikan karena terkena cekal
+                            }
+
                             // Ambil AkademikKrs murid ini yang terhubung ke MataPelajaranKelas ini
                             $krs = \App\Models\AkademikKrs::whereHas(
                                 'siswaDataLjk',

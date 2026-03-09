@@ -38,6 +38,7 @@ class AkademikKrsTable
                     ->sortable()
                     ->weight('semibold')
                     ->color('primary')
+                    ->size('sm')
                     ->toggleable(),
 
                 TextColumn::make('riwayatPendidikan.nomor_induk')
@@ -50,12 +51,14 @@ class AkademikKrsTable
                     ->copyMessageDuration(1500)
                     ->icon('heroicon-o-clipboard')
                     ->iconPosition('after')
+                    ->size('sm')
                     ->toggleable(),
 
                 TextColumn::make('riwayatPendidikan.waliDosen.nama')
                     ->label('Wali Dosen')
                     ->searchable()
                     ->sortable()
+                    ->size('sm')
                     ->toggleable()
                     ->visible(function () {
                         /** @var \App\Models\User $user */
@@ -87,10 +90,13 @@ class AkademikKrsTable
 
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
-                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : $record->kode_tahun)
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik
+                        ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}"
+                        : '-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
+                    ->size('sm')
                     ->toggleable(),
 
                 // Status Bayar dengan SelectColumn yang mendukung dark mode
@@ -341,10 +347,23 @@ class AkademikKrsTable
                     ->preload()
                     ->native(false),
 
-                SelectFilter::make('kode_tahun')
+                SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->options(fn() => \App\Models\Jurusan::pluck('nama', 'id')->toArray())
+                    ->query(function ($query, array $data) {
+                        if (empty($data['value'])) return;
+                        $query->whereHas('riwayatPendidikan', function ($q) use ($data) {
+                            $q->where('id_jurusan', $data['value']);
+                        });
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+
+                SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"])->toArray())
-                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
+                    ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable()
                     ->native(false),
 
@@ -362,6 +381,20 @@ class AkademikKrsTable
                         'Y' => 'Aktif',
                         'N' => 'Tidak Aktif',
                     ])
+                    ->native(false),
+
+                SelectFilter::make('id_wali_dosen')
+                    ->label('Wali Dosen')
+                    ->options(fn() => \App\Models\DosenData::pluck('nama', 'id')->toArray())
+                    ->query(function ($query, array $data) {
+                        if (empty($data['value'])) return;
+                        $query->whereHas('riwayatPendidikan', function ($q) use ($data) {
+                            $q->where('id_wali_dosen', $data['value']);
+                        });
+                    })
+                    ->default(fn() => auth()->user()?->getDosenId())
+                    ->searchable()
+                    ->preload()
                     ->native(false),
             ])
             ->headerActions([])
@@ -563,17 +596,15 @@ class AkademikKrsTable
                     ->modalHeading('Grup Diskusi Pembimbingan')
                     ->modalContent(function () {
                         $user = \Illuminate\Support\Facades\Auth::user();
-                        $dosenId = null;
+                        $dosenId = $user?->getDosenId();
 
-                        if ($user?->isPengajar()) {
-                            $dosenId = $user->getDosenId();
-                        } elseif ($user?->isMurid()) {
+                        if (!$dosenId && $user?->isMurid()) {
                             // Ambil dosen wali dari riwayat pendidikan terbaru
                             $dosenId = $user->siswaData?->riwayatPendidikan()
                                 ->whereNotNull('id_wali_dosen')
                                 ->orderBy('id', 'desc')
                                 ->first()?->id_wali_dosen;
-                        } elseif ($user?->hasRole('super_admin')) {
+                        } elseif (!$dosenId && $user?->hasRole('super_admin')) {
                             $dosenId = 'admin_select'; // Flag for livewire component
                         }
 

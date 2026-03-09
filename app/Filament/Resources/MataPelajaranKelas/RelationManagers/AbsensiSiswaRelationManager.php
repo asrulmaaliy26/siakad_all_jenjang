@@ -11,6 +11,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -42,6 +43,9 @@ class AbsensiSiswaRelationManager extends RelationManager
                     ->orderBy('waktu_absen', 'desc')
             )
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex(),
                 TextColumn::make('krs.riwayatPendidikan.siswaData.nama')
                     ->label('Nama Siswa')
                     ->searchable()
@@ -267,6 +271,7 @@ class AbsensiSiswaRelationManager extends RelationManager
                             LEFT JOIN dosen_data dd ON mpk.id_dosen_data = dd.id
                             WHERE mpk.id = ?
                             GROUP BY sd.id, sd.nama, sd.nomor_induk, mp.nama, mp.bobot, dd.nama, mpk.hari, mpk.jam, mpk.tanggal
+                            ORDER BY sd.nomor_induk ASC, sd.nama ASC
                         ", [$record->id]);
 
                         return view('filament.resources.mata-pelajaran-kelas.rekap-absensi', [
@@ -277,6 +282,49 @@ class AbsensiSiswaRelationManager extends RelationManager
                     ->modalWidth('7xl')
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false),
+                Action::make('atur_kosma')
+                    ->label('Atur Kosma')
+                    ->icon('heroicon-o-user-group')
+                    ->color('warning')
+                    ->modalHeading('Pengaturan Kosma Kelas')
+                    ->modalDescription('Pilih mahasiswa untuk menjadi Kosma (Ketua Kelas). Kosma dapat membantu mengisi absensi khusus untuk kelas ini.')
+                    ->form([
+                        Select::make('id_kosma')
+                            ->label('Pilih Mahasiswa')
+                            ->options(function ($livewire) {
+                                $record = $livewire->getOwnerRecord();
+                                return AkademikKrs::whereHas('siswaDataLjk', function ($query) use ($record) {
+                                    $query->where('id_mata_pelajaran_kelas', $record->id);
+                                })
+                                    ->with('riwayatPendidikan.siswaData')
+                                    ->get()
+                                    ->mapWithKeys(function ($krs) {
+                                        $siswa = $krs->riwayatPendidikan->siswaData;
+                                        if (!$siswa) return [];
+                                        return [$siswa->id => ($siswa->nama ?? 'Tanpa Nama') . " ({$siswa->nomor_induk})"];
+                                    });
+                            })
+                            ->default(fn($livewire) => $livewire->getOwnerRecord()->id_kosma)
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $livewire) {
+                        $record = $livewire->getOwnerRecord();
+                        $record->update(['id_kosma' => $data['id_kosma']]);
+
+                        $siswa = \App\Models\SiswaData::find($data['id_kosma']);
+                        if ($siswa && $siswa->user) {
+                            \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'kosma', 'guard_name' => 'web']);
+                            $siswa->user->assignRole('kosma');
+                        }
+
+                        Notification::make()
+                            ->title('Kosma Berhasil Ditetapkan')
+                            ->body(($siswa->nama ?? 'Siswa') . ' sekarang dapat membantu mengisi absensi untuk kelas ini.')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn() => !auth()->user()?->isMurid()),
                 Action::make('create_session')
                     ->label('Buat Sesi Absensi')
                     ->form(function ($livewire) {
@@ -285,7 +333,12 @@ class AbsensiSiswaRelationManager extends RelationManager
                             $query->where('id_mata_pelajaran_kelas', $record->id);
                         })
                             ->with('riwayatPendidikan.siswaData')
-                            ->get();
+                            ->get()
+                            ->sortBy([
+                                ['riwayatPendidikan.siswaData.nomor_induk', 'asc'],
+                                ['riwayatPendidikan.siswaData.nama', 'asc'],
+                            ])
+                            ->values();
 
                         return [
                             DateTimePicker::make('waktu_absen')
@@ -298,12 +351,16 @@ class AbsensiSiswaRelationManager extends RelationManager
                                 ->label('Daftar Mahasiswa')
                                 ->schema([
                                     Hidden::make('id_krs'),
-                                    TextInput::make('nama')
-                                        ->hiddenLabel()
+                                    TextInput::make('no')
+                                        ->label('No')
                                         ->disabled()
-                                        ->columnSpan(3),
+                                        ->columnSpan(1),
+                                    TextInput::make('nama')
+                                        ->label('Nama Mahasiswa')
+                                        ->disabled()
+                                        ->columnSpan(5),
                                     Select::make('status')
-                                        ->hiddenLabel()
+                                        ->label('Status')
                                         ->options([
                                             'Hadir' => 'Hadir',
                                             'Izin' => 'Izin',
@@ -314,16 +371,17 @@ class AbsensiSiswaRelationManager extends RelationManager
                                         ->required()
                                         ->selectablePlaceholder(false)
                                         ->native(false)
-                                        ->columnSpan(1),
+                                        ->columnSpan(2),
                                 ])
-                                ->columns(4)
+                                ->columns(8)
                                 ->addable(false)
                                 ->deletable(false)
                                 ->reorderable(false)
-                                ->columnSpan(2)
+                                ->columnSpanFull()
                                 ->default(
-                                    $krsList->map(function ($krs) {
+                                    $krsList->map(function ($krs, $index) {
                                         return [
+                                            'no' => $index + 1,
                                             'id_krs' => $krs->id,
                                             'nama' => $krs->riwayatPendidikan->siswaData->nama ?? '-',
                                             'status' => 'Hadir',
@@ -349,10 +407,17 @@ class AbsensiSiswaRelationManager extends RelationManager
                             ->success()
                             ->send();
                     })
-                    ->disabled(function () {
+                    ->disabled(function ($livewire) {
                         /** @var \App\Models\User $user */
                         $user = auth()->user();
-                        return $user && $user->isMurid();
+                        if (!$user) return true;
+
+                        // Jika murid tapi terdaftar sebagai kosma di KELAS INI, maka diperbolehkan
+                        if ($user->isMurid() && $user->getSiswaId() == $livewire->getOwnerRecord()->id_kosma) {
+                            return false;
+                        }
+
+                        return $user->isMurid();
                     }),
             ])
             ->actions([
@@ -372,12 +437,45 @@ class AbsensiSiswaRelationManager extends RelationManager
                             ])
                             ->required()
                             ->native(false),
-                    ]),
-                DeleteAction::make(),
+                    ])
+                    ->disabled(function ($livewire) {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        if (!$user) return true;
+
+                        if ($user->isMurid() && $user->getSiswaId() == $livewire->getOwnerRecord()->id_kosma) {
+                            return false;
+                        }
+
+                        return $user->isMurid();
+                    }),
+                DeleteAction::make()
+                    ->disabled(function ($livewire) {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        if (!$user) return true;
+
+                        if ($user->isMurid() && $user->getSiswaId() == $livewire->getOwnerRecord()->id_kosma) {
+                            return false;
+                        }
+
+                        return $user->isMurid();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->disabled(function ($livewire) {
+                            /** @var \App\Models\User $user */
+                            $user = auth()->user();
+                            if (!$user) return true;
+
+                            if ($user->isMurid() && $user->getSiswaId() == $livewire->getOwnerRecord()->id_kosma) {
+                                return false;
+                            }
+
+                            return $user->isMurid();
+                        }),
                 ]),
             ])
             ->defaultSort('waktu_absen', 'desc')

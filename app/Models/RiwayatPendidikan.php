@@ -9,6 +9,7 @@ use App\Models\SiswaData;
 use App\Models\Jurusan;
 use App\Models\AkademikKrs;
 use App\Models\RefOption\ProgramSekolah;
+use App\Models\RefOption\ProgramKelas;
 use App\Models\RefOption\JenisPendaftaran;
 use App\Models\RefOption\JenisKeluar;
 
@@ -40,6 +41,7 @@ class RiwayatPendidikan extends Model
         // 'id_jenjang_pendidikan', // Derived from Jurusan
         'id_jurusan',
         'ro_program_sekolah',
+        'ro_program_kelas',
         'nomor_induk',
         'ro_status_siswa',
         'id_tahun_akademik',
@@ -119,6 +121,11 @@ class RiwayatPendidikan extends Model
         return $this->belongsTo(ProgramSekolah::class, 'ro_program_sekolah');
     }
 
+    public function programKelas()
+    {
+        return $this->belongsTo(ProgramKelas::class, 'ro_program_kelas');
+    }
+
     public function jenisDaftar()
     {
         return $this->belongsTo(JenisPendaftaran::class, 'ro_jns_daftar');
@@ -156,14 +163,13 @@ class RiwayatPendidikan extends Model
             get: function () {
                 if ($this->tahunAkademik) {
                     $nama = $this->tahunAkademik->nama;
-                    $periode = $this->tahunAkademik->periode;
                     if (str_contains($nama, '/')) {
                         // Hilangkan suffix periode jika ada, misalnya "2024/2025 Genap" -> "2024/2025"
                         $namaClean = explode(' ', $nama)[0];
                         $parts = explode('/', $namaClean);
-                        return strtolower($periode) === 'genap' ? $parts[1] : $parts[0];
+                        return $parts[0]; // Selalu ambil tahun pertama (e.g. 2024/2025 -> 2024)
                     }
-                    // Jika tidak ada garis miring, hilangkan saja periodenya
+                    // Jika tidak ada garis miring, ambil saja bagian pertama
                     return explode(' ', $nama)[0];
                 }
                 return null;
@@ -173,6 +179,17 @@ class RiwayatPendidikan extends Model
 
     /**
      * Centralized Semester Calculation Logic
+     *
+     * Semester dihitung berdasarkan PERIODE AKADEMIK 6-bulanan:
+     *   - Jan–Jun tahun Y  = Periode Genap  (indeks: Y*2 + 0)
+     *   - Jul–Des tahun Y  = Periode Ganjil (indeks: Y*2 + 1)
+     *
+     * Contoh (referensi = Feb 2026 / periode Jan–Jun 2026):
+     *   - Masuk Jan–Jun 2026 → Semester 1
+     *   - Masuk Jul–Des 2025 → Semester 2
+     *   - Masuk Jan–Jun 2025 → Semester 3
+     *   - Masuk Jul–Des 2024 → Semester 4
+     *
      * @param mixed $date Reference date (optional, defaults to now)
      * @return int|null
      */
@@ -181,27 +198,16 @@ class RiwayatPendidikan extends Model
         if (!$this->tanggal_mulai) return null;
 
         $startDate = \Carbon\Carbon::parse($this->tanggal_mulai);
-        $refDate = $date ? \Carbon\Carbon::parse($date) : now();
+        $refDate   = $date ? \Carbon\Carbon::parse($date) : now();
 
-        // Jika tanggal referensi sebelum tanggal mulai, tetap semester 1
-        if ($refDate->lessThan($startDate)) return 1;
+        // Hitung indeks periode untuk masing-masing tanggal
+        // Jan–Jun = half 0, Jul–Des = half 1
+        $startPeriod = $startDate->year * 2 + ($startDate->month <= 6 ? 0 : 1);
+        $refPeriod   = $refDate->year   * 2 + ($refDate->month   <= 6 ? 0 : 1);
 
-        // Logika Semester Akademik:
-        // Ganjil: Juli - Desember (Bulan 7-12) -> +1 semester
-        // Genap: Januari - Juni (Bulan 1-6) -> +2 semester
-        // Semester dihitung dari selisih tahun akademik
+        $semester = ($refPeriod - $startPeriod) + 1;
 
-        // $isGenap = $refDate->month <= 6;
-        // $academicYear = $isGenap ? $refDate->year - 1 : $refDate->year;
-        // $startAcademicYear = $startDate->month <= 6 ? $startDate->year - 1 : $startDate->year;
-
-        // $yearsDiff = $academicYear - $startAcademicYear;
-        // $semester = ($yearsDiff * 2) + ($isGenap ? 2 : 1);
-
-        // return max(1, $semester);
-
-        $diffInMonths = $startDate->diffInMonths($refDate);
-        return (int) floor($diffInMonths / 6) + 1;
+        return max(1, $semester);
     }
 
     /**

@@ -19,6 +19,21 @@ class MataPelajaranKelasDistribusiResource extends Resource
 {
     protected static ?string $model = MataPelajaranKelasDistribusi::class;
 
+    public static function canViewAny(): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if (!$user) return false;
+
+        // Jangan izinkan Murid atau siapapun dengan role 'kosma' mengakses menu ini
+        // Meskipun role kosma belum dibuat atau belum ada di Spatie, kita amankan kodenya.
+        if ($user->hasRole('murid') || $user->hasRole('kosma')) {
+            return false;
+        }
+
+        return parent::canViewAny();
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';
 
     protected static ?string $recordTitleAttribute = 'nama';

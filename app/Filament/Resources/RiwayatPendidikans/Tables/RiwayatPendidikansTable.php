@@ -13,8 +13,11 @@ use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\BulkAction;
 use App\Models\DosenData;
+use App\Models\RefOption\StatusSiswa;
+use App\Models\RefOption\ProgramKelas;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Forms\Components\Select;
+use Illuminate\Database\Eloquent\Builder;
 
 class RiwayatPendidikansTable
 {
@@ -64,6 +67,9 @@ class RiwayatPendidikansTable
                     })
                     ->onColor('success')
                     ->offColor('danger'),
+                TextColumn::make('programKelas.nilai')
+                    ->label('Program Kelas')
+                    ->sortable(),
                 TextColumn::make('tanggal_selesai')
                     ->date()
                     ->sortable(),
@@ -77,6 +83,30 @@ class RiwayatPendidikansTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('angkatan')
+                    ->label('Angkatan')
+                    ->options(fn() => \App\Models\TahunAkademik::query()
+                        ->select('nama')
+                        ->get()
+                        ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                        ->unique()
+                        ->sortDesc()
+                        ->mapWithKeys(fn($y) => [$y => $y])
+                        ->toArray())
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['value'])) return $query;
+                        return $query->whereHas('tahunAkademik', function ($q) use ($data) {
+                            $q->where('nama', 'like', $data['value'] . '/%');
+                        });
+                    })
+                    ->default(
+                        fn() => \App\Models\TahunAkademik::query()
+                            ->select('nama')
+                            ->get()
+                            ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                            ->unique()
+                            ->max()
+                    ),
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
                     ->relationship('jurusan', 'nama'),
@@ -104,6 +134,51 @@ class RiwayatPendidikansTable
                             ]);
                         })
                         ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('set_status_siswa')
+                        ->label('Set Status Siswa')
+                        ->icon('heroicon-o-identification')
+                        ->color('warning')
+                        ->form([
+                            Select::make('ro_status_siswa')
+                                ->label('Status Siswa')
+                                ->options(
+                                    StatusSiswa::aktif()
+                                        ->pluck('nilai', 'id')
+                                )
+                                ->placeholder('Pilih Status Siswa...')
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $records->each->update([
+                                'ro_status_siswa' => $data['ro_status_siswa'],
+                            ]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('set_program_kelas')
+                        ->label('Set Program Kelas')
+                        ->icon('heroicon-o-academic-cap')
+                        ->color('success')
+                        ->form([
+                            Select::make('ro_program_kelas')
+                                ->label('Program Kelas')
+                                ->options(
+                                    ProgramKelas::aktif()
+                                        ->pluck('nilai', 'id')
+                                )
+                                ->placeholder('Pilih Program Kelas...')
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $records->each->update([
+                                'ro_program_kelas' => $data['ro_program_kelas'],
+                            ]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                     DeleteBulkAction::make(),
                 ]),

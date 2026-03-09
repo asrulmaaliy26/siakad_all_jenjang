@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\MataPelajaranKelasDistribusis\Schemas;
 
-use App\Models\RefOption\Hari;
+use App\Models\DosenData;
+use App\Models\MataPelajaranKelasDistribusi;
 use App\Models\RefOption\PelaksanaanKelas;
 use App\Models\RefOption\RuangKelas;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,80 +21,84 @@ class MataPelajaranKelasDistribusiForm
         return $schema
             ->components([
 
-                Select::make('id_mata_pelajaran_kurikulum')
-                    ->label('Mata Pelajaran (Kurikulum)')
-                    ->relationship(
-                        'mataPelajaranKurikulum.mataPelajaranMaster',
-                        'nama'
-                    )
-                    ->searchable()
-                    ->preload(),
+                // ── Informasi (read-only) ──────────────────────────────
+                Section::make('Informasi Mata Pelajaran')
+                    ->columns(2)
+                    ->schema([
+                        Placeholder::make('mata_pelajaran_label')
+                            ->label('Mata Pelajaran')
+                            ->content(fn($record) => $record?->mataPelajaranKurikulum?->mataPelajaranMaster?->nama ?? '—')
+                            ->columnSpanFull(),
 
-                Select::make('id_kelas')
-                    ->label('Kelas')
-                    ->relationship('kelas', 'id')
-                    ->getOptionLabelFromRecordUsing(
-                        fn($record) =>
-                        $record->id . ' - ' . optional($record->programKelas)->nilai . ' - ' . optional($record->tahunAkademik)->nama
-                    )
-                    // ->getOptionLabelFromRecordUsing(
-                    //     fn($record) =>
-                    //     $record->programKelas->nilai ?? '—'
-                    // )
-                    ->searchable()
-                    ->preload(),
+                        Placeholder::make('kelas_label')
+                            ->label('Kelas')
+                            ->content(fn($record) => $record
+                                ? ($record->kelas?->programKelas?->nilai ?? '—')
+                                . ' — Smt ' . ($record->kelas?->semester ?? '?')
+                                . ' — ' . ($record->kelas?->tahunAkademik?->nama ?? '?')
+                                . ' — ' . ($record->kelas?->jurusan?->nama ?? '?')
+                                : '—'),
+                    ]),
 
-                Select::make('id_dosen_data')
-                    ->label('Dosen')
-                    ->relationship('dosen', 'nama')
-                    ->searchable()
-                    ->preload(),
+                // ── Data yang bisa diedit ──────────────────────────────
+                Section::make('Pengajar & Ruang')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('id_dosen_data')
+                            ->label('Dosen Pengajar')
+                            ->options(fn() => DosenData::orderBy('nama')->pluck('nama', 'id')->toArray())
+                            ->default(fn() => auth()->user()->getDosenId())
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
 
-                // Select::make('id_pengawas')
-                //     ->label('Pengawas')
-                //     ->relationship('pengawas', 'nama')
-                //     ->searchable()
-                //     ->preload(),
+                        Select::make('ro_ruang_kelas')
+                            ->label('Ruang Kelas')
+                            ->options(fn() => RuangKelas::orderBy('nilai')->pluck('nilai', 'id')->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
 
-                Select::make('ro_ruang_kelas')
-                    ->label('Ruang Kelas')
-                    ->options(
-                        RuangKelas::query()->pluck('nilai', 'id')
-                    )
-                    ->searchable()
-                    ->preload(),
+                        Select::make('ro_pelaksanaan_kelas')
+                            ->label('Pelaksanaan Kelas')
+                            ->options(fn() => PelaksanaanKelas::orderBy('nilai')->pluck('nilai', 'id')->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
 
-                Select::make('ro_pelaksanaan_kelas')
-                    ->label('Pelaksanaan Kelas')
-                    ->options(
-                        PelaksanaanKelas::query()->pluck('nilai', 'id')
-                    )
-                    ->searchable(),
+                        TextInput::make('jumlah')
+                            ->label('Jumlah Peserta')
+                            ->numeric()
+                            ->nullable(),
+                    ]),
 
-                // TextInput::make('jumlah')
-                //     ->label('Jumlah Peserta')
-                //     ->numeric(),
+                Section::make('Jadwal')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('hari')
+                            ->label('Hari')
+                            ->options([
+                                'Senin'  => 'Senin',
+                                'Selasa' => 'Selasa',
+                                'Rabu'   => 'Rabu',
+                                'Kamis'  => 'Kamis',
+                                'Jumat'  => 'Jumat',
+                                'Sabtu'  => 'Sabtu',
+                                'Minggu' => 'Minggu',
+                            ])
+                            ->nullable(),
 
-                // TextInput::make('hari')
-                //     ->label('Hari'),
-                Select::make('hari')
-                    ->label('hari')
-                    ->options(
-                        Hari::query()->pluck('nilai', 'nilai') // Tetap nilai karena kolom hari di DB adalah varchar
-                    )
-                    ->searchable(),
+                        TextInput::make('jam')
+                            ->label('Jam')
+                            ->placeholder('10.00-11.40'),
 
-                DatePicker::make('tanggal')
-                    ->label('Tanggal'),
-
-                TextInput::make('jam')
-                    ->label('Jam')
-                    ->placeholder('08:00 - 09:40'),
+                        DatePicker::make('tanggal')
+                            ->label('Tanggal Mulai'),
+                    ]),
 
                 Section::make('UTS & UAS')
                     ->columns(2)
                     ->schema([
-
                         DatePicker::make('tgl_uts')
                             ->label('Tanggal UTS'),
 
@@ -119,27 +125,22 @@ class MataPelajaranKelasDistribusiForm
 
                         Select::make('ruang_uts')
                             ->label('Ruang UTS')
-                            // ->relationship('ruangKelas', 'nilai')
-                            ->options(
-                                RuangKelas::query()->pluck('nilai', 'nilai')
-                            )
+                            ->options(fn() => RuangKelas::orderBy('nilai')->pluck('nilai', 'nilai')->toArray())
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->nullable(),
 
                         Select::make('ruang_uas')
                             ->label('Ruang UAS')
-                            // ->relationship('ruangKelas', 'nilai')
-                            ->options(
-                                RuangKelas::query()->pluck('nilai', 'nilai')
-                            )
+                            ->options(fn() => RuangKelas::orderBy('nilai')->pluck('nilai', 'nilai')->toArray())
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->nullable(),
                     ]),
 
                 Section::make('Kelas Online')
                     ->columns(2)
                     ->schema([
-
                         TextInput::make('link_kelas')
                             ->label('Link Kelas')
                             ->url()
@@ -148,13 +149,8 @@ class MataPelajaranKelasDistribusiForm
 
                         TextInput::make('passcode')
                             ->label('Passcode')
-                            ->password()
                             ->columnSpan(1),
                     ]),
-                // Select::make('ro_ruang_kelas')
-                //     ->label('Ruang Kelas')
-                //     ->options(RuangKelas::pluck('nilai', 'id'))
-                //     ->searchable(),
             ]);
     }
 }

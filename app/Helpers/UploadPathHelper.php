@@ -270,7 +270,7 @@ class UploadPathHelper
         if ($record instanceof SiswaDataLJK) {
             $tahunAkademik = $record->mataPelajaranKelas?->kelas?->tahunAkademik;
         } elseif ($record instanceof AkademikKrs) {
-            $tahunAkademik = $record->tahunAkademik ?? $record->kode_tahun;
+            $tahunAkademik = $record->tahunAkademik;
         } elseif ($record instanceof MataPelajaranKelas) {
             $tahunAkademik = $record->kelas?->tahunAkademik;
         } elseif ($get) {
@@ -280,8 +280,8 @@ class UploadPathHelper
             } elseif ($kelasId = $get('id_kelas')) {
                 $kelas = Kelas::find($kelasId);
                 $tahunAkademik = $kelas?->tahunAkademik;
-            } elseif ($kodeTahun = $get('kode_tahun')) {
-                $tahunAkademik = TahunAkademik::where('nama', $kodeTahun)->first() ?? $kodeTahun;
+            } elseif ($tahunId = $get('id_tahun_akademik')) {
+                $tahunAkademik = TahunAkademik::find($tahunId);
             }
         }
 

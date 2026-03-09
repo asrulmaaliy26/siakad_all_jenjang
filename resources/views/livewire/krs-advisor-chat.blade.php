@@ -66,11 +66,16 @@
         </div>
         @else
         {{-- Messages Area with Modern Scrollbar --}}
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#f8fafc] dark:bg-transparent" style="scroll-behavior: smooth;">
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#f8fafc] dark:bg-transparent" style="scroll-behavior: auto;">
+            {{-- Infinite Scroll Trigger --}}
+            <div id="load-more-trigger" class="flex justify-center py-4">
+                <div wire:loading wire:target="loadMore" class="w-6 h-6 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
+            </div>
+
             @forelse($messages ?? [] as $msg)
             @php
             /** @var \App\Models\User|null $msgUser */
-            $msgUser = $msg->user;
+            $msgUser = $msg->user ?? null;
             $isSuperAdmin = $msgUser ? $msgUser->hasRole('super_admin') : false;
             $isDosenReal = $msgUser ? $msgUser->hasRole('pengajar') : false;
             $isDosenView = $isDosenReal || $isSuperAdmin;
@@ -101,12 +106,12 @@
                         <span class="text-[10px] font-black uppercase tracking-widest {{ $isDosenView ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400' }}">
                             {{ $isDosenView ? ($isSuperAdmin ? $senderName : 'PEMBIMBING') : $senderName }}
                         </span>
-                        <span class="text-[9px] font-bold text-gray-300 dark:text-slate-600">{{ \Carbon\Carbon::parse($msg->created_at)->format('H:i') }}</span>
+                        <span class="text-[9px] font-bold text-gray-300 dark:text-slate-600">{{ $msg->created_at ? \Carbon\Carbon::parse($msg->created_at)->format('H:i') : '' }}</span>
                     </div>
 
                     {{-- Chat Bubble --}}
                     <div class="px-5 py-3 {{ $bubbleStyle }} transition-transform hover:scale-[1.01]">
-                        <p class="text-[13px] leading-relaxed font-medium whitespace-pre-wrap">{{ $msg->message }}</p>
+                        <p class="text-[13px] leading-relaxed font-medium whitespace-pre-wrap">{{ $msg->message ?? '' }}</p>
                     </div>
                 </div>
 
@@ -133,7 +138,7 @@
             <form wire:submit.prevent="sendMessage" class="flex items-center gap-3">
                 <div class="flex-1 relative group">
                     <textarea
-                        wire:model.defer="message"
+                        wire:model="message"
                         placeholder="Ketik pesan Anda di sini..."
                         rows="1"
                         class="w-full bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all dark:text-white resize-none max-h-32"
@@ -186,29 +191,55 @@
         <script>
             document.addEventListener('livewire:initialized', () => {
                 const chatContainer = document.getElementById('chat-messages');
+                const loadMoreTrigger = document.getElementById('load-more-trigger');
+
+                if (!chatContainer) return;
+
                 const scrollToBottom = () => {
-                    if (chatContainer) {
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
                 };
 
-                // Initial scroll
-                setTimeout(scrollToBottom, 100);
+                // Initial scroll to bottom on load
+                setTimeout(scrollToBottom, 50);
 
-                // Scroll on new message
+                // Intersection Observer for Load More (Infinite Scroll Up)
+                const loadMoreObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        const oldHeight = chatContainer.scrollHeight;
+                        $wire.loadMore().then(() => {
+                            // After loading more, adjust scroll position to stay at the same message
+                            setTimeout(() => {
+                                chatContainer.scrollTop = chatContainer.scrollHeight - oldHeight;
+                            }, 50);
+                        });
+                    }
+                }, {
+                    threshold: 1.0
+                });
+
+                if (loadMoreTrigger) {
+                    loadMoreObserver.observe(loadMoreTrigger);
+                }
+
+                // Use MutationObserver to detect when new messages are added to the DOM (for auto-scroll down)
+                const ob = new MutationObserver(() => {
+                    // Only auto-scroll down if user is currently near the bottom
+                    const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 150;
+
+                    if (isNearBottom) {
+                        scrollToBottom();
+                    }
+                });
+
+                ob.observe(chatContainer, {
+                    childList: true,
+                    subtree: true
+                });
+
+                // Additional scroll trigger when message is sent by THIS user
                 Livewire.on('message-sent', () => {
                     setTimeout(scrollToBottom, 50);
                 });
-
-                // Periodic scroll check (optional but helps with polling)
-                let lastHeight = chatContainer?.scrollHeight;
-                setInterval(() => {
-                    if (chatContainer && chatContainer.scrollHeight !== lastHeight) {
-                        const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100;
-                        if (isAtBottom) scrollToBottom();
-                        lastHeight = chatContainer.scrollHeight;
-                    }
-                }, 1000);
             });
         </script>
     </div>

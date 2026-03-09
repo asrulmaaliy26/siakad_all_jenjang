@@ -45,60 +45,49 @@ class SiswaDataLjkRelationManager extends RelationManager
                 TextInputColumn::make('nilai')
                     ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_UTS')
-                    ->label('Nilai UTS')
+                    ->label('UTS')
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
                 ...array_map(fn($i) => TextInputColumn::make("Nilai_TGS_{$i}")
-                    ->label("Nilai TGS $i")
+                    ->label("TGS $i")
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: $i > 1)
                     ->disabled(fn() => auth()->user()?->isMurid()), range(1, 12)),
                 TextInputColumn::make('Nilai_UAS')
-                    ->label('Nilai UAS')
+                    ->label('UAS')
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_Performance')
-                    ->label('Nilai Performance')
+                    ->label('Perf')
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('Nilai_Akhir')
-                    ->label('Nilai Akhir')
-                    ->type('number')
-                    ->step(0.01)
-                    ->sortable()
-                    ->disabled(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('Nilai_Huruf')
-                    ->label('Nilai Huruf')
-                    ->sortable()
-                    ->disabled(fn() => auth()->user()?->isMurid()),
-                ...array_merge(...array_map(fn($i) => [
-                    TextColumn::make("ljk_tugas_{$i}")
-                        ->label("File Tugas $i")
-                        ->formatStateUsing(fn($state) => $state ? 'Lihat File' : '-')
-                        ->url(fn($record) => $record->{"ljk_tugas_$i"} ? asset('storage/' . $record->{"ljk_tugas_$i"}) : null)
-                        ->openUrlInNewTab()
-                        ->color(fn($state) => $state ? 'primary' : 'gray')
-                        ->toggleable(isToggledHiddenByDefault: true),
-                    TextColumn::make("ctt_tugas_{$i}")
-                        ->label("Catatan Tugas $i")
-                        ->html()
-                        ->limit(30)
-                        ->toggleable(isToggledHiddenByDefault: true),
-                ], range(1, 12))),
-
+                TextColumn::make('Nilai_Akhir')
+                    ->label('Akhir')
+                    ->weight('bold')
+                    ->sortable(),
+                TextColumn::make('Nilai_Huruf')
+                    ->label('Grade')
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'A', 'A-' => 'success',
+                        'B+', 'B', 'B-' => 'info',
+                        'C+', 'C', 'C-' => 'warning',
+                        default => 'danger',
+                    })
+                    ->sortable(),
                 SelectColumn::make('Status_Nilai')
-                    ->label('Status Nilai')
+                    ->label('Status')
                     ->options([
-                        'L' => 'Lulus',
-                        'TL' => 'Tidak Lulus',
+                        'LULUS' => 'LULUS',
+                        'TL' => 'TIDAK LULUS',
                     ])
                     ->selectablePlaceholder(false)
                     ->sortable()
@@ -107,6 +96,7 @@ class SiswaDataLjkRelationManager extends RelationManager
             ->filters([
                 //
             ])
+            ->columnToggleFormColumns(3)
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
 

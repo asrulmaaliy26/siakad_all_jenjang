@@ -28,7 +28,7 @@ class AkademikKrs extends Model
         // 'id_kelas',
         'jumlah_sks',
         'tgl_krs',
-        'kode_tahun',
+        'id_tahun_akademik',
         'status_bayar',
         'syarat_uts',
         'syarat_uas',
@@ -64,7 +64,7 @@ class AkademikKrs extends Model
 
     public function tahunAkademik()
     {
-        return $this->belongsTo(TahunAkademik::class, 'kode_tahun', 'nama');
+        return $this->belongsTo(TahunAkademik::class, 'id_tahun_akademik');
     }
 
     public function siswaDataLjk()
@@ -118,38 +118,39 @@ class AkademikKrs extends Model
             $startDate = Carbon::parse($riwayat->tanggal_mulai);
             $now = now();
 
-            // Perbaikan Logika Tahun Akademik: 
-            // Jika Jan-Jun, maka tahun akademik masih tahun sebelumnya (Genap)
-            // Jika Jul-Des, maka tahun akademik adalah tahun sekarang (Ganjil)
-            $isGenap = $now->month <= 6;
-            $academicYear = $isGenap ? $now->year - 1 : $now->year;
-            $yearsDiff = $academicYear - $startDate->year;
+            // Logika Periode Akademik:
+            // Jan–Jun tahun Y  = Periode Genap  (indeks: Y*2 + 0)
+            // Jul–Des tahun Y  = Periode Ganjil (indeks: Y*2 + 1)
+            $isGenap      = $now->month <= 6;
+            $startPeriod  = $startDate->year * 2 + ($startDate->month <= 6 ? 0 : 1);
+            $nowPeriod    = $now->year        * 2 + ($isGenap ? 0 : 1);
 
-            $newSemester = ($yearsDiff * 2) + ($isGenap ? 2 : 1);
+            $newSemester = ($nowPeriod - $startPeriod) + 1;
 
             // Jika untuk alasan tertentu semester hasil hitung <= semester sekarang, paksa naik 1
             if ($newSemester <= $this->semester) {
                 $newSemester = $this->semester + 1;
             }
 
-            // 5. Tentukan Kode Tahun (Tahun Akademik)
-            // Format: 2024/2025
-            $tahunAkademik = $isGenap
+            // 5. Tentukan id Tahun Akademik
+            $isGenap      = $now->month <= 6;
+            $tahunLabel   = $isGenap
                 ? ($now->year - 1) . '/' . $now->year
                 : $now->year . '/' . ($now->year + 1);
+
+            $tahunAkademikRecord = \App\Models\TahunAkademik::where('nama', 'like', $tahunLabel . '%')->first();
 
             // 6. Buat Akademik KRS baru
             $newKrs = self::create([
                 'id_riwayat_pendidikan' => $this->id_riwayat_pendidikan,
-                // 'id_kelas' => $this->id_kelas, // Removed
-                'jumlah_sks' => $newSks,
-                'tgl_krs' => $now,
-                'kode_tahun' => $tahunAkademik,
-                'status_bayar' => 'N',
-                'syarat_uts' => 'N',
-                'syarat_uas' => 'N',
-                'syarat_krs' => 'N',
-                'status_aktif' => 'Y',
+                'jumlah_sks'            => $newSks,
+                'tgl_krs'               => $now,
+                'id_tahun_akademik'     => $tahunAkademikRecord?->id,
+                'status_bayar'          => 'N',
+                'syarat_uts'            => 'N',
+                'syarat_uas'            => 'N',
+                'syarat_krs'            => 'N',
+                'status_aktif'          => 'Y',
             ]);
 
             // Nonaktifkan record saat ini

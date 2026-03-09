@@ -11,6 +11,7 @@
     <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; color: #6b7280;">
         <thead style="background-color: #f9fafb; color: #374151; text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;">
             <tr>
+                <th style="padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; width: 3rem;">No</th>
                 <th style="padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb;">Nama Siswa</th>
                 <th style="padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb;">NIM</th>
                 <th style="padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; text-align: center; width: 5rem;">Hadir</th>
@@ -25,6 +26,9 @@
         <tbody style="background-color: white;">
             @forelse($records as $row)
             <tr style="border-bottom: 1px solid #e5e7eb; transition: background-color 0.15s ease-in-out;" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='white'">
+                <td style="padding: 1rem 1.5rem; color: #6b7280; width: 3rem;">
+                    {{ $loop->iteration }}
+                </td>
                 <td style="padding: 1rem 1.5rem; font-weight: 500; color: #111827; white-space: nowrap;">
                     {{ $row->nama_siswa }}
                 </td>

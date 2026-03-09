@@ -27,6 +27,7 @@ class DosenDataTable
                 ImageColumn::make('foto_profil')
                     ->label('Foto')
                     ->circular()
+                    ->disk('public')
                     ->defaultImageUrl(url('https://ui-avatars.com/api/?name=' . urlencode('Dosen'))),
                 TextColumn::make('nama')
                     ->label('Nama')

@@ -26,36 +26,51 @@ class SiswaOverviewStats extends BaseWidget
     {
         $activeTahunId = $this->filters['tahun_akademik'] ?? null;
         $tahunAkademik = $activeTahunId ? TahunAkademik::find($activeTahunId) : null;
-        $tahunNama = $tahunAkademik?->nama;
+        $tahunNamaBare  = $tahunAkademik ? $tahunAkademik->getRawOriginal('nama') : null; // nama asli tanpa accessor (e.g. "2025/2026")
+        $tahunLabel     = $tahunNamaBare ?? 'Semua Tahun';
+
+        // Kumpulkan semua ID tahun akademik yang punya nama tahun sama
+        // (mencakup Ganjil & Genap dalam satu tahun, e.g. 2025/2026)
+        $tahunIds = $tahunNamaBare
+            ? TahunAkademik::where('nama', $tahunNamaBare)->pluck('id')
+            : null;
 
         $totalAktif = RiwayatPendidikan::query()
             ->where('ro_status_siswa', 37)
-            ->when($tahunNama, fn(Builder $query) => $query->whereHas('akademikKrs', fn($q) => $q->where('kode_tahun', $tahunNama)))
+            ->when($tahunIds, fn(Builder $query) => $query->whereHas(
+                'akademikKrs',
+                fn($q) => $q->whereIn('id_tahun_akademik', $tahunIds)
+            ))
             ->count();
 
         $totalPending = RiwayatPendidikan::query()
             ->whereIn('ro_status_siswa', [142, 43])
-            ->when($activeTahunId, fn(Builder $query) => $query->where('id_tahun_akademik', $activeTahunId))
+            ->when($tahunIds, fn(Builder $query) => $query->whereIn('id_tahun_akademik', $tahunIds))
             ->count();
 
+        // Hanya hitung calon pendaftar yang belum diterima (Status_Pendaftaran != 'Y')
         $totalPendaftar = SiswaDataPendaftar::query()
-            ->when($activeTahunId, fn(Builder $query) => $query->where('id_tahun_akademik', $activeTahunId))
+            ->where(function ($q) {
+                $q->where('Status_Pendaftaran', '!=', 'Y')
+                    ->orWhereNull('Status_Pendaftaran');
+            })
+            ->when($tahunIds, fn(Builder $query) => $query->whereIn('id_tahun_akademik', $tahunIds))
             ->count();
 
         return [
             Stat::make('Total Mahasiswa Aktif', $totalAktif)
-                ->description('Berdasarkan KRS ' . ($tahunNama ?? 'Semua Tahun'))
+                ->description('Tahun ' . $tahunLabel)
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('success')
                 ->chart([7, 2, 10, 3, 15, 4, 17]),
 
             Stat::make('Total Pending / Non-Aktif', $totalPending)
-                ->description('Pendaftar lama atau non-aktif')
+                ->description('Status belum aktif, tahun ' . $tahunLabel)
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
             Stat::make('Total Calon Mahasiswa', $totalPendaftar)
-                ->description('Data pendaftaran tahun ' . ($tahunNama ? substr($tahunNama, 0, 4) : 'Semua'))
+                ->description('Belum diterima, tahun ' . $tahunLabel)
                 ->descriptionIcon('heroicon-m-user-plus')
                 ->color('info'),
         ];

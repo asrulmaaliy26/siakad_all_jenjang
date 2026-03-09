@@ -42,9 +42,34 @@ class MataPelajaranKelasDistribusiImporter extends Importer
                 ->numeric()
                 ->integer()
                 ->rules(['nullable', 'integer'])
-                ->ignoreBlankState()  // jika kosong, tidak menimpa data existing
+                ->ignoreBlankState()
                 ->guess(['id_dosen_data', 'id dosen', 'id dosen (untuk update dosen)'])
                 ->example('1'),
+
+            ImportColumn::make('ro_ruang_kelas')
+                ->label('ID Ruang Kelas (lihat sheet REF - Ruang Kelas)')
+                ->rules(['nullable'])
+                ->guess(['ro_ruang_kelas', 'id ruang kelas', 'ruang kelas id'])
+                ->example('3')
+                ->fillRecordUsing(function ($record, $state) {
+                    // Tangani baik integer maupun string numerik
+                    $val = is_numeric($state) ? (int) $state : null;
+                    if ($val && $val > 0) {
+                        $record->ro_ruang_kelas = $val;
+                    }
+                }),
+
+            ImportColumn::make('ro_pelaksanaan_kelas')
+                ->label('ID Pelaksanaan (lihat sheet REF - Pelaksanaan)')
+                ->rules(['nullable'])
+                ->guess(['ro_pelaksanaan_kelas', 'id pelaksanaan', 'pelaksanaan id'])
+                ->example('1')
+                ->fillRecordUsing(function ($record, $state) {
+                    $val = is_numeric($state) ? (int) $state : null;
+                    if ($val && $val > 0) {
+                        $record->ro_pelaksanaan_kelas = $val;
+                    }
+                }),
 
             ImportColumn::make('jumlah')
                 ->label('Jumlah')
@@ -236,6 +261,76 @@ class MataPelajaranKelasDistribusiImporter extends Importer
         // Tidak ditemukan → skip baris ini (jangan buat record baru)
         return null;
     }
+
+    /**
+     * Setelah record disimpan Filament, paksa update ro_ruang_kelas & ro_pelaksanaan_kelas
+     * via DB langsung sebagai safety net — memastikan tersimpan meski fillRecordUsing gagal.
+     */
+    public function afterSave(): void
+    {
+        $updates = [];
+
+        // $this->data berisi raw data dari baris Excel sebelum diproses
+        $rawData = $this->data;
+
+        \Illuminate\Support\Facades\Log::info('MataPelajaranKelasImport afterSave', [
+            'record_id'            => $this->record?->id,
+            'ro_ruang_kelas_raw'   => $rawData['ro_ruang_kelas'] ?? 'KEY_NOT_FOUND',
+            'ro_pelaksanaan_raw'   => $rawData['ro_pelaksanaan_kelas'] ?? 'KEY_NOT_FOUND',
+            'record_ro_ruang'      => $this->record?->ro_ruang_kelas,
+            'record_ro_pelaksanaan' => $this->record?->ro_pelaksanaan_kelas,
+            'all_keys'             => array_keys($rawData),
+        ]);
+
+        // Safety net: jika fillRecordUsing sudah bekerja, record sudah punya nilai
+        // Jika belum, kita paksa update via DB
+        $currentRuang      = $this->record?->getOriginal('ro_ruang_kelas');
+        $currentPelaksanaan = $this->record?->getOriginal('ro_pelaksanaan_kelas');
+
+        // Cek juga dari fresh record untuk pastikan
+        if ($this->record?->id) {
+            $fresh = \Illuminate\Support\Facades\DB::table('mata_pelajaran_kelas')
+                ->where('id', $this->record->id)
+                ->first(['ro_ruang_kelas', 'ro_pelaksanaan_kelas']);
+
+            \Illuminate\Support\Facades\Log::info('DB fresh values', [
+                'fresh_ro_ruang'       => $fresh?->ro_ruang_kelas,
+                'fresh_ro_pelaksanaan' => $fresh?->ro_pelaksanaan_kelas,
+            ]);
+        }
+
+        // Coba semua kemungkinan key name (dari header Excel yang berbeda)
+        $ruangId = $rawData['ro_ruang_kelas']
+            ?? $rawData['ro ruang kelas']
+            ?? $rawData['id ruang kelas']
+            ?? null;
+
+        $pelaksanaanId = $rawData['ro_pelaksanaan_kelas']
+            ?? $rawData['ro pelaksanaan kelas']
+            ?? $rawData['id pelaksanaan']
+            ?? null;
+
+        if (is_numeric($ruangId) && (int) $ruangId > 0) {
+            $updates['ro_ruang_kelas'] = (int) $ruangId;
+        }
+
+        if (is_numeric($pelaksanaanId) && (int) $pelaksanaanId > 0) {
+            $updates['ro_pelaksanaan_kelas'] = (int) $pelaksanaanId;
+        }
+
+        if (!empty($updates) && $this->record?->id) {
+            $affected = \Illuminate\Support\Facades\DB::table('mata_pelajaran_kelas')
+                ->where('id', $this->record->id)
+                ->update($updates);
+
+            \Illuminate\Support\Facades\Log::info('afterSave DB update', [
+                'record_id' => $this->record->id,
+                'updates'   => $updates,
+                'affected'  => $affected,
+            ]);
+        }
+    }
+
 
     public static function getCompletedNotificationBody(Import $import): string
     {

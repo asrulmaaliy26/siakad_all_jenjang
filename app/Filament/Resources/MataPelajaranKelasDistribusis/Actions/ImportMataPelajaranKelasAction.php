@@ -196,15 +196,17 @@ class ImportMataPelajaranKelasAction
 
             try {
                 $fieldMap = [
-                    'id_dosen_data'    => fn($v) => is_numeric($v) && $v > 0 ? (int) $v : null,
-                    'jumlah'           => fn($v) => is_numeric($v) ? (int) $v : null,
-                    'hari'             => fn($v) => $v,
-                    'jam'              => fn($v) => $v,
-                    'ruang_uts'        => fn($v) => $v,
-                    'ruang_uas'        => fn($v) => $v,
-                    'link_kelas'       => fn($v) => $v,
-                    'passcode'         => fn($v) => $v,
-                    'tanggal'          => function ($v) {
+                    'id_dosen_data'        => fn($v) => is_numeric($v) && $v > 0 ? (int) $v : null,
+                    'ro_ruang_kelas'       => fn($v) => is_numeric($v) && $v > 0 ? (int) $v : null,
+                    'ro_pelaksanaan_kelas' => fn($v) => is_numeric($v) && $v > 0 ? (int) $v : null,
+                    'jumlah'               => fn($v) => is_numeric($v) ? (int) $v : null,
+                    'hari'                 => fn($v) => $v,
+                    'jam'                  => fn($v) => $v,
+                    'ruang_uts'            => fn($v) => $v,
+                    'ruang_uas'            => fn($v) => $v,
+                    'link_kelas'           => fn($v) => $v,
+                    'passcode'             => fn($v) => $v,
+                    'tanggal'              => function ($v) {
                         if (blank($v)) return null;
                         try {
                             return Carbon::parse($v)->format('Y-m-d');
@@ -212,7 +214,7 @@ class ImportMataPelajaranKelasAction
                             return null;
                         }
                     },
-                    'uts'              => function ($v) {
+                    'uts'                  => function ($v) {
                         if (blank($v)) return null;
                         try {
                             return Carbon::parse($v)->format('Y-m-d H:i:s');
@@ -220,7 +222,7 @@ class ImportMataPelajaranKelasAction
                             return null;
                         }
                     },
-                    'uas'              => function ($v) {
+                    'uas'                  => function ($v) {
                         if (blank($v)) return null;
                         try {
                             return Carbon::parse($v)->format('Y-m-d H:i:s');
@@ -228,9 +230,10 @@ class ImportMataPelajaranKelasAction
                             return null;
                         }
                     },
-                    'status_uts'       => fn($v) => in_array(strtoupper($v), ['Y', 'N']) ? strtoupper($v) : null,
-                    'status_uas'       => fn($v) => in_array(strtoupper($v), ['Y', 'N']) ? strtoupper($v) : null,
+                    'status_uts'           => fn($v) => in_array(strtoupper($v), ['Y', 'N']) ? strtoupper($v) : null,
+                    'status_uas'           => fn($v) => in_array(strtoupper($v), ['Y', 'N']) ? strtoupper($v) : null,
                 ];
+
 
                 foreach ($fieldMap as $field => $cast) {
                     // Hanya update jika kolom ada di file DAN nilainya tidak kosong

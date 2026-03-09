@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Placeholder;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -23,8 +24,17 @@ class MataPelajaranKelasForm
     {
         return $schema
             ->components([
+                Placeholder::make('nama_matkul_header')
+                    ->hiddenLabel()
+                    ->content(fn($record) => new \Illuminate\Support\HtmlString(
+                        '<h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.025em; border-left: 5px solid #4cae4c; padding-left: 1rem; margin-bottom: 0.5rem;" class="text-slate-900 dark:text-white">' .
+                            ($record->mataPelajaranKurikulum->mataPelajaranMaster->name ?? $record->mataPelajaranKurikulum->mataPelajaranMaster->nama ?? 'Detail Mata Pelajaran') .
+                            '</h1>'
+                    ))
+                    ->visible(fn($record) => $record !== null)
+                    ->columnSpanFull(),
                 Section::make('Informasi Dasar')
-                    ->collapsed()
+                    // ->collapsed()
                     ->columns(['sm' => 1, 'md' => 2])
                     ->schema([
                         Select::make('id_mata_pelajaran_kurikulum')
@@ -46,6 +56,7 @@ class MataPelajaranKelasForm
                         Select::make('id_dosen_data')
                             ->label('Dosen Pengajar')
                             ->relationship('dosenData', 'nama')
+                            ->default(fn() => auth()->user()->getDosenId())
                             ->searchable()
                             ->preload(),
                         Select::make('ro_ruang_kelas')

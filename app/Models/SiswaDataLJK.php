@@ -11,6 +11,76 @@ class SiswaDataLJK extends Model
 
     protected $table = 'siswa_data_ljk';
 
+    protected static function booted()
+    {
+        static::saving(function ($record) {
+            $fields = [
+                'Nilai_UTS',
+                'Nilai_UAS',
+                'Nilai_Performance',
+                'Nilai_TGS_1',
+                'Nilai_TGS_2',
+                'Nilai_TGS_3',
+                'Nilai_TGS_4',
+                'Nilai_TGS_5',
+                'Nilai_TGS_6',
+                'Nilai_TGS_7',
+                'Nilai_TGS_8',
+                'Nilai_TGS_9',
+                'Nilai_TGS_10',
+                'Nilai_TGS_11',
+                'Nilai_TGS_12',
+            ];
+
+            $total = 0;
+            $count = 0;
+
+            foreach ($fields as $field) {
+                $val = $record->{$field};
+                // Jika tidak diisi / 0.00 / null maka tidak ikut dirata-rata
+                if (!is_null($val) && (float)$val > 0) {
+                    $total += (float) $val;
+                    $count++;
+                }
+            }
+
+            if ($count > 0) {
+                $average = $total / $count;
+                // Batasi maksimal 4.00
+                $average = min(4.00, $average);
+                $record->Nilai_Akhir = round($average, 2);
+
+                // Map to Nilai_Huruf (Standar A, B, C +/-)
+                $record->Nilai_Huruf = self::calculateGradeLetter($average);
+
+                // Otomatis set Status Nilai berdasarkan ambang batas (>= 2.00 Lulus)
+                if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance')) {
+                    $record->Status_Nilai = ($average >= 2.00) ? 'LULUS' : 'TL';
+                }
+            } else {
+                // Jika tidak ada nilai sama sekali
+                $record->Nilai_Akhir = 0;
+                $record->Nilai_Huruf = 'E';
+                $record->Status_Nilai = 'TL';
+            }
+        });
+    }
+
+    public static function calculateGradeLetter($average)
+    {
+        if ($average >= 3.85) return 'A';
+        if ($average >= 3.50) return 'A-';
+        if ($average >= 3.15) return 'B+';
+        if ($average >= 2.85) return 'B';
+        if ($average >= 2.50) return 'B-';
+        if ($average >= 2.15) return 'C+';
+        if ($average >= 1.85) return 'C';
+        if ($average >= 1.50) return 'C-';
+        if ($average >= 1.15) return 'D+';
+        if ($average >= 1.00) return 'D';
+        return 'E';
+    }
+
 
     // protected $primaryKey = 'id_data_ljk';
 
@@ -102,18 +172,7 @@ class SiswaDataLJK extends Model
     /* ================= RELATIONS ================= */
     public function getBobotAttribute()
     {
-        $nilaiAngka = $this->Nilai_Akhir ?? 0;
-
-        if ($nilaiAngka >= 85) return 4.0;
-        if ($nilaiAngka >= 80) return 3.7;
-        if ($nilaiAngka >= 75) return 3.3;
-        if ($nilaiAngka >= 70) return 3.0;
-        if ($nilaiAngka >= 65) return 2.7;
-        if ($nilaiAngka >= 60) return 2.3;
-        if ($nilaiAngka >= 55) return 2.0;
-        if ($nilaiAngka >= 50) return 1.0;
-
-        return 0.0;
+        return $this->Nilai_Akhir ?? 0.0;
     }
 
     public function akademikKrs()

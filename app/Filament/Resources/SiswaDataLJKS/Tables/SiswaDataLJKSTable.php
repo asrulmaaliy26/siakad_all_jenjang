@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use App\Models\MataPelajaranKelas;
+use App\Models\SiswaDataLJK;
 
 class SiswaDataLJKSTable
 {
@@ -31,6 +32,44 @@ class SiswaDataLJKSTable
                     ->label('NIM')
                     ->searchable()
                     ->toggleable(),
+
+                TextColumn::make('akademikKrs.riwayatPendidikan.programKelas.nilai')
+                    ->label('Program Kelas')
+                    ->badge()
+                    ->color('info')
+                    ->toggleable(),
+
+                TextColumn::make('mapel_progress')
+                    ->label('Mapel / Kelas')
+                    ->badge()
+                    ->toggleable()
+                    ->getStateUsing(function ($record) {
+                        // Ambil kelas dari mata pelajaran kelas record ini
+                        $kelas = $record->mataPelajaranKelas?->kelas;
+                        if (!$kelas) return '-';
+
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk = \App\Models\SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return "{$jumlahLjk} / {$totalMapel} Mapel";
+                    })
+                    ->color(function ($record) {
+                        $kelas = $record->mataPelajaranKelas?->kelas;
+                        if (!$kelas) return 'gray';
+
+                        $totalMapel = $kelas->mataPelajaranKelas()->count();
+                        $krsId      = $record->id_akademik_krs;
+
+                        $jumlahLjk = \App\Models\SiswaDataLJK::where('id_akademik_krs', $krsId)
+                            ->whereHas('mataPelajaranKelas', fn($q) => $q->where('id_kelas', $kelas->id))
+                            ->count();
+
+                        return $jumlahLjk >= $totalMapel ? 'success' : 'warning';
+                    }),
 
                 TextColumn::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Kuliah')
@@ -78,7 +117,7 @@ class SiswaDataLJKSTable
                 TextColumn::make('Status_Nilai')
                     ->label('Status')
                     ->badge()
-                    ->color(fn($state) => $state === 'Lulus' ? 'success' : 'danger')
+                    ->color(fn($state) => $state === 'LULUS' ? 'success' : 'danger')
                     ->toggleable(),
 
                 TextColumn::make('ljk_uts')
@@ -150,11 +189,18 @@ class SiswaDataLJKSTable
 
                 SelectFilter::make('tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->nama => "{$t->nama} - {$t->periode}"]))
-                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->options(
+                        \App\Models\TahunAkademik::orderByDesc('id')
+                            ->get()
+                            ->pluck('nama', 'id')
+                    )
+                    ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->query(function ($query, array $data) {
                         return $query->when($data['value'], function ($query, $value) {
-                            $query->whereHas('akademikKrs', fn($q) => $q->where('kode_tahun', $value));
+                            $query->whereHas(
+                                'akademikKrs',
+                                fn($q) => $q->where('id_tahun_akademik', $value)
+                            );
                         });
                     })
                     ->searchable()

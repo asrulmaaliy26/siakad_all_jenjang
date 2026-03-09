@@ -9,6 +9,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\WisudaMahasiswaPage;
+use App\Filament\Pages\DiskusiPembimbing;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -41,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             // ->brandLogo(asset('logokampus.jpg'))
             ->brandLogoHeight('3rem')
-            ->favicon(asset('favicon.ico'))
+            ->favicon(asset('logokampus.jpg'))
             ->font('Outfit')
             ->sidebarCollapsibleOnDesktop()
             ->spa()
@@ -50,6 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
                 WisudaMahasiswaPage::class,
+                DiskusiPembimbing::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
@@ -71,12 +73,29 @@ class AdminPanelProvider extends PanelProvider
                 FilamentShieldPlugin::make(),
             ])
             ->navigationGroups([
-                NavigationGroup::make('Master Data'),
-                NavigationGroup::make('Perkuliahan'),
-                NavigationGroup::make('Pendaftaran'),
-                NavigationGroup::make('Tugas Akhir'),
-                NavigationGroup::make('Pengaturan User'),
-                NavigationGroup::make('Temp'),
+                NavigationGroup::make('Master Data')
+                    ->icon('heroicon-o-circle-stack'),
+
+                NavigationGroup::make('Perkuliahan')
+                    ->icon('heroicon-o-academic-cap'),
+
+                NavigationGroup::make('Layanan Mahasiswa')
+                    ->icon('heroicon-o-users'),
+
+                NavigationGroup::make('Pendaftaran')
+                    ->icon('heroicon-o-clipboard-document-list'),
+
+                NavigationGroup::make('Tugas Akhir')
+                    ->icon('heroicon-o-document-text'),
+
+                NavigationGroup::make('Perpustakaan')
+                    ->icon('heroicon-o-book-open'),
+
+                NavigationGroup::make('Pengaturan User')
+                    ->icon('heroicon-o-cog-6-tooth'),
+
+                NavigationGroup::make('Temp')
+                    ->icon('heroicon-o-folder'),
             ])
             ->authMiddleware([
                 Authenticate::class,
@@ -103,7 +122,6 @@ class AdminPanelProvider extends PanelProvider
                     </script>
                 '
             )
-
             ->renderHook(
                 \Filament\View\PanelsRenderHook::USER_MENU_BEFORE,
                 fn(): string => \Illuminate\Support\Facades\Blade::render('

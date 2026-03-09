@@ -14,6 +14,7 @@ use Filament\Tables\Columns\SelectColumn;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use App\Filament\Resources\SiswaData\SiswaDataResource;
+use Illuminate\Database\Eloquent\Builder;
 
 class SiswaDataTable
 {
@@ -24,6 +25,7 @@ class SiswaDataTable
                 ImageColumn::make('foto_profil')
                     ->label('Foto')
                     ->circular()
+                    ->disk('public')
                     ->defaultImageUrl(url('https://ui-avatars.com/api/?name=' . urlencode('Siswa'))),
                 TextColumn::make('riwayatPendidikanAktif.angkatan')
                     ->label('Angkatan')
@@ -102,12 +104,12 @@ class SiswaDataTable
                                 ]);
 
                                 // Buat Akademik KRS Pertama otomatis
-                                $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'aktif')->first();
+                                $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'Y')->latest()->first();
                                 \App\Models\AkademikKrs::create([
                                     'id_riwayat_pendidikan' => $riwayat->id,
                                     'jumlah_sks' => 24,
                                     'tgl_krs' => now(),
-                                    'kode_tahun' => $tahunAkademikAktif?->nama ?? (date('Y') . '/' . (date('Y') + 1)),
+                                    'id_tahun_akademik' => $tahunAkademikAktif?->id,
                                     'status_bayar' => 'N',
                                     'syarat_uts' => 'N',
                                     'syarat_uas' => 'N',
@@ -156,6 +158,50 @@ class SiswaDataTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('angkatan')
+                    ->label('Angkatan')
+                    ->options(fn() => \App\Models\TahunAkademik::query()
+                        ->select('nama')
+                        ->get()
+                        ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                        ->unique()
+                        ->sortDesc()
+                        ->mapWithKeys(fn($y) => [$y => $y])
+                        ->toArray())
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['value'])) return $query;
+                        return $query->whereHas('riwayatPendidikanAktif', function ($q) use ($data) {
+                            $q->whereHas('tahunAkademik', function ($q2) use ($data) {
+                                $q2->where('nama', 'like', $data['value'] . '/%');
+                            });
+                        });
+                    })
+                    ->default(
+                        fn() => \App\Models\TahunAkademik::query()
+                            ->select('nama')
+                            ->get()
+                            ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                            ->unique()
+                            ->max()
+                    ),
+                SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->options(fn() => \App\Models\Jurusan::pluck('nama', 'id')->toArray())
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                        if (empty($data['value'])) return $query;
+                        return $query->whereHas('riwayatPendidikanAktif', function ($q) use ($data) {
+                            $q->where('id_jurusan', $data['value']);
+                        });
+                    }),
+                SelectFilter::make('ro_program_kelas')
+                    ->label('Program Kelas')
+                    ->options(fn() => \App\Models\RefOption\ProgramKelas::pluck('nilai', 'id')->toArray())
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                        if (empty($data['value'])) return $query;
+                        return $query->whereHas('riwayatPendidikanAktif', function ($q) use ($data) {
+                            $q->where('ro_program_kelas', $data['value']);
+                        });
+                    }),
                 SelectFilter::make('status_siswa')
                     ->label('Status Siswa')
                     ->options([
@@ -231,12 +277,12 @@ class SiswaDataTable
                                     ]);
 
                                     // Buat Akademik KRS Pertama otomatis
-                                    $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'aktif')->first();
+                                    $tahunAkademikAktif = \App\Models\TahunAkademik::where('status', 'Y')->latest()->first();
                                     \App\Models\AkademikKrs::create([
                                         'id_riwayat_pendidikan' => $riwayat->id,
                                         'jumlah_sks' => 24,
                                         'tgl_krs' => now(),
-                                        'kode_tahun' => $tahunAkademikAktif?->nama ?? date('Y') . '/' . (date('Y') + 1),
+                                        'id_tahun_akademik' => $tahunAkademikAktif?->id,
                                         'status_bayar' => 'N',
                                         'syarat_uts' => 'N',
                                         'syarat_uas' => 'N',

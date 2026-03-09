@@ -36,10 +36,14 @@ class AkademikKrsForm
                             ->label('Tanggal KRS')
                             ->disabled(fn() => auth()->user()?->isMurid()),
 
-                        Select::make('kode_tahun')
+                        Select::make('id_tahun_akademik')
                             ->label('Tahun Akademik')
-                            ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"]))
-                            ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                            ->options(
+                                \App\Models\TahunAkademik::orderByDesc('id')
+                                    ->get()
+                                    ->pluck('nama', 'id')
+                            )
+                            ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                             ->searchable()
                             ->required()
                             ->disabled(fn() => auth()->user()?->isMurid()),

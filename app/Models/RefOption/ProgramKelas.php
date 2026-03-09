@@ -36,6 +36,19 @@ class ProgramKelas extends Model
     }
 
     /**
+     * Scope hanya yang aktif (status = 'aktif' atau '1' atau 'Y')
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', 'aktif')
+                ->orWhere('status', '1')
+                ->orWhere('status', 'Y')
+                ->orWhereNull('status');
+        });
+    }
+
+    /**
      * Getter alias "nama" agar sesuai konsep ProgramKelas
      */
     public function getNamaAttribute()
@@ -59,15 +72,8 @@ class ProgramKelas extends Model
     {
         return $this->hasMany(\App\Models\Kelas::class, 'ro_program_kelas');
     }
-
-    /**
-     * Scope tambahan jika ingin filter aktif saja
-     */
-    public function scopeAktif($query)
-    {
-        return $query->where('status', 1);
-    }
 }
+
 
 // use App\Models\ProgramKelas;
 

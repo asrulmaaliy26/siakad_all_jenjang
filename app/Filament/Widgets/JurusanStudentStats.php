@@ -32,29 +32,44 @@ class JurusanStudentStats extends BaseWidget
     {
         $activeTahunId = $this->filters['tahun_akademik'] ?? null;
         $tahunAkademik = $activeTahunId ? TahunAkademik::find($activeTahunId) : null;
-        $tahunNama = $tahunAkademik?->nama;
+        $tahunNamaBare = $tahunAkademik ? $tahunAkademik->getRawOriginal('nama') : null;
+        $tahunLabel    = $tahunNamaBare ?? 'Semua Tahun';
+
+        // Kumpulkan semua ID tahun akademik dengan nama tahun yang sama (Ganjil + Genap)
+        $tahunIds = $tahunNamaBare
+            ? TahunAkademik::where('nama', $tahunNamaBare)->pluck('id')
+            : null;
 
         return $table
             ->query(
                 Jurusan::query()
 
                     ->withCount([
-                        'riwayatPendidikan as total_aktif' => function (Builder $query) use ($tahunNama) {
-                            $query->where('ro_status_siswa', 37); // Aktif
-                            if ($tahunNama) {
-                                $query->whereHas('akademikKrs', fn($q) => $q->where('kode_tahun', $tahunNama));
+                        // Mhs. Aktif: ro_status_siswa = 37, filter via KRS id_tahun_akademik (Ganjil+Genap)
+                        'riwayatPendidikan as total_aktif' => function (Builder $query) use ($tahunIds) {
+                            $query->where('ro_status_siswa', 37);
+                            if ($tahunIds) {
+                                $query->whereHas(
+                                    'akademikKrs',
+                                    fn($q) => $q->whereIn('id_tahun_akademik', $tahunIds)
+                                );
                             }
                         },
-                        'riwayatPendidikan as total_pending' => function (Builder $query) use ($activeTahunId) {
-                            $query->whereIn('ro_status_siswa', [142, 43]); // Pendaftar, Non-Aktif
-                            if ($activeTahunId) {
-                                // For pending, maybe they don't have KRS yet, so we check id_tahun_akademik or just skip year filter
-                                $query->where('id_tahun_akademik', $activeTahunId);
+                        // Pending: ro_status_siswa IN [142, 43], filter id_tahun_akademik di riwayat
+                        'riwayatPendidikan as total_pending' => function (Builder $query) use ($tahunIds) {
+                            $query->whereIn('ro_status_siswa', [142, 43]);
+                            if ($tahunIds) {
+                                $query->whereIn('id_tahun_akademik', $tahunIds);
                             }
                         },
-                        'pendaftar as total_pendaftar_baru' => function (Builder $query) use ($activeTahunId) {
-                            if ($activeTahunId) {
-                                $query->where('id_tahun_akademik', $activeTahunId);
+                        // Calon Mahasiswa: belum diterima (Status_Pendaftaran != 'Y')
+                        'pendaftar as total_pendaftar_baru' => function (Builder $query) use ($tahunIds) {
+                            $query->where(function ($q) {
+                                $q->where('Status_Pendaftaran', '!=', 'Y')
+                                    ->orWhereNull('Status_Pendaftaran');
+                            });
+                            if ($tahunIds) {
+                                $query->whereIn('id_tahun_akademik', $tahunIds);
                             }
                         },
                     ])

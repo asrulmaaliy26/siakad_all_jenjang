@@ -37,12 +37,18 @@ class MataPelajaranKelas extends Model
         'passcode',
         'ctt_soal_uts',
         'ctt_soal_uas',
+        'id_kosma',
     ];
 
     protected $casts = [
         'soal_uts' => 'array',
         'soal_uas' => 'array',
     ];
+
+    public function kosma()
+    {
+        return $this->belongsTo(SiswaData::class, 'id_kosma');
+    }
 
     public function mataPelajaranKurikulum()
     {

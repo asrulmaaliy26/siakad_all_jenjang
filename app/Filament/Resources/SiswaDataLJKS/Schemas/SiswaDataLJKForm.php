@@ -60,13 +60,18 @@ class SiswaDataLJKForm
                 Section::make('Nilai & Evaluasi')
                     ->columns(3)
                     ->schema([
-                        TextInput::make('Nilai_UTS')->numeric()->maxValue(100)->label('Nilai UTS'),
-                        TextInput::make('Nilai_UAS')->numeric()->maxValue(100)->label('Nilai UAS'),
-                        ...array_map(fn($i) => TextInput::make("Nilai_TGS_{$i}")->numeric()->maxValue(100)->label("Nilai TGS $i"), range(1, 12)),
-                        TextInput::make('Nilai_Performance')->numeric()->maxValue(100)->label('Nilai Performance'),
-                        TextInput::make('Nilai_Akhir')->numeric()->label('Nilai Akhir')->readOnly(), // Biasanya calculated
-                        TextInput::make('Nilai_Huruf')->label('Nilai Huruf'),
-                        TextInput::make('Status_Nilai')->label('Status Nilai'), // Lulus/Gagal
+                        TextInput::make('Nilai_UTS')->numeric()->step(0.01)->minValue(0)->maxValue(4)->placeholder('0.00 - 4.00')->label('Nilai UTS'),
+                        TextInput::make('Nilai_UAS')->numeric()->step(0.01)->minValue(0)->maxValue(4)->placeholder('0.00 - 4.00')->label('Nilai UAS'),
+                        ...array_map(fn($i) => TextInput::make("Nilai_TGS_{$i}")->numeric()->step(0.01)->minValue(0)->maxValue(4)->placeholder('0.00 - 4.00')->label("Nilai TGS $i"), range(1, 12)),
+                        TextInput::make('Nilai_Performance')->numeric()->step(0.01)->minValue(0)->maxValue(4)->placeholder('0.00 - 4.00')->label('Nilai Performance'),
+                        TextInput::make('Nilai_Akhir')->numeric()->label('Nilai Akhir (IP)')->readOnly()->placeholder('Otomatis'),
+                        TextInput::make('Nilai_Huruf')->label('Grade')->readOnly()->placeholder('Otomatis'),
+                        Select::make('Status_Nilai')
+                            ->label('Status Kelulusan')
+                            ->options([
+                                'LULUS' => 'LULUS',
+                                'TL' => 'TIDAK LULUS',
+                            ]),
                         TextInput::make('Rekom_Nilai')->label('Rekomendasi'),
                         Textarea::make('ket')->label('Keterangan')->columnSpanFull(),
                     ]),

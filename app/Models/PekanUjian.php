@@ -54,7 +54,7 @@ class PekanUjian extends Model
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
             get: fn($value) => $value === 'Y',
-            set: fn($value) => $value ? 'Y' : 'N',
+            set: fn($value) => in_array($value, [true, 1, '1', 'Y'], true) ? 'Y' : 'N',
         );
     }
 
@@ -62,15 +62,15 @@ class PekanUjian extends Model
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
             get: fn($value) => $value === 'Y',
-            set: fn($value) => $value ? 'Y' : 'N',
+            set: fn($value) => in_array($value, [true, 1, '1', 'Y'], true) ? 'Y' : 'N',
         );
     }
 
     protected function statusUjian(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
-            get: fn($value) => $value === 'Y', // Assuming 'Y' is meant to be Active/True
-            set: fn($value) => $value ? 'Y' : 'N', // If true, set 'Y', else 'N'
+            get: fn($value) => $value === 'Y',
+            set: fn($value) => in_array($value, [true, 1, '1', 'Y'], true) ? 'Y' : 'N',
         );
     }
 }

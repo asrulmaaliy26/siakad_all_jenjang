@@ -92,7 +92,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function isMurid(): bool
     {
         return $this->hasRole('murid')
-            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
+            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi', 'admin_jenjang_s1']);
     }
 
     public function isPendaftar(): bool
@@ -106,7 +106,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function isPengajar(): bool
     {
         return $this->hasRole('pengajar')
-            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
+            && !$this->hasAnyRole(['super_admin', 'admin', 'kaprodi', 'admin_jenjang_s1']);
     }
 
     /**
@@ -114,7 +114,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
      */
     public function isAdmin(): bool
     {
-        return $this->hasAnyRole(['super_admin', 'admin', 'kaprodi']);
+        return $this->hasAnyRole(['super_admin', 'admin', 'kaprodi', 'admin_jenjang_s1']);
     }
 
     /**
@@ -123,6 +123,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function getDosenId()
     {
         return DosenData::where('user_id', $this->id)->value('id');
+    }
+
+    /**
+     * Get ID siswa berdasarkan user_id
+     */
+    public function getSiswaId()
+    {
+        return SiswaData::where('user_id', $this->id)->value('id');
     }
     public function ulasans()
     {

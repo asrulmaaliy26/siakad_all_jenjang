@@ -39,19 +39,22 @@ class PekanUjiansTable
                     ->label('Status Akses')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->updateStateUsing(fn($record, $state) => $record->update(['status_akses' => $state ? 'Y' : 'N'])),
 
                 ToggleColumn::make('status_bayar')
                     ->label('Syarat Pembayaran')
                     ->onColor('success')
                     ->offColor('warning')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->updateStateUsing(fn($record, $state) => $record->update(['status_bayar' => $state ? 'Y' : 'N'])),
 
                 ToggleColumn::make('status_ujian')
                     ->label('Status Aktif')
                     ->onColor('success')
                     ->offColor('gray')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
+                    ->disabled(fn() => auth()->user()?->isMurid())
+                    ->updateStateUsing(fn($record, $state) => $record->update(['status_ujian' => $state ? 'Y' : 'N'])),
 
                 TextColumn::make('informasi')
                     ->label('Informasi')
@@ -61,8 +64,8 @@ class PekanUjiansTable
             ->filters([
                 \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => "{$t->nama} - {$t->periode}"]))
-                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->id)
+                    ->options(\App\Models\TahunAkademik::orderByDesc('id')->get()->mapWithKeys(fn($t) => [$t->id => "{$t->nama} - {$t->periode}"]))
+                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable()
                     ->preload(),
             ])

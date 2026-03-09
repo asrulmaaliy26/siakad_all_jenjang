@@ -58,14 +58,18 @@ class RiwayatPendidikanRelationManager extends RelationManager
 
             Select::make('id_wali_dosen')
                 ->label('Dosen Wali')
-                ->options(function (callable $get) {
+                ->relationship('waliDosen', 'nama', function ($query, callable $get, ?Model $record) {
                     $jurusanId = $get('id_jurusan');
-                    if (!$jurusanId) {
-                        return \App\Models\DosenData::pluck('nama', 'id');
+
+                    if ($jurusanId) {
+                        $query->where('id_jurusan', $jurusanId);
+
+                        if ($record && $record->id_wali_dosen) {
+                            $query->orWhere('id', $record->id_wali_dosen);
+                        }
                     }
 
-                    return \App\Models\DosenData::where('id_jurusan', $jurusanId)
-                        ->pluck('nama', 'id');
+                    return $query;
                 })
                 ->searchable()
                 ->preload(),
@@ -163,12 +167,15 @@ class RiwayatPendidikanRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('id'),
                 Tables\Columns\TextColumn::make('angkatan'),
                 Tables\Columns\TextColumn::make('nomor_induk'),
-                Tables\Columns\TextColumn::make('jurusan.nama'),
+                Tables\Columns\TextColumn::make('jurusan.nama')
+                    ->label('Jurusan'),
+                Tables\Columns\TextColumn::make('waliDosen.nama')
+                    ->label('Dosen Wali'),
                 Tables\Columns\TextColumn::make('programSekolah.nilai'),
                 Tables\Columns\TextColumn::make('statusSiswa.nilai'),
                 Tables\Columns\TextColumn::make('status'),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Terakhir Diperbarui')
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Tanggal Riwayat')
                     ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(),
@@ -179,19 +186,17 @@ class RiwayatPendidikanRelationManager extends RelationManager
             ->actions([
                 EditAction::make()
                     ->using(function (Model $record, array $data): Model {
+                        // Ambil data asli dari database sebelum diupdate
+                        $oldRecord = \App\Models\RiwayatPendidikan::find($record->id);
 
-                        // Ambil data asli sebelum edit
-                        $oldRecord = $record->fresh();
-
-                        // Copy data lama untuk history HANYA jika data lama sudah berisi (misal: nomor_induk tidak kosong)
-                        // Jika masih baru (null/kosong), langsung update saja tanpa menambah baris baru.
-                        if (!empty($oldRecord->nomor_induk)) {
+                        if ($oldRecord) {
+                            // Copy data lama untuk history
                             $history = $oldRecord->replicate();
                             $history->status = 'N';
                             $history->save();
                         }
 
-                        // Update data baru
+                        // Update data baru pada record saat ini
                         $data['status'] = 'Y';
                         $record->update($data);
 

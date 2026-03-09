@@ -176,7 +176,7 @@ class SiswaDataPendaftarsTable
             ->filters([
                 SelectFilter::make('ro_program_sekolah')
                     ->label('Program Sekolah')
-                    ->relationship('programSekolahRef', 'nilai')
+                    ->relationship('programSekolahRef', 'nilai', fn(\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama_grup', 'program_sekolah'))
                     ->preload()
                     ->multiple(),
 
@@ -194,6 +194,7 @@ class SiswaDataPendaftarsTable
                         'Y' => 'Diterima',
                         'N' => 'Ditolak',
                     ])
+                    ->default(['B'])
                     ->multiple(),
 
                 SelectFilter::make('Status_Kelulusan_Seleksi')
@@ -207,13 +208,18 @@ class SiswaDataPendaftarsTable
 
                 SelectFilter::make('Jalur_PMB')
                     ->label('Jalur PMB')
-                    ->relationship('jalurPmbRef', 'nilai')
+                    ->relationship('jalurPmbRef', 'nilai', fn(\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama_grup', 'jalur_pmb'))
                     ->preload()
                     ->multiple(),
 
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->relationship('tahunAkademik', 'nama')
+                    ->options(fn() => \App\Models\TahunAkademik::all()->pluck('nama', 'id')->toArray())
+                    ->multiple(),
+
+                SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->relationship('jurusan', 'nama')
                     ->preload()
                     ->multiple(),
             ])

@@ -7,14 +7,14 @@
         <!-- We use an img tag pointing to an external QR service or a package like simple-qrcode -->
         <img id="qr-image-{{ $record->id }}" src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ urlencode($url) }}&margin=10" alt="QR Code" class="w-48 h-48 mb-4 border border-gray-100 rounded shadow-sm" crossorigin="anonymous" />
 
-        <button type="button"
-            onclick="downloadQR('{{ $record->id }}', '{{ $record->kode }}', this)"
+        <a href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ urlencode($url) }}&margin=10"
+            target="_blank"
             class="inline-flex items-center px-4 py-2 bg-primary-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-primary-500 focus:bg-primary-700 active:bg-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition ease-in-out duration-150">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
             </svg>
-            Download QR
-        </button>
+            Buka QR Code
+        </a>
     </div>
 
     <div class="w-full max-w-md">
@@ -38,53 +38,5 @@
         Kode: <span class="font-bold text-primary-600">{{ $record->kode }}</span>
     </div>
 
-    <script>
-        if (typeof downloadQR === 'undefined') {
-            function downloadQR(id, kode, buttonElement) {
-                try {
-                    const originalText = buttonElement.innerHTML;
-                    buttonElement.innerHTML = 'Proses...';
-                    buttonElement.disabled = true;
 
-                    const imgUrl = document.getElementById('qr-image-' + id).src;
-
-                    // Try fetching first (works if CORS is configured on the API)
-                    fetch(imgUrl)
-                        .then(response => {
-                            if (!response.ok) throw new Error('Network response not ok: ' + response.status);
-                            return response.blob();
-                        })
-                        .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'QR-Referal-' + kode + '.png';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                        })
-                        .catch(err => {
-                            console.error('Download error:', err);
-                            alert('Pemberitahuan: Sistem keamanan browser memblokir unduhan langsung. Gambar akan dibuka di tab baru. (' + err.message + ')');
-
-                            // Fallback: create anchor and open in new tab
-                            const a = document.createElement('a');
-                            a.href = imgUrl;
-                            a.target = '_blank';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        })
-                        .finally(() => {
-                            buttonElement.innerHTML = originalText;
-                            buttonElement.disabled = false;
-                        });
-                } catch (error) {
-                    alert('Terjadi kesalahan script: ' + error.message);
-                    console.error(error);
-                }
-            }
-        }
-    </script>
 </div>

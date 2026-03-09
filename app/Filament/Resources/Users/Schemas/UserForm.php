@@ -23,7 +23,7 @@ class UserForm
                     ->password()
                     ->dehydrated(fn($state) => filled($state))
                     ->required(fn($operation) => $operation === 'create')
-                    ->afterStateUpdated(function (?string $state, \Closure $set) {
+                    ->afterStateUpdated(function (?string $state, $set) {
                         if (filled($state)) {
                             $set('view_password', $state);
                         }

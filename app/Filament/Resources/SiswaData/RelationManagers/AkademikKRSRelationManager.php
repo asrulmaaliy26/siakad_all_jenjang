@@ -41,10 +41,14 @@ class AkademikKRSRelationManager extends RelationManager
                 ->default(now())
                 ->disabled(fn() => auth()->user()?->isMurid()),
 
-            Forms\Components\Select::make('kode_tahun')
+            Forms\Components\Select::make('id_tahun_akademik')
                 ->label('Tahun Akademik')
-                ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"]))
-                ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                ->options(
+                    \App\Models\TahunAkademik::orderByDesc('id')
+                        ->get()
+                        ->pluck('nama', 'id')
+                )
+                ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                 ->searchable()
                 ->required()
                 ->disabled(fn() => auth()->user()?->isMurid()),
@@ -106,7 +110,9 @@ class AkademikKRSRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
-                    ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : $record->kode_tahun)
+                    ->formatStateUsing(fn($record) => $record->tahunAkademik
+                        ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}"
+                        : '-')
                     ->searchable()
                     ->sortable(),
 
@@ -197,10 +203,22 @@ class AkademikKRSRelationManager extends RelationManager
             ->filters([
                 // Bisa tambahkan filter semester, tahun akademik, atau status_bayar
                 Tables\Filters\SelectFilter::make('semester'),
-                Tables\Filters\SelectFilter::make('kode_tahun')
+                Tables\Filters\SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->options(fn() => \App\Models\Jurusan::pluck('nama', 'id')->toArray())
+                    ->query(function ($query, array $data) {
+                        if (empty($data['value'])) return;
+                        $query->whereHas('riwayatPendidikan', function ($q) use ($data) {
+                            $q->where('id_jurusan', $data['value']);
+                        });
+                    })
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('id_tahun_akademik')
+                    ->attribute('akademik_krs.id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($item) => [$item->nama => "{$item->nama} - {$item->periode}"])->toArray())
-                    ->default(\App\Models\TahunAkademik::where('status', 'Aktif')->first()?->nama)
+                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
+                    ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('status_bayar')
                     ->options([

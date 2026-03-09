@@ -54,9 +54,9 @@ class KelasTable
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
                     ->options(
-                        TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
+                        TahunAkademik::orderByDesc('id')->get()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
                     )
-                    ->default(TahunAkademik::where('status', 'Aktif')->first()?->id)
+                    ->default(TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable(),
 
                 SelectFilter::make('id_jurusan')

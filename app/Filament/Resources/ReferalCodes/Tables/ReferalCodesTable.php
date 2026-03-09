@@ -9,6 +9,10 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
+use Filament\Actions\BulkAction;
+use Illuminate\Database\Eloquent\Collection;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ReferalCodeExport;
 
 class ReferalCodesTable
 {
@@ -49,6 +53,14 @@ class ReferalCodesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('export_with_qr')
+                        ->label('Export dengan QR')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('success')
+                        ->action(fn(Collection $records) => Excel::download(
+                            new ReferalCodeExport($records),
+                            'referal_codes_with_qr_' . now()->format('Y-m-d_H-i-s') . '.xlsx'
+                        )),
                     DeleteBulkAction::make(),
                 ]),
             ]);

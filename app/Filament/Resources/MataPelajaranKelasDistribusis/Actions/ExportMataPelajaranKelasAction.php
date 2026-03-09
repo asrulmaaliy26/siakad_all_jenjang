@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MataPelajaranKelasDistribusis\Actions;
 
 use App\Exports\MataPelajaranKelasExport;
+use App\Models\MataPelajaranKelasDistribusi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
@@ -68,11 +69,11 @@ class ExportMataPelajaranKelasAction
                 }
 
                 // Pastikan kolom kunci selalu ada di awal
-                $keyColumns = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));
-                $otherColumns = array_filter($selectedColumns, fn($k) => !in_array($k, ['id', 'kode_feeder']));
+                $keyColumns     = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));
+                $otherColumns   = array_filter($selectedColumns, fn($k) => !in_array($k, ['id', 'kode_feeder']));
                 $orderedColumns = array_values(array_merge($keyColumns, $otherColumns));
 
-                // Ambil data dari livewire (query dengan filter & sort aktif)
+                // Ambil data dari livewire — query sudah include filter & sort aktif
                 $query   = $livewire->getFilteredSortedTableQuery();
                 $records = $query->with([
                     'mataPelajaranKurikulum.mataPelajaranMaster',
@@ -97,13 +98,28 @@ class ExportMataPelajaranKelasAction
 
                 $fileName = 'mata_pelajaran_kelas_' . date('Ymd_His') . '.' . $fileFormat;
 
-                return Excel::download(
-                    new MataPelajaranKelasExport($records, $orderedColumns),
-                    $fileName,
-                    $writerType
-                );
+                try {
+                    return Excel::download(
+                        new MataPelajaranKelasExport($records, $orderedColumns),
+                        $fileName,
+                        $writerType
+                    );
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->title('Export gagal!')
+                        ->body('[' . class_basename($e) . '] ' . $e->getMessage() . ' (baris ' . $e->getLine() . ')')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    \Illuminate\Support\Facades\Log::error('Export MataPelajaranKelas gagal', [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
             });
     }
+
 
     /**
      * Buat bulk action export (untuk baris yang diseleksi).
@@ -144,7 +160,7 @@ class ExportMataPelajaranKelasAction
                     ->default('xlsx')
                     ->required(),
             ])
-            ->action(function (array $data, Action $action) {
+            ->action(function (array $data, Action $action, $livewire) {
                 $selectedColumns = $data['columns_to_export'] ?? [];
                 $fileFormat      = $data['file_format'] ?? 'xlsx';
 
@@ -156,10 +172,10 @@ class ExportMataPelajaranKelasAction
                     return;
                 }
 
-                // Ambil selected records lewat action (sudah ada accessSelectedRecords())
-                $records = $action->getSelectedRecords();
+                // Ambil ID dari selected records
+                $selectedIds = $action->getSelectedRecords()->pluck('id');
 
-                if ($records->isEmpty()) {
+                if ($selectedIds->isEmpty()) {
                     Notification::make()
                         ->title('Tidak ada baris yang dipilih')
                         ->body('Pilih setidaknya satu baris di tabel terlebih dahulu.')
@@ -168,19 +184,30 @@ class ExportMataPelajaranKelasAction
                     return;
                 }
 
+                // Ambil urutan sort aktif dari tabel melalui getFilteredSortedTableQuery,
+                // lalu intersect dengan selectedIds agar urutan tabel terjaga
+                $sortedIds = $livewire
+                    ->getFilteredSortedTableQuery()
+                    ->whereIn('mata_pelajaran_kelas.id', $selectedIds->toArray())
+                    ->pluck('mata_pelajaran_kelas.id')
+                    ->toArray();
+
+                // Re-fetch records dengan urutan yang sudah benar (preserve order via FIELD())
+                $records = MataPelajaranKelasDistribusi::whereIn('id', $sortedIds)
+                    ->with([
+                        'mataPelajaranKurikulum.mataPelajaranMaster',
+                        'kelas.programKelas',
+                        'dosen',
+                        'ruangKelas',
+                        'pelaksanaanKelas',
+                    ])
+                    ->orderByRaw('FIELD(id, ' . implode(',', $sortedIds) . ')')
+                    ->get();
+
                 // Urutkan: kolom kunci di depan
                 $keyColumns     = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));
                 $otherColumns   = array_filter($selectedColumns, fn($k) => !in_array($k, ['id', 'kode_feeder']));
                 $orderedColumns = array_values(array_merge($keyColumns, $otherColumns));
-
-                // Eager load relasi yang dibutuhkan
-                $records->load([
-                    'mataPelajaranKurikulum.mataPelajaranMaster',
-                    'kelas.programKelas',
-                    'dosen',
-                    'ruangKelas',
-                    'pelaksanaanKelas',
-                ]);
 
                 $writerType = $fileFormat === 'csv'
                     ? \Maatwebsite\Excel\Excel::CSV
@@ -188,11 +215,26 @@ class ExportMataPelajaranKelasAction
 
                 $fileName = 'mata_pelajaran_kelas_selected_' . date('Ymd_His') . '.' . $fileFormat;
 
-                return Excel::download(
-                    new MataPelajaranKelasExport($records, $orderedColumns),
-                    $fileName,
-                    $writerType
-                );
+                try {
+                    return Excel::download(
+                        new MataPelajaranKelasExport($records, $orderedColumns),
+                        $fileName,
+                        $writerType
+                    );
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->title('Export Terpilih gagal!')
+                        ->body('[' . class_basename($e) . '] ' . $e->getMessage() . ' (baris ' . $e->getLine() . ')')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    \Illuminate\Support\Facades\Log::error('Export Terpilih MataPelajaranKelas gagal', [
+                        'error'        => $e->getMessage(),
+                        'selected_ids' => $selectedIds->toArray(),
+                        'trace'        => $e->getTraceAsString(),
+                    ]);
+                }
             });
     }
 }

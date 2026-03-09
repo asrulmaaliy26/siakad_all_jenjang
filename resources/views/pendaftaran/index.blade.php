@@ -10,6 +10,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <!-- Tambahkan Alpine.js Collapse plugin -->
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
+    <link rel="icon" type="image/jpg" href="{{ asset('logokampus.jpg') }}">
     <style>
         body {
             font-family: 'Outfit', sans-serif;
@@ -18,20 +19,21 @@
 
         .filament-input {
             width: 100%;
-            border-color: #d1d5db;
-            border-radius: 0.5rem;
+            border: 1.5px solid #d1d5db;
+            border-radius: 0.75rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-            transition: all 0.15s ease-in-out;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5rem;
+            transition: all 0.2s ease-in-out;
+            background-color: #fdfdfd;
         }
 
         .filament-input:focus {
             outline: none;
             border-color: #65a30d;
-            /* Lime-600 for Filament-like feel (Primary) */
-            box-shadow: 0 0 0 2px rgba(101, 163, 13, 0.2);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(101, 163, 13, 0.1);
         }
 
         .accordion-item {
@@ -193,15 +195,39 @@
             @else
 
             <form action="{{ route('pendaftaran.store') }}" method="POST" enctype="multipart/form-data"
+                id="registrationForm"
+                novalidate
                 x-data="{ 
-                    activeStep: 1, 
+                    activeStep: {{ $errors->any() ? 1 : 1 }}, 
+                    isSubmitting: false,
                     selectedJurusanId: {{ json_encode(old('id_jurusan')) }},
                     jurusans: {{ json_encode($jurusans->map(fn($j) => ['id' => $j->id, 'nama' => $j->nama])) }}
-                }">
+                }"
+                @submit="
+                    if(!$el.checkValidity()) {
+                        $event.preventDefault();
+                        isSubmitting = false;
+                        const firstInvalid = $el.querySelector(':invalid');
+                        if(firstInvalid) {
+                            const stepContainer = firstInvalid.closest('[x-show*=\'activeStep ===\']');
+                            if(stepContainer) {
+                                const stepMatch = stepContainer.getAttribute('x-show').match(/activeStep === (\d+)/);
+                                if(stepMatch && stepMatch[1]) {
+                                    activeStep = parseInt(stepMatch[1]);
+                                    setTimeout(() => {
+                                        firstInvalid.focus();
+                                        $el.reportValidity();
+                                    }, 100);
+                                }
+                            }
+                        }
+                    } else {
+                        isSubmitting = true;
+                    }
+                ">
                 @csrf
 
                 @if(isset($referalCode))
-                <input type="hidden" name="id_referal_code" value="{{ $referalCode->id }}">
                 <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4 rounded-r-lg shadow-sm">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -224,15 +250,48 @@
                 <div class="flex flex-col gap-6">
                     <!-- TOP TABS NAVIGATION -->
                     <div class="flex flex-nowrap items-center gap-2 md:gap-4 overflow-x-auto pb-4 pt-2 scrollbar-hide" style="-webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
-                        <template x-for="(stepName, index) in ['Akun & Prodi', 'Data Pribadi', 'Alamat & Kontak', 'Sekolah Asal', 'Data Orang Tua', 'Upload Dokumen']">
-                            <button type="button" @click="activeStep = index + 1"
-                                x-init="$watch('activeStep', val => { if(val === index + 1) { setTimeout(() => $el.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'}), 50) } })"
-                                :class="activeStep === (index + 1) ? 'bg-lime-600 text-white shadow-lg transform scale-105 border-transparent z-10' : 'bg-white text-gray-600 hover:bg-lime-50 border-gray-200 hover:border-lime-300'"
-                                class="flex-shrink-0 px-4 py-3 rounded-xl font-bold text-center transition-all duration-300 flex flex-col md:flex-row items-center justify-center gap-2 group border">
-                                <span :class="activeStep === (index + 1) ? 'bg-white text-lime-600' : 'bg-gray-100 text-gray-500 group-hover:bg-lime-200 group-hover:text-lime-700'" class="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full text-xs md:text-sm transition-colors duration-300 shadow-sm" x-text="index + 1"></span>
-                                <span class="text-xs md:text-sm whitespace-nowrap" x-text="stepName"></span>
-                            </button>
-                        </template>
+                        @php
+                        $stepErrors = [
+                        1 => ['nama', 'username', 'password', 'password_confirmation', 'ro_program_sekolah', 'id_jurusan', 'Jalur_PMB'],
+                        2 => ['nama_lengkap', 'email', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'agama', 'golongan_darah', 'no_ktp', 'no_kk', 'kebutuhan_khusus'],
+                        3 => ['alamat', 'rt', 'rw', 'nomor_rumah', 'dusun', 'desa', 'kecamatan', 'kabupaten', 'provinsi', 'kode_pos', 'no_telepon', 'jenis_domisili'],
+                        4 => ['asal_slta', 'status_asal_sekolah', 'jenis_slta', 'kejuruan_slta', 'tahun_lulus_slta', 'nisn', 'nomor_seri_ijazah_slta', 'PT_Asal', 'Prodi_Asal', 'NIMKO_Asal', 'IPK_Asal', 'Jml_SKS_Asal'],
+                        5 => ['Nama_Ayah', 'Nomor_KTP_Ayah', 'Tempat_Lhr_Ayah', 'Thn_Lhr_ayah', 'Pendidikan_Terakhir_Ayah', 'Pekerjaan_Ayah', 'No_HP_ayah', 'Nama_Ibu', 'Nomor_KTP_Ibu', 'Tempat_Lhr_Ibu', 'Thn_Lhr_Ibu', 'Pendidikan_Terakhir_Ibu', 'Pekerjaan_Ibu', 'No_HP_ibu'],
+                        6 => ['Legalisir_Ijazah', 'Legalisir_SKHU', 'Copy_KTP', 'Foto_BW_3x3', 'Foto_BW_3x4', 'Foto_Warna_5x6', 'File_Foto_Berwarna']
+                        ];
+                        @endphp
+
+                        @foreach (['Akun & Prodi', 'Data Pribadi', 'Alamat & Kontak', 'Sekolah Asal', 'Data Orang Tua', 'Upload Dokumen'] as $index => $stepName)
+                        @php
+                        $stepNum = $index + 1;
+                        $hasError = false;
+                        if (isset($stepErrors[$stepNum])) {
+                        foreach ($stepErrors[$stepNum] as $field) {
+                        if ($errors->has($field)) {
+                        $hasError = true;
+                        break;
+                        }
+                        }
+                        }
+                        @endphp
+                        <button type="button" @click="activeStep = {{ $stepNum }}"
+                            x-init="$watch('activeStep', val => { if(val === {{ $stepNum }}) { setTimeout(() => $el.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'}), 50) } })"
+                            :class="activeStep === {{ $stepNum }} ? 'bg-lime-600 text-white shadow-lg transform scale-105 border-transparent z-10' : 'bg-white text-gray-600 hover:bg-lime-50 border-gray-200 hover:border-lime-300 {{ $hasError ? 'border-red-300 bg-red-50' : '' }}'"
+                            class="flex-shrink-0 px-4 py-3 rounded-xl font-bold text-center transition-all duration-300 flex flex-col md:flex-row items-center justify-center gap-2 group border relative">
+
+                            @if($hasError)
+                            <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                            @endif
+
+                            <span :class="activeStep === {{ $stepNum }} ? 'bg-white text-lime-600' : '{{ $hasError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500' }} group-hover:bg-lime-200 group-hover:text-lime-700'" class="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full text-xs md:text-sm transition-colors duration-300 shadow-sm">
+                                {{ $stepNum }}
+                            </span>
+                            <span class="text-xs md:text-sm whitespace-nowrap">{{ $stepName }}</span>
+                        </button>
+                        @endforeach
                     </div>
 
                     <!-- CONTENT AREA BAWAH -->
@@ -256,11 +315,11 @@
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="password">Password <span class="text-red-500">*</span></label>
-                                            <input type="password" name="password" id="password" class="filament-input mt-1" required>
+                                            <input type="password" name="password" id="password" class="filament-input mt-1" required placeholder="Buat password minimal 8 karakter">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="password_confirmation">Konfirmasi Password <span class="text-red-500">*</span></label>
-                                            <input type="password" name="password_confirmation" id="password_confirmation" class="filament-input mt-1" required>
+                                            <input type="password" name="password_confirmation" id="password_confirmation" class="filament-input mt-1" required placeholder="Ulangi password Anda">
                                         </div>
                                     </div>
                                 </div>
@@ -319,6 +378,10 @@
                                                 <option value="Lainnya" {{ old('Jenis_Pembiayaan') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
                                             </select>
                                         </div>
+                                        <div>
+                                            <label class="block font-medium text-sm text-gray-700" for="kode_referal">Kode Referal (Opsional)</label>
+                                            <input type="text" name="kode_referal" id="kode_referal" class="filament-input mt-1" value="{{ old('kode_referal', isset($referalCode) ? $referalCode->kode : '') }}" placeholder="Contoh: REF-123">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -333,17 +396,17 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="nama_lengkap">Nama Lengkap (Sesuai Ijazah)</label>
-                                    <input type="text" name="nama_lengkap" id="nama_lengkap" value="{{ old('nama_lengkap') }}" class="filament-input mt-1">
+                                    <input type="text" name="nama_lengkap" id="nama_lengkap" value="{{ old('nama_lengkap') }}" class="filament-input mt-1" placeholder="Contoh: Ahmad Khoirul">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="email">Email</label>
-                                    <input type="email" name="email" id="email" value="{{ old('email') }}" class="filament-input mt-1" placeholder="email@example.com">
+                                    <input type="email" name="email" id="email" value="{{ old('email') }}" class="filament-input mt-1" placeholder="nama@email.com">
                                 </div>
 
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="jenis_kelamin">Jenis Kelamin</label>
                                     <select name="jenis_kelamin" id="jenis_kelamin" class="filament-input mt-1">
-                                        <option value="">-- Pilih --</option>
+                                        <option value="">-- Pilih Jenis Kelamin --</option>
                                         <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
                                         <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
                                     </select>
@@ -352,7 +415,7 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block font-medium text-sm text-gray-700" for="tempat_lahir">Tempat Lahir</label>
-                                        <input type="text" name="tempat_lahir" id="tempat_lahir" value="{{ old('tempat_lahir') }}" class="filament-input mt-1">
+                                        <input type="text" name="tempat_lahir" id="tempat_lahir" value="{{ old('tempat_lahir') }}" class="filament-input mt-1" placeholder="Kota Kelahiran">
                                     </div>
                                     <div>
                                         <label class="block font-medium text-sm text-gray-700" for="tanggal_lahir">Tanggal Lahir</label>
@@ -384,15 +447,15 @@
 
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="no_ktp">NIK / No. KTP</label>
-                                    <input type="text" name="no_ktp" id="no_ktp" value="{{ old('no_ktp') }}" class="filament-input mt-1">
+                                    <input type="text" name="no_ktp" id="no_ktp" value="{{ old('no_ktp') }}" class="filament-input mt-1" placeholder="16 Digit NIK Anda">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="no_kk">No. KK</label>
-                                    <input type="text" name="no_kk" id="no_kk" value="{{ old('no_kk') }}" class="filament-input mt-1">
+                                    <input type="text" name="no_kk" id="no_kk" value="{{ old('no_kk') }}" class="filament-input mt-1" placeholder="16 Digit No. Kartu Keluarga">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="kebutuhan_khusus">Kebutuhan Khusus</label>
-                                    <input type="text" name="kebutuhan_khusus" id="kebutuhan_khusus" value="{{ old('kebutuhan_khusus') }}" class="filament-input mt-1" placeholder="Kosongkan jika tidak ada">
+                                    <input type="text" name="kebutuhan_khusus" id="kebutuhan_khusus" value="{{ old('kebutuhan_khusus') }}" class="filament-input mt-1" placeholder="Contoh: Tunanetra (Isi '-' jika tidak ada)">
                                 </div>
                             </div>
                             <div class="mt-8 flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -407,49 +470,49 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="md:col-span-2">
                                     <label class="block font-medium text-sm text-gray-700" for="alamat">Alamat Lengkap (Jalan, Gg, Blok)</label>
-                                    <textarea name="alamat" id="alamat" rows="2" class="filament-input mt-1" placeholder="Contoh: Jl. Merdeka No. 10">{{ old('alamat') }}</textarea>
+                                    <textarea name="alamat" id="alamat" rows="2" class="filament-input mt-1" placeholder="Nama Jalan, No. Rumah, RT/RW, Dusun/Lingkungan">{{ old('alamat') }}</textarea>
                                 </div>
                                 <div class="grid grid-cols-3 gap-4 md:col-span-2">
                                     <div>
                                         <label class="block font-medium text-sm text-gray-700" for="rt">RT</label>
-                                        <input type="text" name="rt" id="rt" value="{{ old('rt') }}" class="filament-input mt-1">
+                                        <input type="text" name="rt" id="rt" value="{{ old('rt') }}" class="filament-input mt-1" placeholder="000">
                                     </div>
                                     <div>
                                         <label class="block font-medium text-sm text-gray-700" for="rw">RW</label>
-                                        <input type="text" name="rw" id="rw" value="{{ old('rw') }}" class="filament-input mt-1">
+                                        <input type="text" name="rw" id="rw" value="{{ old('rw') }}" class="filament-input mt-1" placeholder="000">
                                     </div>
                                     <div>
                                         <label class="block font-medium text-sm text-gray-700" for="nomor_rumah">No. Rumah</label>
-                                        <input type="text" name="nomor_rumah" id="nomor_rumah" value="{{ old('nomor_rumah') }}" class="filament-input mt-1">
+                                        <input type="text" name="nomor_rumah" id="nomor_rumah" value="{{ old('nomor_rumah') }}" class="filament-input mt-1" placeholder="Ex: 10A">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="dusun">Dusun / Lingkungan</label>
-                                    <input type="text" name="dusun" id="dusun" value="{{ old('dusun') }}" class="filament-input mt-1">
+                                    <input type="text" name="dusun" id="dusun" value="{{ old('dusun') }}" class="filament-input mt-1" placeholder="Nama Dusun">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="desa">Desa / Kelurahan</label>
-                                    <input type="text" name="desa" id="desa" value="{{ old('desa') }}" class="filament-input mt-1">
+                                    <input type="text" name="desa" id="desa" value="{{ old('desa') }}" class="filament-input mt-1" placeholder="Nama Desa">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="kecamatan">Kecamatan</label>
-                                    <input type="text" name="kecamatan" id="kecamatan" value="{{ old('kecamatan') }}" class="filament-input mt-1">
+                                    <input type="text" name="kecamatan" id="kecamatan" value="{{ old('kecamatan') }}" class="filament-input mt-1" placeholder="Nama Kecamatan">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="kabupaten">Kabupaten / Kota</label>
-                                    <input type="text" name="kabupaten" id="kabupaten" value="{{ old('kabupaten') }}" class="filament-input mt-1">
+                                    <input type="text" name="kabupaten" id="kabupaten" value="{{ old('kabupaten') }}" class="filament-input mt-1" placeholder="Nama Kabupaten/Kota">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="provinsi">Provinsi</label>
-                                    <input type="text" name="provinsi" id="provinsi" value="{{ old('provinsi') }}" class="filament-input mt-1">
+                                    <input type="text" name="provinsi" id="provinsi" value="{{ old('provinsi') }}" class="filament-input mt-1" placeholder="Nama Provinsi">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="kode_pos">Kode Pos</label>
-                                    <input type="text" name="kode_pos" id="kode_pos" value="{{ old('kode_pos') }}" class="filament-input mt-1">
+                                    <input type="text" name="kode_pos" id="kode_pos" value="{{ old('kode_pos') }}" class="filament-input mt-1" placeholder="5 Digit Kode Pos">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="no_telepon">No. Handphone / WA</label>
-                                    <input type="text" name="no_telepon" id="no_telepon" value="{{ old('no_telepon') }}" class="filament-input mt-1">
+                                    <input type="text" name="no_telepon" id="no_telepon" value="{{ old('no_telepon') }}" class="filament-input mt-1" placeholder="Contoh: 081234567890">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="jenis_domisili">Status Tempat Tinggal</label>
@@ -500,15 +563,15 @@
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="tahun_lulus_slta">Tahun Lulus</label>
-                                    <input type="number" name="tahun_lulus_slta" id="tahun_lulus_slta" value="{{ old('tahun_lulus_slta') }}" class="filament-input mt-1">
+                                    <input type="number" name="tahun_lulus_slta" id="tahun_lulus_slta" value="{{ old('tahun_lulus_slta') }}" class="filament-input mt-1" placeholder="Contoh: 2024">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="nisn">NISN</label>
-                                    <input type="text" name="nisn" id="nisn" value="{{ old('nisn') }}" class="filament-input mt-1">
+                                    <input type="text" name="nisn" id="nisn" value="{{ old('nisn') }}" class="filament-input mt-1" placeholder="10 Digit NISN">
                                 </div>
                                 <div>
                                     <label class="block font-medium text-sm text-gray-700" for="nomor_seri_ijazah_slta">No. Seri Ijazah</label>
-                                    <input type="text" name="nomor_seri_ijazah_slta" id="nomor_seri_ijazah_slta" value="{{ old('nomor_seri_ijazah_slta') }}" class="filament-input mt-1">
+                                    <input type="text" name="nomor_seri_ijazah_slta" id="nomor_seri_ijazah_slta" value="{{ old('nomor_seri_ijazah_slta') }}" class="filament-input mt-1" placeholder="Masukkan nomor ijazah">
                                 </div>
                             </div>
 
@@ -524,23 +587,23 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="PT_Asal">Perguruan Tinggi Asal</label>
-                                            <input type="text" name="PT_Asal" id="PT_Asal" value="{{ old('PT_Asal') }}" class="filament-input mt-1">
+                                            <input type="text" name="PT_Asal" id="PT_Asal" value="{{ old('PT_Asal') }}" class="filament-input mt-1" placeholder="Nama Universitas/Sekolah Tinggi Asal">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="Prodi_Asal">Prodi Asal</label>
-                                            <input type="text" name="Prodi_Asal" id="Prodi_Asal" value="{{ old('Prodi_Asal') }}" class="filament-input mt-1">
+                                            <input type="text" name="Prodi_Asal" id="Prodi_Asal" value="{{ old('Prodi_Asal') }}" class="filament-input mt-1" placeholder="Nama Program Studi">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="NIMKO_Asal">NIM Asal</label>
-                                            <input type="text" name="NIMKO_Asal" id="NIMKO_Asal" value="{{ old('NIMKO_Asal') }}" class="filament-input mt-1">
+                                            <input type="text" name="NIMKO_Asal" id="NIMKO_Asal" value="{{ old('NIMKO_Asal') }}" class="filament-input mt-1" placeholder="Nomor Induk Mahasiswa">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="IPK_Asal">IPK Terakhir</label>
-                                            <input type="text" name="IPK_Asal" id="IPK_Asal" value="{{ old('IPK_Asal') }}" class="filament-input mt-1">
+                                            <input type="text" name="IPK_Asal" id="IPK_Asal" value="{{ old('IPK_Asal') }}" class="filament-input mt-1" placeholder="Contoh: 3.50">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="Jml_SKS_Asal">Jumlah SKS Diakui</label>
-                                            <input type="number" name="Jml_SKS_Asal" id="Jml_SKS_Asal" value="{{ old('Jml_SKS_Asal') }}" class="filament-input mt-1">
+                                            <input type="number" name="Jml_SKS_Asal" id="Jml_SKS_Asal" value="{{ old('Jml_SKS_Asal') }}" class="filament-input mt-1" placeholder="Jumlah SKS">
                                         </div>
                                     </div>
                                 </div>
@@ -564,20 +627,20 @@
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Nama_Ayah">Nama Lengkap</label>
-                                            <input type="text" name="Nama_Ayah" id="Nama_Ayah" value="{{ old('Nama_Ayah') }}" class="filament-input mt-1">
+                                            <input type="text" name="Nama_Ayah" id="Nama_Ayah" value="{{ old('Nama_Ayah') }}" class="filament-input mt-1" placeholder="Nama Lengkap Ayah">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Nomor_KTP_Ayah">NIK / No. KTP</label>
-                                            <input type="text" name="Nomor_KTP_Ayah" id="Nomor_KTP_Ayah" value="{{ old('Nomor_KTP_Ayah') }}" class="filament-input mt-1">
+                                            <input type="text" name="Nomor_KTP_Ayah" id="Nomor_KTP_Ayah" value="{{ old('Nomor_KTP_Ayah') }}" class="filament-input mt-1" placeholder="16 Digit NIK Ayah">
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label class="block font-medium text-xs text-gray-600" for="Tempat_Lhr_Ayah">Tempat Lahir</label>
-                                                <input type="text" name="Tempat_Lhr_Ayah" id="Tempat_Lhr_Ayah" value="{{ old('Tempat_Lhr_Ayah') }}" class="filament-input mt-1">
+                                                <input type="text" name="Tempat_Lhr_Ayah" id="Tempat_Lhr_Ayah" value="{{ old('Tempat_Lhr_Ayah') }}" class="filament-input mt-1" placeholder="Kota Lahir">
                                             </div>
                                             <div>
                                                 <label class="block font-medium text-xs text-gray-600" for="Thn_Lhr_ayah">Tahun Lahir</label>
-                                                <input type="text" name="Thn_Lhr_ayah" id="Thn_Lhr_ayah" value="{{ old('Thn_Lhr_ayah') }}" class="filament-input mt-1">
+                                                <input type="text" name="Thn_Lhr_ayah" id="Thn_Lhr_ayah" value="{{ old('Thn_Lhr_ayah') }}" class="filament-input mt-1" placeholder="YYYY">
                                             </div>
                                         </div>
                                         <div>
@@ -594,11 +657,11 @@
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Pekerjaan_Ayah">Pekerjaan</label>
-                                            <input type="text" name="Pekerjaan_Ayah" id="Pekerjaan_Ayah" value="{{ old('Pekerjaan_Ayah') }}" class="filament-input mt-1">
+                                            <input type="text" name="Pekerjaan_Ayah" id="Pekerjaan_Ayah" value="{{ old('Pekerjaan_Ayah') }}" class="filament-input mt-1" placeholder="Contoh: Pegawai Swasta">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="No_HP_ayah">No. HP</label>
-                                            <input type="text" name="No_HP_ayah" id="No_HP_ayah" value="{{ old('No_HP_ayah') }}" class="filament-input mt-1">
+                                            <input type="text" name="No_HP_ayah" id="No_HP_ayah" value="{{ old('No_HP_ayah') }}" class="filament-input mt-1" placeholder="08XXXXXXXXXX">
                                         </div>
                                     </div>
                                 </div>
@@ -609,20 +672,20 @@
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Nama_Ibu">Nama Lengkap</label>
-                                            <input type="text" name="Nama_Ibu" id="Nama_Ibu" value="{{ old('Nama_Ibu') }}" class="filament-input mt-1">
+                                            <input type="text" name="Nama_Ibu" id="Nama_Ibu" value="{{ old('Nama_Ibu') }}" class="filament-input mt-1" placeholder="Nama Lengkap Ibu">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Nomor_KTP_Ibu">NIK / No. KTP</label>
-                                            <input type="text" name="Nomor_KTP_Ibu" id="Nomor_KTP_Ibu" value="{{ old('Nomor_KTP_Ibu') }}" class="filament-input mt-1">
+                                            <input type="text" name="Nomor_KTP_Ibu" id="Nomor_KTP_Ibu" value="{{ old('Nomor_KTP_Ibu') }}" class="filament-input mt-1" placeholder="16 Digit NIK Ibu">
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label class="block font-medium text-xs text-gray-600" for="Tempat_Lhr_Ibu">Tempat Lahir</label>
-                                                <input type="text" name="Tempat_Lhr_Ibu" id="Tempat_Lhr_Ibu" value="{{ old('Tempat_Lhr_Ibu') }}" class="filament-input mt-1">
+                                                <input type="text" name="Tempat_Lhr_Ibu" id="Tempat_Lhr_Ibu" value="{{ old('Tempat_Lhr_Ibu') }}" class="filament-input mt-1" placeholder="Kota Lahir">
                                             </div>
                                             <div>
                                                 <label class="block font-medium text-xs text-gray-600" for="Thn_Lhr_Ibu">Tahun Lahir</label>
-                                                <input type="text" name="Thn_Lhr_Ibu" id="Thn_Lhr_Ibu" value="{{ old('Thn_Lhr_Ibu') }}" class="filament-input mt-1">
+                                                <input type="text" name="Thn_Lhr_Ibu" id="Thn_Lhr_Ibu" value="{{ old('Thn_Lhr_Ibu') }}" class="filament-input mt-1" placeholder="YYYY">
                                             </div>
                                         </div>
                                         <div>
@@ -639,11 +702,11 @@
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="Pekerjaan_Ibu">Pekerjaan</label>
-                                            <input type="text" name="Pekerjaan_Ibu" id="Pekerjaan_Ibu" value="{{ old('Pekerjaan_Ibu') }}" class="filament-input mt-1">
+                                            <input type="text" name="Pekerjaan_Ibu" id="Pekerjaan_Ibu" value="{{ old('Pekerjaan_Ibu') }}" class="filament-input mt-1" placeholder="Contoh: Ibu Rumah Tangga">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-xs text-gray-600" for="No_HP_ibu">No. HP</label>
-                                            <input type="text" name="No_HP_ibu" id="No_HP_ibu" value="{{ old('No_HP_ibu') }}" class="filament-input mt-1">
+                                            <input type="text" name="No_HP_ibu" id="No_HP_ibu" value="{{ old('No_HP_ibu') }}" class="filament-input mt-1" placeholder="08XXXXXXXXXX">
                                         </div>
                                     </div>
                                 </div>
@@ -701,8 +764,22 @@
                             <div class="mt-8 flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
                                 <button type="button" @click="activeStep = 5" class="px-5 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium shadow-sm transition-all">&larr; Sebelumnya</button>
 
-                                <button type="submit" class="px-8 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 text-base font-bold shadow-xl transform transition hover:-translate-y-1 uppercase tracking-wide animate-pulse">
-                                    Simpan Pendaftaran &rarr;
+                                <button type="submit"
+                                    :disabled="isSubmitting"
+                                    class="px-8 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 text-base font-bold shadow-xl transform transition hover:-translate-y-1 uppercase tracking-wide flex items-center gap-2"
+                                    :class="isSubmitting ? 'opacity-75 cursor-not-allowed bg-lime-800' : 'animate-pulse'">
+                                    <template x-if="!isSubmitting">
+                                        <span>Simpan Pendaftaran &rarr;</span>
+                                    </template>
+                                    <template x-if="isSubmitting">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Memproses...</span>
+                                        </div>
+                                    </template>
                                 </button>
                             </div>
                         </div>
@@ -710,6 +787,27 @@
                     </div> <!-- End Main Content Right -->
                 </div> <!-- End Flex Split Layout -->
             </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Cek jika ada error session atau validation errors
+                    const hasErrors = {
+                        {
+                            ($errors - > any() || session('error')) ? 'true' : 'false'
+                        }
+                    };
+                    if (hasErrors) {
+                        // Scroll ke atas form atau ke block error
+                        const errorBlock = document.querySelector('.bg-red-50');
+                        if (errorBlock) {
+                            errorBlock.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                        }
+                    }
+                });
+            </script>
             @endif
         </div> <!-- Tutup div class="w-full max-w-4xl mt-4 px-6 py-8 bg-white..." -->
 

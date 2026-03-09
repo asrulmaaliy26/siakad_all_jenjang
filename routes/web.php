@@ -9,6 +9,7 @@ use App\Http\Controllers\CetakController;
 
 Route::get('/pendaftaran', [App\Http\Controllers\PendaftaranController::class, 'index'])->name('pendaftaran.index');
 Route::post('/pendaftaran', [App\Http\Controllers\PendaftaranController::class, 'store'])->name('pendaftaran.store');
+Route::get('/referal-qr/{kode}/download', [App\Http\Controllers\PendaftaranController::class, 'downloadQr'])->name('referal.qr.download');
 
 Route::middleware('auth')->group(function () {
     Route::get('/cetak-absensi-kosong/{id_mata_pelajaran_kelas}', [CetakController::class, 'absensiKosong'])->name('cetak.absensi.kosong');

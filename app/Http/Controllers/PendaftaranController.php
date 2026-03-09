@@ -20,19 +20,26 @@ class PendaftaranController extends Controller
      */
     public function index(Request $request)
     {
-        $jurusans = \App\Models\Jurusan::all();
-        $jalurPmbs = \App\Models\ReferenceOption::where('nama_grup', 'jalur_pmb')->where('status', 1)->get();
-        // Ambil reference option untuk program sekolah
-        $programSekolahs = \App\Models\ReferenceOption::where('nama_grup', 'program_sekolah')->where('status', 1)->get();
+        try {
+            $jurusans = \App\Models\Jurusan::all();
+            $jalurPmbs = \App\Models\ReferenceOption::where('nama_grup', 'jalur_pmb')->where('status', 1)->get();
+            // Ambil reference option untuk program sekolah
+            $programSekolahs = \App\Models\ReferenceOption::where('nama_grup', 'program_sekolah')->where('status', 1)->get();
 
-        $referalCode = null;
-        if ($request->has('ref')) {
-            $referalCode = \App\Models\ReferalCode::where('kode', $request->query('ref'))->first();
+            $referalCode = null;
+            if ($request->has('ref')) {
+                $referalCode = \App\Models\ReferalCode::where('kode', $request->query('ref'))->first();
+            }
+
+            $pengaturanPendaftaran = \App\Models\PengaturanPendaftaran::getAktif();
+
+            return view('pendaftaran.index', compact('jurusans', 'jalurPmbs', 'programSekolahs', 'referalCode', 'pengaturanPendaftaran'));
+        } catch (\Exception $e) {
+            Log::error('Error loading pendaftaran index: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat memuat data. Mohon hubungi admin.');
         }
-
-        $pengaturanPendaftaran = \App\Models\PengaturanPendaftaran::getAktif();
-
-        return view('pendaftaran.index', compact('jurusans', 'jalurPmbs', 'programSekolahs', 'referalCode', 'pengaturanPendaftaran'));
     }
 
     /**
@@ -40,146 +47,160 @@ class PendaftaranController extends Controller
      */
     public function store(Request $request)
     {
-        // Debug logging
-        Log::info('Pendaftaran store method called', [
-            'username' => $request->username,
-            'nama' => $request->nama,
-        ]);
-
-        $pengaturan = \App\Models\PengaturanPendaftaran::getAktif();
-        if (!$pengaturan->isPendaftaranBuka()) {
-            return back()->with('error', 'Pendaftaran sedang ditutup. Anda tidak dapat mengirim data.');
-        }
-
-        // Validation rules - HANYA 3 FIELD WAJIB: nama, username, password
-        $validator = Validator::make($request->all(), [
-            // REQUIRED FIELDS
-            'nama' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-
-            // OPTIONAL FIELDS - Semua field lain nullable
-            'nama_lengkap' => ['nullable', 'string', 'max:255'],
-            'nama_panggilan' => ['nullable', 'string', 'max:255'],
-            'jenis_kelamin' => ['nullable', 'string', 'max:10'],
-            'tempat_lahir' => ['nullable', 'string', 'max:255'],
-            'tanggal_lahir' => ['nullable', 'date'],
-            'alamat' => ['nullable', 'string'],
-            'no_telepon' => ['nullable', 'string', 'max:20'],
-            'agama' => ['nullable', 'string'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-
-            // Parent Data (Ayah)
-            'Nama_Ayah' => ['nullable', 'string', 'max:255'],
-            'Tempat_Lhr_Ayah' => ['nullable', 'string', 'max:255'],
-            'Tgl_Lhr_Ayah' => ['nullable', 'string', 'max:2'],
-            'Bln_Lhr_Ayah' => ['nullable', 'string', 'max:2'],
-            'Thn_Lhr_ayah' => ['nullable', 'string', 'max:4'],
-            'Agama_Ayah' => ['nullable', 'string', 'max:50'],
-            'Gol_Darah_Ayah' => ['nullable', 'string', 'max:5'],
-            'Pendidikan_Terakhir_Ayah' => ['nullable', 'string', 'max:50'],
-            'Pekerjaan_Ayah' => ['nullable', 'string', 'max:100'],
-            'Penghasilan_Ayah' => ['nullable', 'string', 'max:100'],
-            'Kebutuhan_Khusus_Ayah' => ['nullable', 'string', 'max:100'],
-            'Nomor_KTP_Ayah' => ['nullable', 'string', 'max:20'],
-            'Alamat_Ayah' => ['nullable', 'string'],
-            'No_HP_ayah' => ['nullable', 'string', 'max:16'],
-
-            // Parent Data (Ibu)
-            'Nama_Ibu' => ['nullable', 'string', 'max:255'],
-            'Tempat_Lhr_Ibu' => ['nullable', 'string', 'max:255'],
-            'Tgl_Lhr_Ibu' => ['nullable', 'string', 'max:2'],
-            'Bln_Lhr_Ibu' => ['nullable', 'string', 'max:2'],
-            'Thn_Lhr_Ibu' => ['nullable', 'string', 'max:4'],
-            'Agama_Ibu' => ['nullable', 'string', 'max:50'],
-            'Gol_Darah_Ibu' => ['nullable', 'string', 'max:5'],
-            'Pendidikan_Terakhir_Ibu' => ['nullable', 'string', 'max:50'],
-            'Pekerjaan_Ibu' => ['nullable', 'string', 'max:100'],
-            'Penghasilan_Ibu' => ['nullable', 'string', 'max:100'],
-            'Kebutuhan_Khusus_Ibu' => ['nullable', 'string', 'max:100'],
-            'Nomor_KTP_Ibu' => ['nullable', 'string', 'max:20'],
-            'Alamat_Ibu' => ['nullable', 'string'],
-            'No_HP_ibu' => ['nullable', 'string', 'max:16'],
-
-            // Pendaftar Data (Extended)
-            'nama_pendaftar' => ['nullable', 'string', 'max:255'],
-            'Kelas_Program_Kuliah' => ['nullable', 'string', 'max:255'],
-            'id_jurusan' => ['required', 'exists:jurusan,id'],
-            'ro_program_sekolah' => ['required', 'exists:reference_option,id'],
-            'Jalur_PMB' => ['required', 'exists:reference_option,id'], // ID Reference Option
-            'Jenis_Pembiayaan' => ['nullable', 'string', 'max:255'],
-            'id_referal_code' => ['nullable', 'exists:referal_codes,id'],
-            // Transfer Data
-            'NIMKO_Asal' => ['nullable', 'string', 'max:255'],
-            'PT_Asal' => ['nullable', 'string', 'max:255'],
-            'Prodi_Asal' => ['nullable', 'string', 'max:255'],
-            'Jml_SKS_Asal' => ['nullable', 'integer'],
-            'IPK_Asal' => ['nullable', 'string', 'max:255'],
-            'Semester_Asal' => ['nullable', 'string', 'max:10'],
-            'Pengantar_Mutasi' => ['nullable', 'string'],
-            'Transkip_Asal' => ['nullable', 'string'],
-            // Documents
-            'Legalisir_Ijazah' => ['nullable', 'array'],
-            'Legalisir_Ijazah.*' => ['file'],
-            'Legalisir_SKHU' => ['nullable', 'array'],
-            'Legalisir_SKHU.*' => ['file'],
-            'Copy_KTP' => ['nullable', 'array'],
-            'Copy_KTP.*' => ['file'],
-            // Photos
-            'File_Foto_Berwarna' => ['nullable', 'array'],
-            'File_Foto_Berwarna.*' => ['file', 'image'],
-            'Foto_BW_3x3' => ['nullable', 'array'],
-            'Foto_BW_3x3.*' => ['file', 'image'],
-            'Foto_BW_3x4' => ['nullable', 'array'],
-            'Foto_BW_3x4.*' => ['file', 'image'],
-            'Foto_Warna_5x6' => ['nullable', 'array'],
-            'Foto_Warna_5x6.*' => ['file', 'image'],
-            'Nama_File_Foto' => ['nullable', 'string', 'max:255'],
-
-            // Additional Siswa Fields
-            'golongan_darah' => ['nullable', 'string', 'max:5'],
-            'nomor_rumah' => ['nullable', 'string', 'max:20'],
-            'dusun' => ['nullable', 'string', 'max:100'],
-            'rt' => ['nullable', 'string', 'max:10'],
-            'rw' => ['nullable', 'string', 'max:10'],
-            'desa' => ['nullable', 'string', 'max:100'],
-            'kecamatan' => ['nullable', 'string', 'max:100'],
-            'kabupaten' => ['nullable', 'string', 'max:100'],
-            'provinsi' => ['nullable', 'string', 'max:100'],
-            'kode_pos' => ['nullable', 'string', 'max:10'],
-            'tempat_domisili' => ['nullable', 'string', 'max:255'],
-            'jenis_domisili' => ['nullable', 'string', 'max:50'],
-            'no_ktp' => ['nullable', 'string', 'max:20'],
-            'no_kk' => ['nullable', 'string', 'max:20'],
-            'kewarganegaraan' => ['nullable', 'string', 'max:50'],
-            'anak_ke' => ['nullable', 'integer'],
-            'jumlah_saudara' => ['nullable', 'integer'],
-            'asal_slta' => ['nullable', 'string', 'max:100'],
-            'status_asal_sekolah' => ['nullable', 'in:Negeri,Swasta'],
-            'jenis_slta' => ['nullable', 'string', 'max:50'],
-            'kejuruan_slta' => ['nullable', 'string', 'max:100'],
-            'tahun_lulus_slta' => ['nullable', 'integer'],
-            'nisn' => ['nullable', 'string', 'max:20'],
-            'nomor_seri_ijazah_slta' => ['nullable', 'string', 'max:50'],
-        ], [
-            // Custom error messages in Indonesian
-            'nama.required' => 'Nama wajib diisi.',
-            'nama.max' => 'Nama maksimal 255 karakter.',
-            'username.required' => 'Username wajib diisi.',
-            'username.unique' => 'Username sudah terdaftar. Silakan gunakan username lain.',
-            'password.required' => 'Password wajib diisi.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        DB::beginTransaction();
-
         try {
+            // Debug logging
+            Log::info('Pendaftaran store method called', [
+                'username' => $request->username,
+                'nama' => $request->nama,
+            ]);
+
+            $pengaturan = \App\Models\PengaturanPendaftaran::getAktif();
+            if (!$pengaturan->isPendaftaranBuka()) {
+                return back()->with('error', 'Pendaftaran sedang ditutup. Anda tidak dapat mengirim data.');
+            }
+
+            // Validation rules - HANYA 3 FIELD WAJIB: nama, username, password
+            $validator = Validator::make($request->all(), [
+                // REQUIRED FIELDS
+                'nama' => ['required', 'string', 'max:255'],
+                'username' => ['required', 'string', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'confirmed', Password::defaults()],
+
+                // OPTIONAL FIELDS - Semua field lain nullable
+                'nama_lengkap' => ['nullable', 'string', 'max:255'],
+                'nama_panggilan' => ['nullable', 'string', 'max:255'],
+                'jenis_kelamin' => ['nullable', 'string', 'max:10'],
+                'tempat_lahir' => ['nullable', 'string', 'max:255'],
+                'tanggal_lahir' => ['nullable', 'date'],
+                'alamat' => ['nullable', 'string'],
+                'no_telepon' => ['nullable', 'string', 'max:20'],
+                'agama' => ['nullable', 'string'],
+                'email' => ['nullable', 'string', 'email', 'max:255'],
+
+                // Parent Data (Ayah)
+                'Nama_Ayah' => ['nullable', 'string', 'max:255'],
+                'Tempat_Lhr_Ayah' => ['nullable', 'string', 'max:255'],
+                'Tgl_Lhr_Ayah' => ['nullable', 'string', 'max:2'],
+                'Bln_Lhr_Ayah' => ['nullable', 'string', 'max:2'],
+                'Thn_Lhr_ayah' => ['nullable', 'string', 'max:4'],
+                'Agama_Ayah' => ['nullable', 'string', 'max:50'],
+                'Gol_Darah_Ayah' => ['nullable', 'string', 'max:5'],
+                'Pendidikan_Terakhir_Ayah' => ['nullable', 'string', 'max:50'],
+                'Pekerjaan_Ayah' => ['nullable', 'string', 'max:100'],
+                'Penghasilan_Ayah' => ['nullable', 'string', 'max:100'],
+                'Kebutuhan_Khusus_Ayah' => ['nullable', 'string', 'max:100'],
+                'Nomor_KTP_Ayah' => ['nullable', 'string', 'max:20'],
+                'Alamat_Ayah' => ['nullable', 'string'],
+                'No_HP_ayah' => ['nullable', 'string', 'max:16'],
+
+                // Parent Data (Ibu)
+                'Nama_Ibu' => ['nullable', 'string', 'max:255'],
+                'Tempat_Lhr_Ibu' => ['nullable', 'string', 'max:255'],
+                'Tgl_Lhr_Ibu' => ['nullable', 'string', 'max:2'],
+                'Bln_Lhr_Ibu' => ['nullable', 'string', 'max:2'],
+                'Thn_Lhr_Ibu' => ['nullable', 'string', 'max:4'],
+                'Agama_Ibu' => ['nullable', 'string', 'max:50'],
+                'Gol_Darah_Ibu' => ['nullable', 'string', 'max:5'],
+                'Pendidikan_Terakhir_Ibu' => ['nullable', 'string', 'max:50'],
+                'Pekerjaan_Ibu' => ['nullable', 'string', 'max:100'],
+                'Penghasilan_Ibu' => ['nullable', 'string', 'max:100'],
+                'Kebutuhan_Khusus_Ibu' => ['nullable', 'string', 'max:100'],
+                'Nomor_KTP_Ibu' => ['nullable', 'string', 'max:20'],
+                'Alamat_Ibu' => ['nullable', 'string'],
+                'No_HP_ibu' => ['nullable', 'string', 'max:16'],
+
+                // Pendaftar Data (Extended)
+                'nama_pendaftar' => ['nullable', 'string', 'max:255'],
+                'Kelas_Program_Kuliah' => ['nullable', 'string', 'max:255'],
+                'id_jurusan' => ['required', 'exists:jurusan,id'],
+                'ro_program_sekolah' => ['required', 'exists:reference_option,id'],
+                'Jalur_PMB' => ['required', 'exists:reference_option,id'], // ID Reference Option
+                'Jenis_Pembiayaan' => ['nullable', 'string', 'max:255'],
+                'id_referal_code' => ['nullable', 'exists:referal_codes,id'],
+                // Transfer Data
+                'NIMKO_Asal' => ['nullable', 'string', 'max:255'],
+                'PT_Asal' => ['nullable', 'string', 'max:255'],
+                'Prodi_Asal' => ['nullable', 'string', 'max:255'],
+                'Jml_SKS_Asal' => ['nullable', 'integer'],
+                'IPK_Asal' => ['nullable', 'string', 'max:255'],
+                'Semester_Asal' => ['nullable', 'string', 'max:10'],
+                'Pengantar_Mutasi' => ['nullable', 'string'],
+                'Transkip_Asal' => ['nullable', 'string'],
+                // Documents
+                'Legalisir_Ijazah' => ['nullable', 'array'],
+                'Legalisir_Ijazah.*' => ['file'],
+                'Legalisir_SKHU' => ['nullable', 'array'],
+                'Legalisir_SKHU.*' => ['file'],
+                'Copy_KTP' => ['nullable', 'array'],
+                'Copy_KTP.*' => ['file'],
+                // Photos
+                'File_Foto_Berwarna' => ['nullable', 'array'],
+                'File_Foto_Berwarna.*' => ['file', 'image'],
+                'Foto_BW_3x3' => ['nullable', 'array'],
+                'Foto_BW_3x3.*' => ['file', 'image'],
+                'Foto_BW_3x4' => ['nullable', 'array'],
+                'Foto_BW_3x4.*' => ['file', 'image'],
+                'Foto_Warna_5x6' => ['nullable', 'array'],
+                'Foto_Warna_5x6.*' => ['file', 'image'],
+                'Nama_File_Foto' => ['nullable', 'string', 'max:255'],
+
+                // Additional Siswa Fields
+                'golongan_darah' => ['nullable', 'string', 'max:5'],
+                'nomor_rumah' => ['nullable', 'string', 'max:20'],
+                'dusun' => ['nullable', 'string', 'max:100'],
+                'rt' => ['nullable', 'string', 'max:10'],
+                'rw' => ['nullable', 'string', 'max:10'],
+                'desa' => ['nullable', 'string', 'max:100'],
+                'kecamatan' => ['nullable', 'string', 'max:100'],
+                'kabupaten' => ['nullable', 'string', 'max:100'],
+                'provinsi' => ['nullable', 'string', 'max:100'],
+                'kode_pos' => ['nullable', 'string', 'max:10'],
+                'tempat_domisili' => ['nullable', 'string', 'max:255'],
+                'jenis_domisili' => ['nullable', 'string', 'max:50'],
+                'no_ktp' => ['nullable', 'string', 'max:20'],
+                'no_kk' => ['nullable', 'string', 'max:20'],
+                'kewarganegaraan' => ['nullable', 'string', 'max:50'],
+                'anak_ke' => ['nullable', 'integer'],
+                'jumlah_saudara' => ['nullable', 'integer'],
+                'asal_slta' => ['nullable', 'string', 'max:100'],
+                'status_asal_sekolah' => ['nullable', 'in:Negeri,Swasta'],
+                'jenis_slta' => ['nullable', 'string', 'max:50'],
+                'kejuruan_slta' => ['nullable', 'string', 'max:100'],
+                'tahun_lulus_slta' => ['nullable', 'integer'],
+                'nisn' => ['nullable', 'string', 'max:20'],
+                'nomor_seri_ijazah_slta' => ['nullable', 'string', 'max:50'],
+            ], [
+                // Custom error messages in Indonesian
+                'nama.required' => 'Nama wajib diisi.',
+                'nama.max' => 'Nama maksimal 255 karakter.',
+                'username.required' => 'Username wajib diisi.',
+                'username.unique' => 'Username sudah terdaftar. Silakan gunakan username lain.',
+                'password.required' => 'Password wajib diisi.',
+                'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('Pendaftaran validation failed', [
+                    'errors' => $validator->errors()->toArray(),
+                    'username' => $request->username
+                ]);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('error', 'Data tidak valid. Silakan periksa kembali isian Anda.');
+            }
+
+            // Logic to handle Referal Code string
+            if ($request->filled('kode_referal')) {
+                $referal = \App\Models\ReferalCode::where('kode', $request->kode_referal)->first();
+                if ($referal) {
+                    // Merge the ID into the request for the store logic
+                    $request->merge(['id_referal_code' => $referal->id]);
+                }
+            }
+
+            DB::beginTransaction();
+
             // 1. Create User
             Log::info('Step 1: Creating User');
             try {
@@ -403,7 +424,9 @@ class PendaftaranController extends Controller
             return redirect()->route('pendaftaran.index')
                 ->with('success', 'Pendaftaran berhasil! Akun Anda telah dibuat dengan username: ' . $request->username . '. Silakan login untuk melanjutkan.');
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
 
             // Log the error for debugging
             Log::error('Pendaftaran failed', [
@@ -431,6 +454,33 @@ class PendaftaranController extends Controller
             return redirect()->back()
                 ->with('error', $errorMessage)
                 ->withInput();
+        }
+    }
+
+    /**
+     * Proxy to download the QR code image because browsers block cross-origin download.
+     */
+    public function downloadQr($kode)
+    {
+        $url = url('/pendaftaran?ref=' . $kode);
+        $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . urlencode($url) . "&margin=10";
+
+        try {
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\r\n"
+                ]
+            ]);
+            $imageContent = file_get_contents($qrApiUrl, false, $context);
+            if ($imageContent === false) {
+                return response('Gagal mengambil QR code dari server luar.', 500);
+            }
+
+            return response($imageContent)
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="QR-Referal-' . $kode . '.png"');
+        } catch (\Exception $e) {
+            return response('Error: ' . $e->getMessage(), 500);
         }
     }
 }

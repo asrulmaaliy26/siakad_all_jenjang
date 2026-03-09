@@ -175,6 +175,9 @@ class MataPelajaranKelasRelationManager extends RelationManager
                 }
             })
             ->columns([
+                TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.kode_feeder')
+                    ->label('Kode Feeder')
+                    ->searchable(),
                 TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
                     ->searchable(),
