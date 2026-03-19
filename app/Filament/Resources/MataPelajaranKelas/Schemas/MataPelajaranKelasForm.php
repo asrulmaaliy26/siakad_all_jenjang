@@ -126,7 +126,7 @@ class MataPelajaranKelasForm
                             ->disk('public')
                             ->visibility('public')
                             ->multiple()
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uts'))
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uts'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->preserveFilenames()
                             ->maxSize(10240)
@@ -135,7 +135,7 @@ class MataPelajaranKelasForm
                             ->columnSpanFull(), // full width,,
                         RichEditor::make('ctt_soal_uts')
                             ->label('Soal UTS (Rich Text)')
-                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uts'))
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uts'))
                             ->columnSpanFull(),
                     ]),
 
@@ -164,7 +164,7 @@ class MataPelajaranKelasForm
                             ->label('Upload File Soal UAS')
                             ->disk('public')
                             ->multiple()
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uas'))
+                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uas'))
                             ->visibility('public')
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->preserveFilenames()
@@ -174,7 +174,7 @@ class MataPelajaranKelasForm
                             ->columnSpanFull(), // full width,,
                         RichEditor::make('ctt_soal_uas')
                             ->label('Soal UAS (Rich Text)')
-                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $get, 'soal_uas'))
+                            ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadMataPelajaranKelasPath($get, $record, 'soal_uas'))
                             ->columnSpanFull(),
                     ]),
             ]);

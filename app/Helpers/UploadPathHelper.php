@@ -77,7 +77,7 @@ class UploadPathHelper
 
         // 2. Kelas Info (Program Kelas + Semester)
         $kelasInfo = 'KelasUmum';
-        if ($record && $record->kelas) {
+        if ($record instanceof Model && $record->kelas) {
             $prog = $record->kelas->programKelas->nilai ?? '';
             $sem = $record->kelas->semester ?? '';
             $kelasInfo = "kelas {$prog}{$sem}";
@@ -92,7 +92,7 @@ class UploadPathHelper
 
         // 3. Nama Mata Pelajaran
         $mapelNama = 'MapelUmum';
-        if ($record && $record->mataPelajaranKurikulum && $record->mataPelajaranKurikulum->mataPelajaranMaster) {
+        if ($record instanceof Model && $record->mataPelajaranKurikulum && $record->mataPelajaranKurikulum->mataPelajaranMaster) {
             $mapelNama = $record->mataPelajaranKurikulum->mataPelajaranMaster->name ?? $record->mataPelajaranKurikulum->mataPelajaranMaster->nama ?? 'MapelUmum';
         } elseif ($get && $mapelKurikulumId = $get('id_mata_pelajaran_kurikulum')) {
             $mk = \App\Models\MataPelajaranKurikulum::find($mapelKurikulumId);

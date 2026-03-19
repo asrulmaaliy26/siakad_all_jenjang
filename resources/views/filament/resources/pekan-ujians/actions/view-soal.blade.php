@@ -3,7 +3,8 @@
     $fileKey = $type == 'uas' ? 'soal_uas' : 'soal_uts';
     $noteKey = $type == 'uas' ? 'ctt_soal_uas' : 'ctt_soal_uts';
 
-    $filePath = $record->$fileKey;
+    $filePathValue = $record->$fileKey;
+    $filePath = is_array($filePathValue) ? ($filePathValue[0] ?? null) : $filePathValue;
     $note = $record->$noteKey;
     $typeName = strtoupper($type);
     $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
@@ -92,9 +93,16 @@
                 <img src="{{ $fileUrl }}" alt="Preview Soal {{ $typeName }}"
                     class="max-w-full max-h-full w-auto h-auto object-contain rounded shadow-lg">
             </div>
-            @elseif(strtolower($extension) === 'pdf')
+            @elseif(in_array(strtolower($extension), ['pdf', 'doc', 'docx']))
+                @php
+                    $previewUrl = $fileUrl;
+                    if (in_array(strtolower($extension), ['doc', 'docx'])) {
+                        // Gunakan Google Docs Viewer untuk file Word agar bisa di-preview di iframe
+                        $previewUrl = "https://docs.google.com/viewer?url=" . urlencode($fileUrl) . "&embedded=true";
+                    }
+                @endphp
             <iframe
-                src="{{ $fileUrl }}#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
+                src="{{ $previewUrl }}{{ strtolower($extension) === 'pdf' ? '#toolbar=0&navpanes=0&scrollbar=1&view=FitH' : '' }}"
                 class="w-full h-full"
                 style="border: none;"
                 frameborder="0"

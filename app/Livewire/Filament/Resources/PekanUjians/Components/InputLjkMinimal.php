@@ -84,7 +84,8 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
                             ->label('File Soal')
                             ->content(function () {
                                 $field = $this->type == 'uas' ? 'soal_uas' : 'soal_uts';
-                                $file = $this->record?->$field;
+                                $fileValue = $this->record?->$field;
+                                $file = is_array($fileValue) ? ($fileValue[0] ?? null) : $fileValue;
                                 if (!$file) return 'Tidak ada file soal.';
                                 return new \Illuminate\Support\HtmlString('<a href="' . asset('storage/' . $file) . '" target="_blank" class="text-primary-600 underline font-bold">Unduh / Lihat Soal</a>');
                             }),
