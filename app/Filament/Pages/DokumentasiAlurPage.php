@@ -21,7 +21,7 @@ class DokumentasiAlurPage extends Page
 
     protected static ?string $title = 'Dokumentasi Alur SIAKAD';
 
-    protected static string $view = 'filament.pages.dokumentasi-alur-page';
+    protected string $view = 'filament.pages.dokumentasi-alur-page';
 
     public function mount(): void
     {

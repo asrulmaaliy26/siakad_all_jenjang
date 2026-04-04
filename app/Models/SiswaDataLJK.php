@@ -68,17 +68,18 @@ class SiswaDataLJK extends Model
 
     public static function calculateGradeLetter($average)
     {
-        if ($average >= 3.85) return 'A';
-        if ($average >= 3.50) return 'A-';
-        if ($average >= 3.15) return 'B+';
-        if ($average >= 2.85) return 'B';
-        if ($average >= 2.50) return 'B-';
-        if ($average >= 2.15) return 'C+';
-        if ($average >= 1.85) return 'C';
-        if ($average >= 1.50) return 'C-';
-        if ($average >= 1.15) return 'D+';
-        if ($average >= 1.00) return 'D';
-        return 'E';
+        if ($average >= 3.76 && $average <= 4.00) return 'A+';
+        if ($average >= 3.51 && $average <= 3.75) return 'A';
+        if ($average >= 3.26 && $average <= 3.50) return 'A-';
+        if ($average >= 3.01 && $average <= 3.25) return 'B+';
+        if ($average >= 2.76 && $average <= 3.00) return 'B';
+        if ($average >= 2.51 && $average <= 2.75) return 'B-';
+        if ($average >= 2.26 && $average <= 2.50) return 'C+';
+        if ($average >= 2.00 && $average <= 2.25) return 'C';
+        if ($average >= 1.76 && $average <= 1.99) return 'C-';
+        if ($average >= 0 && $average <= 1.75) return 'D';
+
+        return 'Tidak Valid';
     }
 
 

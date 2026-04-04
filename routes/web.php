@@ -22,6 +22,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/cetak-khs/{id}', [CetakController::class, 'khs'])->name('cetak.khs');
     Route::get('/cetak-transkrip/{id}', [CetakController::class, 'transkrip'])->name('cetak.transkrip');
     Route::get('/cetak-ktm/{id}', [CetakController::class, 'ktm'])->name('cetak.ktm');
+    
+    // Sarpras Correspondence
+    Route::get('/sarpras/surat-keluar/{id}/cetak', [App\Http\Controllers\Sarpras\SarprasSuratController::class, 'cetak'])->name('sarpras.surat-keluar.cetak');
 });
 
 Route::get('/library/checkin/{nim}', [App\Http\Controllers\LibraryVisitController::class, 'autoCheckin'])->name('library.checkin');

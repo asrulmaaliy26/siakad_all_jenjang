@@ -32,6 +32,15 @@ class SiswaDataLjkRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                TextColumn::make('id')
+                    ->label('ID LJK')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('id_akademik_krs')
+                    ->label('ID KRS')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('id_mata_pelajaran_kelas')
+                    ->label('ID Mapel Kelas')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nama')
                     ->label('Nama Mahasiswa')
                     ->searchable()
@@ -131,6 +140,28 @@ class SiswaDataLjkRelationManager extends RelationManager
                             ->success()
                             ->send();
                     }),
+                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
+                    ->label('Export Excel')
+                    ->color('success')
+                    ->exports([
+                        \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                            ->fromTable()
+                            ->withColumns([
+                                \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
+                                ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
+                            ])
+                    ]),
+                \Filament\Actions\ImportAction::make()
+                    ->label('Import Excel')
+                    ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
+                    ->color('warning'),
             ])
             ->actions([
                 DeleteAction::make()
@@ -138,6 +169,22 @@ class SiswaDataLjkRelationManager extends RelationManager
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->fromTable()
+                                ->withColumns([
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
+                                    ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
+                                ])
+                        ]),
                     DeleteBulkAction::make()
                         ->visible(fn() => ! auth()->user()?->isMurid()),
                 ]),
