@@ -108,14 +108,19 @@ class MataPelajaranKelas extends Model
 
     public function getJumlahMahasiswaAttribute()
     {
-        return $this->kelas ? $this->kelas->akademikKrs()->count() : 0;
+        return $this->siswaDataLjk()->count();
+    }
+
+    public function getJumlahSesiAbsensiAttribute()
+    {
+        return $this->absensiSiswa()->distinct('waktu_absen')->count('waktu_absen');
     }
 
     public function getProgressAttribute()
     {
         $totalPertemuan = 16; // Asumsi standar 16 pertemuan
-        $jumlahPertemuan = $this->pertemuanKelas()->count();
-        return ($jumlahPertemuan / $totalPertemuan) * 100;
+        $jumlahSesi = $this->jumlah_sesi_absensi;
+        return ($jumlahSesi / $totalPertemuan) * 100;
     }
     protected function statusUts(): \Illuminate\Database\Eloquent\Casts\Attribute
     {

@@ -48,6 +48,7 @@ class MataPelajaranKelasTable
                 // ── Hari & Jam dengan deteksi bentrok ──
                 TextColumn::make('hari')
                     ->searchable()
+                    ->sortable()
                     ->toggleable()
                     ->color(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'danger' : null)
                     ->weight(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'bold' : null)
@@ -56,6 +57,7 @@ class MataPelajaranKelasTable
                         : []),
 
                 TextColumn::make('jam')
+                    ->sortable()
                     ->toggleable()
                     ->color(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'danger' : null)
                     ->weight(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'bold' : null)
@@ -65,6 +67,7 @@ class MataPelajaranKelasTable
 
                 TextColumn::make('ruangKelas.nilai')
                     ->label('Ruang')
+                    ->sortable()
                     ->toggleable()
                     ->color(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'danger' : null)
                     ->weight(fn($record, $livewire) => static::isBentrok($record, $livewire) ? 'bold' : null)
@@ -87,6 +90,30 @@ class MataPelajaranKelasTable
                     ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('id_jurusan')
+                    ->label('Jurusan')
+                    ->relationship('kelas.jurusan', 'nama')
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('ro_program_kelas')
+                    ->label('Program Kelas')
+                    ->relationship('kelas.programKelas', 'nilai')
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('hari')
+                    ->label('Hari')
+                    ->options([
+                        'Senin' => 'Senin',
+                        'Selasa' => 'Selasa',
+                        'Rabu' => 'Rabu',
+                        'Kamis' => 'Kamis',
+                        'Jumat' => 'Jumat',
+                        'Sabtu' => 'Sabtu',
+                        'Minggu' => 'Minggu',
+                    ]),
+
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
                     ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())

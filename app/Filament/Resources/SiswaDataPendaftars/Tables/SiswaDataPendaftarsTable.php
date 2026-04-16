@@ -219,7 +219,7 @@ class SiswaDataPendaftarsTable
 
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
-                    ->relationship('jurusan', 'nama')
+                    ->relationship('jurusan', 'nama', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama', 'NOT LIKE', '%temp%'))
                     ->preload()
                     ->multiple(),
             ])

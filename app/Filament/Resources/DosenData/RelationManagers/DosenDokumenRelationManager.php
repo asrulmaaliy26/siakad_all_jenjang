@@ -39,6 +39,7 @@ class DosenDokumenRelationManager extends RelationManager
                         'tugas' => 'Tugas',
                         'rpp' => 'RPP',
                         'silabus' => 'Silabus',
+                        'profil' => 'Profil',
                         'lainnya' => 'Lainnya',
                     ])
                     ->required()
@@ -85,6 +86,7 @@ class DosenDokumenRelationManager extends RelationManager
                         'tugas' => 'warning',
                         'rpp' => 'info',
                         'silabus' => 'primary',
+                        'profil' => 'secondary',
                         'lainnya' => 'gray',
                     }),
 

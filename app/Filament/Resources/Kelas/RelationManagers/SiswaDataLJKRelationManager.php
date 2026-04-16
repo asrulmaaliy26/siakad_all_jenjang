@@ -19,6 +19,7 @@ use Filament\Actions\ImportAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\MultiSelect;
+use Filament\Actions\ActionGroup;
 
 class SiswaDataLJKRelationManager extends RelationManager
 {
@@ -180,6 +181,8 @@ class SiswaDataLJKRelationManager extends RelationManager
                             })
                             ->required()
                             ->searchable()
+                            ->preload()
+                            ->optionsLimit(500)
                             ->placeholder('Pilih mahasiswa dari jurusan yang sama'),
                     ])
                     ->using(function (array $data) {
@@ -203,28 +206,34 @@ class SiswaDataLJKRelationManager extends RelationManager
                         }
                         return null; // Menghentikan proses pembuatan record tunggal default
                     }),
-                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
-                    ->label('Export Excel')
-                    ->color('success')
-                    ->exports([
-                        \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                            ->fromTable()
-                            ->withColumns([
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
-                                ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
-                            ])
-                    ]),
-                \Filament\Actions\ImportAction::make()
-                    ->label('Import Excel')
-                    ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
-                    ->color('warning')
+                ActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
+                        ->label('Export Excel')
+                        ->color('success')
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->fromTable()
+                                ->withColumns([
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
+                                    ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
+                                ])
+                        ]),
+                    \Filament\Actions\ImportAction::make()
+                        ->label('Import Excel')
+                        ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
+                        ->color('warning'),
+                ])
+                    ->label('Opsi Excel')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->color('gray')
+                    ->button(),
             ])
             ->actions([
                 DeleteAction::make(),

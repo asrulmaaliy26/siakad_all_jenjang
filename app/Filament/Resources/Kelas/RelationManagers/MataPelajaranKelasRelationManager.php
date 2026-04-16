@@ -110,7 +110,7 @@ class MataPelajaranKelasRelationManager extends RelationManager
                     }
 
                     return $query
-                        ->limit(50)
+                        ->limit(500)
                         ->get()
                         ->mapWithKeys(fn($item) => [
                             $item->id => ($item->mataPelajaranMaster->nama ?? 'N/A') . ' - Semester ' . $item->semester
@@ -147,7 +147,7 @@ class MataPelajaranKelasRelationManager extends RelationManager
                     }
 
                     return $query
-                        ->limit(20)
+                        ->limit(100)
                         ->get()
                         ->mapWithKeys(fn($item) => [
                             $item->id => ($item->mataPelajaranMaster->nama ?? 'N/A') . ' - Semester ' . $item->semester

@@ -50,14 +50,41 @@ class JurnalPengajaranRelationManager extends RelationManager
                     ->required()
                     ->default('N'),
 
-                Forms\Components\Select::make('dokumen')
-                    ->multiple()
-                    ->relationship('dokumen', 'judul_dokumen', function (Builder $query) {
-                        // Filter documents: only show those belonging to the Dosen of this Class
-                        return $query->where('id_dosen', $this->getOwnerRecord()->id_dosen_data);
-                    })
-                    ->preload()
-                    ->label('Dokumen Terkait (Materi/Tugas Dosen)'),
+                Grid::make(3)
+                    ->schema([
+                        Forms\Components\Select::make('filter_tipe_dokumen')
+                            ->label('Filter Tipe')
+                            ->options([
+                                'materi' => 'Materi',
+                                'tugas' => 'Tugas',
+                                'rpp' => 'RPP',
+                                'silabus' => 'Silabus',
+                                'profil' => 'Profil',
+                                'lainnya' => 'Lainnya',
+                            ])
+                            ->live()
+                            ->dehydrated(false)
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('dokumen')
+                            ->multiple()
+                            ->relationship('dokumen', 'judul_dokumen', function (Builder $query, $get) {
+                                // Filter by dosen
+                                $query->where('id_dosen', $this->getOwnerRecord()->id_dosen_data);
+
+                                // Filter by selected type if any
+                                if ($get('filter_tipe_dokumen')) {
+                                    $query->where('tipe_dokumen', $get('filter_tipe_dokumen'));
+                                }
+
+                                return $query;
+                            })
+                            ->searchable(['judul_dokumen', 'tipe_dokumen'])
+                            ->getOptionLabelFromRecordUsing(fn(\Illuminate\Database\Eloquent\Model $record) => "{$record->judul_dokumen} (" . ucfirst($record->tipe_dokumen ?? 'lainnya') . ")")
+                            ->optionsLimit(20)
+                            ->label('Dokumen Terkait (Materi/Tugas Dosen)')
+                            ->columnSpan(2),
+                    ]),
             ]);
     }
 

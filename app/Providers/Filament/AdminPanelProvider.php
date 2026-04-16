@@ -73,17 +73,17 @@ class AdminPanelProvider extends PanelProvider
                 FilamentShieldPlugin::make(),
             ])
             ->navigationGroups([
-                NavigationGroup::make('Master Data')
-                    ->icon('heroicon-o-circle-stack'),
-
                 NavigationGroup::make('Perkuliahan')
                     ->icon('heroicon-o-academic-cap'),
 
-                NavigationGroup::make('Layanan Mahasiswa')
-                    ->icon('heroicon-o-users'),
+                NavigationGroup::make('Master Data')
+                    ->icon('heroicon-o-circle-stack'),
 
                 NavigationGroup::make('Pendaftaran')
                     ->icon('heroicon-o-clipboard-document-list'),
+
+                NavigationGroup::make('Layanan Mahasiswa')
+                    ->icon('heroicon-o-users'),
 
                 NavigationGroup::make('Tugas Akhir')
                     ->icon('heroicon-o-document-text'),
@@ -93,6 +93,9 @@ class AdminPanelProvider extends PanelProvider
 
                 NavigationGroup::make('Pengaturan User')
                     ->icon('heroicon-o-cog-6-tooth'),
+
+                NavigationGroup::make('Sarpras / Inventaris')
+                    ->icon('heroicon-o-archive-box'),
 
                 NavigationGroup::make('Temp')
                     ->icon('heroicon-o-folder'),

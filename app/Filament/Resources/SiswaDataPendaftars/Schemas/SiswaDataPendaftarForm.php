@@ -186,7 +186,7 @@ class SiswaDataPendaftarForm
 
                                         Select::make('id_jurusan')
                                             ->label('Jurusan')
-                                            ->relationship('jurusan', 'nama')
+                                            ->relationship('jurusan', 'nama', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama', 'NOT LIKE', '%temp%'))
                                             ->searchable()
                                             ->preload()
                                             ->required()
@@ -196,12 +196,12 @@ class SiswaDataPendaftarForm
 
                                         Select::make('Prodi_Pilihan_1')
                                             ->label('Prodi Pilihan 1')
-                                            ->options(\App\Models\Jurusan::pluck('nama', 'nama'))
+                                            ->options(\App\Models\Jurusan::where('nama', 'NOT LIKE', '%temp%')->pluck('nama', 'nama'))
                                             ->searchable(),
 
                                         Select::make('Prodi_Pilihan_2')
                                             ->label('Prodi Pilihan 2')
-                                            ->options(\App\Models\Jurusan::pluck('nama', 'nama'))
+                                            ->options(\App\Models\Jurusan::where('nama', 'NOT LIKE', '%temp%')->pluck('nama', 'nama'))
                                             ->searchable(),
 
                                         Select::make('Jalur_PMB')

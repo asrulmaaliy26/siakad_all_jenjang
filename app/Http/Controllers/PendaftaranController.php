@@ -21,7 +21,7 @@ class PendaftaranController extends Controller
     public function index(Request $request)
     {
         try {
-            $jurusans = \App\Models\Jurusan::all();
+            $jurusans = \App\Models\Jurusan::where('nama', 'NOT LIKE', '%temp%')->get();
             $jalurPmbs = \App\Models\ReferenceOption::where('nama_grup', 'jalur_pmb')->where('status', 1)->get();
             // Ambil reference option untuk program sekolah
             $programSekolahs = \App\Models\ReferenceOption::where('nama_grup', 'program_sekolah')->where('status', 1)->get();

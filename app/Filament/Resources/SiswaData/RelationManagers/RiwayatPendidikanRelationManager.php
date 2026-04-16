@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SiswaData\RelationManagers;
 use App\Models\RefOption\JenisKeluar;
 use App\Models\RefOption\JenisPendaftaran;
 use App\Models\RefOption\ProgramSekolah;
+use App\Models\RefOption\ProgramKelas;
 use Filament\Forms;
 use Filament\Tables;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -42,6 +43,11 @@ class RiwayatPendidikanRelationManager extends RelationManager
             Select::make('ro_program_sekolah')
                 ->label('Program Sekolah')
                 ->options(ProgramSekolah::pluck('nilai', 'id'))
+                ->searchable(),
+
+            Select::make('ro_program_kelas')
+                ->label('Program Kelas')
+                ->options(ProgramKelas::pluck('nilai', 'id'))
                 ->searchable(),
 
             TextInput::make('nomor_induk')
@@ -172,6 +178,7 @@ class RiwayatPendidikanRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('waliDosen.nama')
                     ->label('Dosen Wali'),
                 Tables\Columns\TextColumn::make('programSekolah.nilai'),
+                Tables\Columns\TextColumn::make('programKelas.nilai'),
                 Tables\Columns\TextColumn::make('statusSiswa.nilai'),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('created_at')

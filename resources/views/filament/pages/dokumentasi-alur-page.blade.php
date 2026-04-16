@@ -45,6 +45,16 @@
                     >
                         Alur Perubahan Semester & KRS
                     </button>
+                    <button
+                        type="button"
+                        class="px-3 py-1.5 rounded-md transition"
+                        :class="tab === 'dosen'
+                            ? 'bg-white text-primary-600 shadow-sm dark:bg-gray-800 dark:text-primary-400'
+                            : 'hover:bg-white/60 dark:hover:bg-gray-800/70'"
+                        @click="tab = 'dosen'"
+                    >
+                        Panduan Penggunaan Dosen
+                    </button>
                 </div>
 
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-black/5 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900">
@@ -70,6 +80,14 @@
                         x-cloak
                     >
                         @include('filament.pages.dokumentasi.alur-semester')
+                    </div>
+
+                    {{-- Tab: Panduan Dosen --}}
+                    <div
+                        x-show="tab === 'dosen'"
+                        x-cloak
+                    >
+                        @include('filament.pages.dokumentasi.panduan-dosen')
                     </div>
                 </div>
             </div>

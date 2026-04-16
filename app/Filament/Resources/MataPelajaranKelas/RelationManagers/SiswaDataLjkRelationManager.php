@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -21,6 +22,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\SelectColumn;
+use App\Filament\Resources\MataPelajaranKelas\Actions\ImportSiswaDataLjkAction;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class SiswaDataLjkRelationManager extends RelationManager
 {
@@ -140,28 +144,68 @@ class SiswaDataLjkRelationManager extends RelationManager
                             ->success()
                             ->send();
                     }),
-                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
-                    ->label('Export Excel')
-                    ->color('success')
-                    ->exports([
-                        \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                            ->fromTable()
-                            ->withColumns([
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
-                                ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
-                                \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
-                            ])
-                    ]),
-                \Filament\Actions\ImportAction::make()
-                    ->label('Import Excel')
-                    ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
-                    ->color('warning'),
+                ActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
+                        ->label('Export Excel')
+                        ->color('success')
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->fromTable()
+                                ->withColumns([
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
+                                    ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
+                                ])
+                                ->withFilename(function () {
+                                    $record = $this->getOwnerRecord();
+                                    return 'Export_Nilai_' . str($record->mataPelajaranKurikulum->mataPelajaranMaster->nama)->slug('_') . '_' . now()->format('YmdHis');
+                                }),
+                        ]),
+                    ImportSiswaDataLjkAction::make()
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
+                    Action::make('cetak_pdf')
+                        ->label('Cetak PDF Resmi')
+                        ->icon('heroicon-o-printer')
+                        ->color('danger')
+                        ->visible(fn() => ! auth()->user()?->isMurid())
+                        ->action(function ($livewire) {
+                            $record = $this->getOwnerRecord();
+                            $record->load([
+                                'kelas.jurusan.fakultas',
+                                'kelas.tahunAkademik',
+                                'kelas.programKelas',
+                                'dosenData',
+                                'mataPelajaranKurikulum.mataPelajaranMaster'
+                            ]);
+
+                            $records = $livewire->getFilteredTableQuery()
+                                ->with([
+                                    'akademikKrs.riwayatPendidikan.siswa',
+                                ])
+                                ->get();
+
+                            $pdf = Pdf::loadView('cetak.nilai-dpna', [
+                                'kelas' => $record,
+                                'records' => $records,
+                            ])->setPaper('a4', 'portrait');
+
+                            return response()->streamDownload(
+                                fn() => print($pdf->output()),
+                                'DPNA_' . str($record->mataPelajaranKurikulum->mataPelajaranMaster->nama)->slug('_') . '_' . now()->format('YmdHis') . '.pdf'
+                            );
+                        }),
+
+                ])
+                    ->label('Opsi Excel')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->color('gray')
+                    ->button(),
             ])
             ->actions([
                 DeleteAction::make()
@@ -184,6 +228,10 @@ class SiswaDataLjkRelationManager extends RelationManager
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
                                 ])
+                                ->withFilename(function () {
+                                    $record = $this->getOwnerRecord();
+                                    return 'Bulk_Export_Nilai_' . str($record->mataPelajaranKurikulum->mataPelajaranMaster->nama)->slug('_') . '_' . now()->format('YmdHis');
+                                }),
                         ]),
                     DeleteBulkAction::make()
                         ->visible(fn() => ! auth()->user()?->isMurid()),

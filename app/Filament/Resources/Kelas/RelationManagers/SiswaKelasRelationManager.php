@@ -67,7 +67,7 @@ class SiswaKelasRelationManager extends RelationManager
                 ->required()
                 ->searchable()
                 ->preload(false)
-                ->optionsLimit(20)
+                ->optionsLimit(500)
                 ->reactive()
 
                 // Saat dropdown dibuka (tanpa search)
@@ -105,14 +105,14 @@ class SiswaKelasRelationManager extends RelationManager
                         });
                     }
 
-                    $results = $query->limit(100)->get();
+                    $results = $query->limit(1000)->get();
 
                     if ($semesterFilter) {
                         $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semesterFilter);
                     }
 
                     return $results
-                        ->take(20)
+                        ->take(500)
                         ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
                             $item->id => ($item->siswa?->nama ?? '-') . ' (Sem ' . $item->getSemester() . ') - ' . ($item->programKelas?->nilai ?? 'No Program')
                         ])
@@ -154,14 +154,14 @@ class SiswaKelasRelationManager extends RelationManager
                         });
                     }
 
-                    $results = $query->limit(100)->get();
+                    $results = $query->limit(1000)->get();
 
                     if ($semesterFilter) {
                         $results = $results->filter(fn(\App\Models\RiwayatPendidikan $item) => $item->getSemester() == $semesterFilter);
                     }
 
                     return $results
-                        ->take(20)
+                        ->take(500)
                         ->mapWithKeys(fn(\App\Models\RiwayatPendidikan $item) => [
                             $item->id => ($item->siswa?->nama ?? '-') . ' (Sem ' . $item->getSemester() . ') - ' . ($item->programKelas?->nilai ?? 'No Program')
                         ])

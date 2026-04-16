@@ -37,6 +37,7 @@ class SiswaOverviewStats extends BaseWidget
 
         $totalAktif = RiwayatPendidikan::query()
             ->where('ro_status_siswa', 37)
+            ->whereHas('jurusan', fn($q) => $q->where('nama', 'NOT LIKE', '%temp%'))
             ->when($tahunIds, fn(Builder $query) => $query->whereHas(
                 'akademikKrs',
                 fn($q) => $q->whereIn('id_tahun_akademik', $tahunIds)
@@ -45,6 +46,7 @@ class SiswaOverviewStats extends BaseWidget
 
         $totalPending = RiwayatPendidikan::query()
             ->whereIn('ro_status_siswa', [142, 43])
+            ->whereHas('jurusan', fn($q) => $q->where('nama', 'NOT LIKE', '%temp%'))
             ->when($tahunIds, fn(Builder $query) => $query->whereIn('id_tahun_akademik', $tahunIds))
             ->count();
 
@@ -54,6 +56,7 @@ class SiswaOverviewStats extends BaseWidget
                 $q->where('Status_Pendaftaran', '!=', 'Y')
                     ->orWhereNull('Status_Pendaftaran');
             })
+            ->whereHas('jurusan', fn($q) => $q->where('nama', 'NOT LIKE', '%temp%'))
             ->when($tahunIds, fn(Builder $query) => $query->whereIn('id_tahun_akademik', $tahunIds))
             ->count();
 

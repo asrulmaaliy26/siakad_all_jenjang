@@ -42,7 +42,7 @@ class JurusanStudentStats extends BaseWidget
 
         return $table
             ->query(
-                Jurusan::query()
+                Jurusan::query()->where('nama', 'NOT LIKE', '%temp%')
 
                     ->withCount([
                         // Mhs. Aktif: ro_status_siswa = 37, filter via KRS id_tahun_akademik (Ganjil+Genap)

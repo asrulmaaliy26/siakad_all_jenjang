@@ -19,6 +19,8 @@ class SarprasPeminjamanResource extends Resource
     protected static ?string $model = SarprasPeminjaman::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|\UnitEnum|null $navigationGroup = 'Sarpras / Inventaris';
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $recordTitleAttribute = 'no';
 
