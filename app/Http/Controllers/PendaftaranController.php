@@ -63,7 +63,7 @@ class PendaftaranController extends Controller
             $validator = Validator::make($request->all(), [
                 // REQUIRED FIELDS
                 'nama' => ['required', 'string', 'max:255'],
-                'username' => ['required', 'string', 'max:255', 'unique:users,email'],
+                'username' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'confirmed', Password::defaults()],
 
                 // OPTIONAL FIELDS - Semua field lain nullable
@@ -173,8 +173,9 @@ class PendaftaranController extends Controller
                 // Custom error messages in Indonesian
                 'nama.required' => 'Nama wajib diisi.',
                 'nama.max' => 'Nama maksimal 255 karakter.',
-                'username.required' => 'Username wajib diisi.',
-                'username.unique' => 'Username sudah terdaftar. Silakan gunakan username lain.',
+                'username.required' => 'Username (Email) wajib diisi.',
+                'username.email' => 'Username harus berupa format email yang valid.',
+                'username.unique' => 'Username (Email) sudah terdaftar. Silakan gunakan email lain.',
                 'password.required' => 'Password wajib diisi.',
                 'password.confirmed' => 'Konfirmasi password tidak cocok.',
             ]);

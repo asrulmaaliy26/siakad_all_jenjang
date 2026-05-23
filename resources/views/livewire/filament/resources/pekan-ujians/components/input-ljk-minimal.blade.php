@@ -54,6 +54,61 @@
                 </div>
             </div>
         </div>
+        @else
+        {{-- Status Pengumpulan Jawaban untuk Mahasiswa --}}
+        @php
+            $ljkField    = $type == 'uas' ? 'ljk_uas'             : 'ljk_uts';
+            $tglField    = $type == 'uas' ? 'tgl_upload_ljk_uas'  : 'tgl_upload_ljk_uts';
+            $uploadDate  = $selectedLjk->$tglField;
+
+            // Tampilkan SEMUA file yang ada di direktori
+            $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $selectedLjk, $ljkField);
+            $uploadedFiles = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+        @endphp
+        <div class="mb-6 rounded-xl border {{ count($uploadedFiles) ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20' : 'border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20' }} p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-0.5">
+                    @if(count($uploadedFiles))
+                        <x-heroicon-o-check-circle class="w-6 h-6 text-green-500 dark:text-green-400" />
+                    @else
+                        <x-heroicon-o-clock class="w-6 h-6 text-amber-500 dark:text-amber-400" />
+                    @endif
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold {{ count($uploadedFiles) ? 'text-green-800 dark:text-green-200' : 'text-amber-800 dark:text-amber-200' }}">
+                        @if(count($uploadedFiles))
+                            ✅ Jawaban Sudah Dikumpulkan
+                        @else
+                            ⏳ Belum Ada Jawaban Dikumpulkan
+                        @endif
+                    </p>
+                    @if($uploadDate)
+                        <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                            Terakhir diupload: {{ \Carbon\Carbon::parse($uploadDate)->translatedFormat('d F Y') }}
+                        </p>
+                    @endif
+                    @if(count($uploadedFiles))
+                        <div class="mt-3 flex flex-col gap-2">
+                            @foreach($uploadedFiles as $fp)
+                                @php
+                                    $fUrl  = asset('storage/' . $fp);
+                                    $fName = basename($fp);
+                                    $fExt  = strtolower(pathinfo($fp, PATHINFO_EXTENSION));
+                                @endphp
+                                <a href="{{ $fUrl }}" target="_blank"
+                                    class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-600 rounded-lg text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors max-w-sm">
+                                    <span class="text-base leading-none">
+                                        @if($fExt == 'pdf') 📄 @elseif(in_array($fExt, ['doc','docx'])) 📝 @else 🖼️ @endif
+                                    </span>
+                                    <span class="truncate">{{ $fName }}</span>
+                                    <span class="ml-auto flex-shrink-0 text-green-400 text-xs">↗ Lihat</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
         @endif
 
         <!-- Form Input LJK -->
@@ -90,6 +145,20 @@
                 <p class="text-lg font-medium text-gray-700 dark:text-gray-300">Belum Ada Mahasiswa Terpilih</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md">
                     Silakan pilih mahasiswa dari daftar di atas untuk melihat dan mengelola data Lembar Jawab Komputer (LJK) mereka.
+                </p>
+            </div>
+        </div>
+        @else
+        <!-- Empty State for Student (isMurid, no LJK record yet) -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-amber-200 dark:border-amber-700 p-12 text-center"
+            wire:key="student-no-ljk-state">
+            <div class="flex flex-col items-center justify-center">
+                <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+                    <x-heroicon-o-exclamation-triangle class="w-10 h-10 text-amber-400 dark:text-amber-500" />
+                </div>
+                <p class="text-lg font-medium text-gray-700 dark:text-gray-300">Data LJK Belum Tersedia</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md">
+                    Data LJK Anda untuk mata pelajaran ini belum dibuat oleh sistem. Silakan hubungi pengajar atau admin untuk mengaktifkan form pengisian jawaban.
                 </p>
             </div>
         </div>

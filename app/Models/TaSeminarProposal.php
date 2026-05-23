@@ -170,4 +170,13 @@ class TaSeminarProposal extends Model
 
         return 'Menunggu Penilaian';
     }
+    public function getGradeAttribute(): ?string
+    {
+        $avg = $this->nilai_rata_rata;
+        if ($avg === null) {
+            return null;
+        }
+
+        return SiswaDataLJK::calculateGradeLetter($avg);
+    }
 }

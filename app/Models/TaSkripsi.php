@@ -201,16 +201,6 @@ class TaSkripsi extends Model
             return null;
         }
 
-        return match (true) {
-            $this->nilai_akhir >= 85 => 'A',
-            $this->nilai_akhir >= 80 => 'A-',
-            $this->nilai_akhir >= 75 => 'B+',
-            $this->nilai_akhir >= 70 => 'B',
-            $this->nilai_akhir >= 65 => 'B-',
-            $this->nilai_akhir >= 60 => 'C+',
-            $this->nilai_akhir >= 55 => 'C',
-            $this->nilai_akhir >= 50 => 'D',
-            default                  => 'E',
-        };
+        return SiswaDataLJK::calculateGradeLetter($this->nilai_akhir);
     }
 }

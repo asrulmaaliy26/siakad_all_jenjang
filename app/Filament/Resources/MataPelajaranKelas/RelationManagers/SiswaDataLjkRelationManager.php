@@ -55,8 +55,6 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->searchable()
                     ->sortable()
                     ->hidden(fn() => auth()->user()?->isMurid()),
-                TextInputColumn::make('nilai')
-                    ->disabled(fn() => auth()->user()?->isMurid()),
                 TextInputColumn::make('Nilai_UTS')
                     ->label('UTS')
                     ->type('number')

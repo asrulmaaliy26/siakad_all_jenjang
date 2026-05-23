@@ -13,7 +13,7 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use pxlrbt\FilamentExcel\Columns\Column;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use Maatwebsite\Excel\Excel;
-use Filament\Tables\Actions\ButtonAction;
+use Filament\Actions\ButtonAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Barryvdh\DomPDF\Facade\Pdf;

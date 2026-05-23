@@ -310,8 +310,8 @@
                                             <input type="text" name="nama" id="nama" class="filament-input mt-1" value="{{ old('nama') }}" required placeholder="Nama lengkap Anda">
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-sm text-gray-700" for="username">Username <span class="text-red-500">*</span></label>
-                                            <input type="text" name="username" id="username" class="filament-input mt-1" value="{{ old('username') }}" required placeholder="Username untuk login">
+                                            <label class="block font-medium text-sm text-gray-700" for="username">Username (Email) <span class="text-red-500">*</span></label>
+                                            <input type="email" name="username" id="username" class="filament-input mt-1" value="{{ old('username') }}" required placeholder="Gunakan Email aktif sebagai Username">
                                         </div>
                                         <div>
                                             <label class="block font-medium text-sm text-gray-700" for="password">Password <span class="text-red-500">*</span></label>

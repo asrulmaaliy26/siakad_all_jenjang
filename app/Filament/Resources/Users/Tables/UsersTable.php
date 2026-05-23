@@ -57,6 +57,15 @@ class UsersTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
+            ->actions([
+                \Filament\Actions\Action::make('impersonate')
+                    ->label('Masuk Sebagai')
+                    ->icon('heroicon-o-arrow-right-on-rectangle')
+                    ->action(function (\App\Models\User $record) {
+                        return redirect()->route('impersonate', ['id' => $record->id]);
+                    })
+                    ->visible(fn() => auth()->user()?->hasRole('super_admin')),
+            ])
             ->bulkActions([
                 BulkActionGroup::make([
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),

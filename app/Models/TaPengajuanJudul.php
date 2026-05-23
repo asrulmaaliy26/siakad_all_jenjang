@@ -141,4 +141,13 @@ class TaPengajuanJudul extends Model
 
         return round(array_sum($values) / count($values), 2);
     }
+    public function getGradeAttribute(): ?string
+    {
+        $avg = $this->nilai_rata_rata;
+        if ($avg === null) {
+            return null;
+        }
+
+        return SiswaDataLJK::calculateGradeLetter($avg);
+    }
 }

@@ -34,6 +34,7 @@ class UjianRelationManager extends RelationManager
                             ->label('Upload LJK UTS')
                             ->disk('public')
                             ->visibility('public')
+                            ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uts'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
@@ -64,6 +65,7 @@ class UjianRelationManager extends RelationManager
                             ->label('Upload LJK UAS')
                             ->disk('public')
                             ->visibility('public')
+                            ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uas'))
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
@@ -138,27 +140,37 @@ class UjianRelationManager extends RelationManager
                 TextColumn::make('ctt_uts')
                     ->label('LJK UTS')
                     ->formatStateUsing(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uts, $record->ctt_uts)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uts)
                             ? 'Lihat Jawaban'
                             : '-';
                     })
                     ->icon(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uts, $record->ctt_uts)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uts)
                             ? 'heroicon-o-check-circle'
                             : 'heroicon-o-x-circle';
                     })
                     ->color(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uts, $record->ctt_uts)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uts)
                             ? 'success'
                             : 'danger';
                     })
                     ->action(
                         Action::make('view_uts')
                             ->modalHeading('Detail LJK UTS')
-                            ->modalContent(fn(SiswaDataLJK $record) => view('filament.resources.mata-pelajaran-kelas.ljk-view', [
-                                'url' => $record->ljk_uts ? asset('storage/' . $record->ljk_uts) : null,
-                                'notes' => $record->ctt_uts,
-                            ]))
+                            ->modalContent(function(SiswaDataLJK $record) {
+                                $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
+                                $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                                return view('filament.resources.mata-pelajaran-kelas.ljk-view', [
+                                    'files' => $files,
+                                    'notes' => $record->ctt_uts,
+                                ]);
+                            })
                             ->modalSubmitAction(false)
                             ->modalCancelAction(fn() => Action::make('close')->label('Tutup')->close())
                             ->closeModalByClickingAway(false)
@@ -169,27 +181,37 @@ class UjianRelationManager extends RelationManager
                 TextColumn::make('ctt_uas')
                     ->label('LJK UAS')
                     ->formatStateUsing(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uas, $record->ctt_uas)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uas)
                             ? 'Lihat Jawaban'
                             : '-';
                     })
                     ->icon(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uas, $record->ctt_uas)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uas)
                             ? 'heroicon-o-check-circle'
                             : 'heroicon-o-x-circle';
                     })
                     ->color(function ($state, SiswaDataLJK $record) {
-                        return \App\Helpers\UjianHelper::hasSubmission($record->ljk_uas, $record->ctt_uas)
+                        $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
+                        $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                        return \App\Helpers\UjianHelper::hasSubmission($files, $record->ctt_uas)
                             ? 'success'
                             : 'danger';
                     })
                     ->action(
                         Action::make('view_uas')
                             ->modalHeading('Detail LJK UAS')
-                            ->modalContent(fn(SiswaDataLJK $record) => view('filament.resources.mata-pelajaran-kelas.ljk-view', [
-                                'url' => $record->ljk_uas ? asset('storage/' . $record->ljk_uas) : null,
-                                'notes' => $record->ctt_uas,
-                            ]))
+                            ->modalContent(function(SiswaDataLJK $record) {
+                                $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
+                                $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                                return view('filament.resources.mata-pelajaran-kelas.ljk-view', [
+                                    'files' => $files,
+                                    'notes' => $record->ctt_uas,
+                                ]);
+                            })
                             ->modalSubmitAction(false)
                             ->modalCancelAction(fn() => Action::make('close')->label('Tutup')->close())
                             ->closeModalByClickingAway(false)

@@ -30,7 +30,7 @@ class SiswaDataTable
                 TextColumn::make('riwayatPendidikanAktif.angkatan')
                     ->label('Angkatan')
                     ->toggleable(),
-                TextColumn::make('nama')
+                TextColumn::make('nama_lengkap')
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.nomor_induk')

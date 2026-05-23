@@ -15,6 +15,7 @@ class SiswaDataLJK extends Model
     {
         static::saving(function ($record) {
             $fields = [
+                'nilai', // Add 'nilai' to be processed for comma replacement
                 'Nilai_UTS',
                 'Nilai_UAS',
                 'Nilai_Performance',
@@ -32,10 +33,20 @@ class SiswaDataLJK extends Model
                 'Nilai_TGS_12',
             ];
 
+            // Normalize comma to dot for all float fields before calculation
+            foreach ($fields as $field) {
+                if (isset($record->{$field}) && is_string($record->{$field}) && strpos($record->{$field}, ',') !== false) {
+                    $record->{$field} = str_replace(',', '.', $record->{$field});
+                }
+            }
+
+            // Exclude 'nilai' from average calculation
+            $avgFields = array_diff($fields, ['nilai']);
+
             $total = 0;
             $count = 0;
 
-            foreach ($fields as $field) {
+            foreach ($avgFields as $field) {
                 $val = $record->{$field};
                 // Jika tidak diisi / 0.00 / null maka tidak ikut dirata-rata
                 if (!is_null($val) && (float)$val > 0) {
@@ -60,7 +71,7 @@ class SiswaDataLJK extends Model
             } else {
                 // Jika tidak ada nilai sama sekali
                 $record->Nilai_Akhir = 0;
-                $record->Nilai_Huruf = 'E';
+                $record->Nilai_Huruf = 'D';
                 $record->Status_Nilai = 'TL';
             }
         });
@@ -68,18 +79,19 @@ class SiswaDataLJK extends Model
 
     public static function calculateGradeLetter($average)
     {
-        if ($average >= 3.76 && $average <= 4.00) return 'A+';
-        if ($average >= 3.51 && $average <= 3.75) return 'A';
-        if ($average >= 3.26 && $average <= 3.50) return 'A-';
-        if ($average >= 3.01 && $average <= 3.25) return 'B+';
-        if ($average >= 2.76 && $average <= 3.00) return 'B';
-        if ($average >= 2.51 && $average <= 2.75) return 'B-';
-        if ($average >= 2.26 && $average <= 2.50) return 'C+';
-        if ($average >= 2.00 && $average <= 2.25) return 'C';
-        if ($average >= 1.76 && $average <= 1.99) return 'C-';
-        if ($average >= 0 && $average <= 1.75) return 'D';
-
-        return 'Tidak Valid';
+        return match (true) {
+            $average >= 3.76 => 'A+',
+            $average >= 3.51 => 'A',
+            $average >= 3.26 => 'A-',
+            $average >= 3.01 => 'B+',
+            $average >= 2.76 => 'B',
+            $average >= 2.51 => 'B-',
+            $average >= 2.26 => 'C+',
+            $average >= 2.00 => 'C',
+            $average >= 1.76 => 'C-',
+            $average >= 0    => 'D',
+            default          => 'Tidak Valid',
+        };
     }
 
 
@@ -151,23 +163,44 @@ class SiswaDataLJK extends Model
     ];
 
     protected $casts = [
-        'nilai'       => 'float',
-        'ljk_uts'     => 'array',
-        'artikel_uts' => 'array',
-        'ljk_uas'     => 'array',
-        'artikel_uas' => 'array',
-        'ljk_tugas_1' => 'array',
-        'ljk_tugas_2' => 'array',
-        'ljk_tugas_3' => 'array',
-        'ljk_tugas_4' => 'array',
-        'ljk_tugas_5' => 'array',
-        'ljk_tugas_6' => 'array',
-        'ljk_tugas_7' => 'array',
-        'ljk_tugas_8' => 'array',
-        'ljk_tugas_9' => 'array',
-        'ljk_tugas_10' => 'array',
-        'ljk_tugas_11' => 'array',
-        'ljk_tugas_12' => 'array',
+        'ljk_simulasi'      => 'array',
+        'ljk_uas'           => 'array',
+        'artikel_uas'       => 'array',
+        'ljk_uts'           => 'array',
+        'artikel_uts'       => 'array',
+        'tugas'             => 'array',
+        'ljk_tugas_1'       => 'array',
+        'ljk_tugas_2'       => 'array',
+        'ljk_tugas_3'       => 'array',
+        'ljk_tugas_4'       => 'array',
+        'ljk_tugas_5'       => 'array',
+        'ljk_tugas_6'       => 'array',
+        'ljk_tugas_7'       => 'array',
+        'ljk_tugas_8'       => 'array',
+        'ljk_tugas_9'       => 'array',
+        'ljk_tugas_10'      => 'array',
+        'ljk_tugas_11'      => 'array',
+        'ljk_tugas_12'      => 'array',
+        'Nilai_UTS'         => 'decimal:2',
+        'Nilai_UAS'         => 'decimal:2',
+        'Nilai_TGS_1'       => 'decimal:2',
+        'Nilai_TGS_2'       => 'decimal:2',
+        'Nilai_TGS_3'       => 'decimal:2',
+        'Nilai_TGS_4'       => 'decimal:2',
+        'Nilai_TGS_5'       => 'decimal:2',
+        'Nilai_TGS_6'       => 'decimal:2',
+        'Nilai_TGS_7'       => 'decimal:2',
+        'Nilai_TGS_8'       => 'decimal:2',
+        'Nilai_TGS_9'       => 'decimal:2',
+        'Nilai_TGS_10'      => 'decimal:2',
+        'Nilai_TGS_11'      => 'decimal:2',
+        'Nilai_TGS_12'      => 'decimal:2',
+        'Nilai_Performance' => 'decimal:2',
+        'Nilai_Akhir'       => 'decimal:2',
+        'tgl_upload_ljk_uas'     => 'date',
+        'tgl_upload_artikel_uas' => 'date',
+        'tgl_upload_ljk_uts'     => 'date',
+        'tgl_upload_tugas'       => 'date',
     ];
 
     /* ================= RELATIONS ================= */
@@ -179,6 +212,18 @@ class SiswaDataLJK extends Model
     public function akademikKrs()
     {
         return $this->belongsTo(AkademikKrs::class, 'id_akademik_krs');
+    }
+
+    public function taSkripsi()
+    {
+        return $this->hasOneThrough(
+            TaSkripsi::class,
+            AkademikKrs::class,
+            'id', // AkademikKrs.id
+            'id_riwayat_pendidikan', // TaSkripsi.id_riwayat_pendidikan
+            'id_akademik_krs', // SiswaDataLJK.id_akademik_krs
+            'id_riwayat_pendidikan' // AkademikKrs.id_riwayat_pendidikan
+        );
     }
 
     public function mataPelajaranKelas()

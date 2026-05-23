@@ -218,7 +218,7 @@ class TaPengajuanJudulForm
 
                                                         TextInput::make('nilai_dosen_1')
                                                             ->label('Nilai')
-                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 
                                                         FileUpload::make('file_revisi_dosen_1')
@@ -302,7 +302,7 @@ class TaPengajuanJudulForm
 
                                                         TextInput::make('nilai_dosen_2')
                                                             ->label('Nilai')
-                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 
                                                         FileUpload::make('file_revisi_dosen_2')
@@ -386,7 +386,7 @@ class TaPengajuanJudulForm
 
                                                         TextInput::make('nilai_dosen_3')
                                                             ->label('Nilai')
-                                                            ->numeric()->minValue(0)->maxValue(100)
+                                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 
                                                         FileUpload::make('file_revisi_dosen_3')

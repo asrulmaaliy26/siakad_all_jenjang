@@ -244,7 +244,7 @@ class TaSeminarProposalForm
 
                                         TextInput::make('nilai_dosen_1')
                                             ->label('Nilai Dosen 1')
-                                            ->numeric()->minValue(0)->maxValue(100)
+                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 
@@ -331,7 +331,7 @@ class TaSeminarProposalForm
 
                                         TextInput::make('nilai_dosen_2')
                                             ->label('Nilai Dosen 2')
-                                            ->numeric()->minValue(0)->maxValue(100)
+                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 
@@ -418,7 +418,7 @@ class TaSeminarProposalForm
 
                                         TextInput::make('nilai_dosen_3')
                                             ->label('Nilai Dosen 3')
-                                            ->numeric()->minValue(0)->maxValue(100)
+                                            ->numeric()->step(0.01)->minValue(0)->maxValue(4)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && $user->isMurid()),
 

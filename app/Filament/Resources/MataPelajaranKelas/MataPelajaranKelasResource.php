@@ -86,6 +86,21 @@ class MataPelajaranKelasResource extends Resource
             $query->whereHas('dosenData', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
+        } elseif ($user && $user->hasRole('kaprodi') && !$user->hasAnyRole(['super_admin', 'admin'])) {
+            // Kaprodi melihat kelas yang diajarnya ATAU kelas yang sesuai dengan jurusannya
+            $query->where(function ($q) use ($user) {
+                $q->whereHas('dosenData', function ($subQ) use ($user) {
+                    $subQ->where('user_id', $user->id);
+                })
+                ->orWhereHas('mataPelajaranKurikulum.kurikulum', function ($subQ) use ($user) {
+                    $subQ->where('id_jurusan', function ($jurusanQ) use ($user) {
+                        $jurusanQ->select('id_jurusan')
+                            ->from('dosen_data')
+                            ->where('user_id', $user->id)
+                            ->limit(1);
+                    });
+                });
+            });
         }
 
         // Jika user memiliki role 'murid' dan bukan super_admin/admin

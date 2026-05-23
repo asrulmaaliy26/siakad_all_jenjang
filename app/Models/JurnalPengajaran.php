@@ -13,6 +13,7 @@ class JurnalPengajaran extends Model
 
     protected $fillable = [
         'judul',
+        'type',
         'id_mata_pelajaran_kelas',
         'description',
         'deadline',

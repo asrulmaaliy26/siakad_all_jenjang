@@ -85,6 +85,7 @@ class SiswaDataLJKForm
                             ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uts'))
                             ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->downloadable()
                             ->openable(), // full width,,
                         FileUpload::make('artikel_uts')
@@ -92,7 +93,8 @@ class SiswaDataLJKForm
                             ->disk('public')
                             ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'artikel_uts'))
-                            ->visibility('public'), // full width,,
+                            ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*']), // full width,,
                         DatePicker::make('tgl_upload_ljk_uts')->label('Tgl Upload LJK UTS'),
                         RichEditor::make('ctt_uts')
                             ->label('Catatan UTS')
@@ -108,6 +110,7 @@ class SiswaDataLJKForm
                             ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'ljk_uas'))
                             ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->downloadable()
                             ->openable(), // full width,,
                         FileUpload::make('artikel_uas')
@@ -115,7 +118,8 @@ class SiswaDataLJKForm
                             ->disk('public')
                             ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $get, 'artikel_uas'))
-                            ->visibility('public'), // full width,,
+                            ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*']), // full width,,
                         DatePicker::make('tgl_upload_ljk_uas')->label('Tgl Upload LJK UAS'),
                         DatePicker::make('tgl_upload_artikel_uas')->label('Tgl Upload Artikel UAS'),
                         RichEditor::make('ctt_uas')
@@ -132,12 +136,36 @@ class SiswaDataLJKForm
                             ->multiple()
                             ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $get, (string)$i))
                             ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->downloadable()
                             ->openable(),
                         RichEditor::make("ctt_tugas_{$i}")
                             ->label("Catatan Tugas {$i}")
                             ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadTugasPath($get, $get, (string)$i)),
                     ]), range(1, 12)),
+
+                Section::make('Informasi Tugas Akhir / Skripsi')
+                    ->description('Hanya tampil jika mahasiswa sedang menempuh Skripsi')
+                    ->visible(fn($record) => $record && $record->taSkripsi()->exists())
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('taSkripsi.judul')
+                            ->label('Judul Skripsi')
+                            ->disabled()
+                            ->columnSpanFull(),
+                        TextInput::make('taSkripsi.nilai_akhir')
+                            ->label('Nilai Akhir Skripsi')
+                            ->disabled(),
+                        TextInput::make('taSkripsi.grade')
+                            ->label('Grade Skripsi')
+                            ->disabled(),
+                        TextInput::make('taSkripsi.dosenPembimbing1.nama')
+                            ->label('Pembimbing 1')
+                            ->disabled(),
+                        TextInput::make('taSkripsi.dosenPembimbing2.nama')
+                            ->label('Pembimbing 2')
+                            ->disabled(),
+                    ]),
             ]);
     }
 }

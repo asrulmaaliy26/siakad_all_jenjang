@@ -76,6 +76,9 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
 
     public function form(Schema $form): Schema
     {
+        $ljkField = $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts';
+        $cttField = $this->type == 'uas' ? 'ctt_uas' : 'ctt_uts';
+
         return $form
             ->components([
                 Section::make('Soal ' . strtoupper($this->type))
@@ -102,23 +105,63 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
 
                 Section::make('Input Jawaban ' . strtoupper($this->type))
                     ->schema([
-                        FileUpload::make($this->type == 'uas' ? 'ljk_uas' : 'ljk_uts')
-                            ->label('Upload Jawaban LJK ' . strtoupper($this->type))
+                        // Show already-uploaded files as clickable links so students can verify their submissions
+                        Placeholder::make('file_tersimpan_' . $ljkField)
+                            ->label('File Jawaban Tersimpan')
+                            ->content(function () use ($ljkField) {
+                                $ljk = $this->getSelectedLjkRecord();
+                                if (!$ljk) return new \Illuminate\Support\HtmlString('<span class="text-gray-400 italic">Belum ada file tersimpan.</span>');
+
+                                $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $ljk, $ljkField);
+                                $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
+                                if (empty($files)) return new \Illuminate\Support\HtmlString('<span class="text-gray-400 italic">Belum ada file tersimpan.</span>');
+
+                                $html = '<div class="flex flex-col gap-2">';
+                                foreach ($files as $filePath) {
+                                    if (!$filePath) continue;
+                                    $url = asset('storage/' . $filePath);
+                                    $name = basename($filePath);
+                                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                                    $icon = in_array($ext, ['pdf']) ? '📄' : (in_array($ext, ['doc', 'docx']) ? '📝' : '🖼️');
+                                    $html .= '<a href="' . $url . '" target="_blank" '
+                                        . 'class="inline-flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 '
+                                        . 'border border-green-200 dark:border-green-700 rounded-lg text-sm font-medium '
+                                        . 'text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">';
+                                    $html .= '<span>' . $icon . '</span>';
+                                    $html .= '<span class="truncate max-w-xs">' . htmlspecialchars($name) . '</span>';
+                                    $html .= '<span class="ml-auto text-green-500 text-xs">↗ Lihat / Unduh</span>';
+                                    $html .= '</a>';
+                                }
+                                $html .= '</div>';
+                                return new \Illuminate\Support\HtmlString($html);
+                            })
+                            ->columnSpanFull(),
+
+                        FileUpload::make($ljkField)
+                            ->label('Ganti / Upload Ulang File LJK ' . strtoupper($this->type))
+                            ->helperText('Upload file baru hanya jika ingin mengganti file yang sudah tersimpan di atas.')
                             ->disk('public')
-                            ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, $this->type == 'uas' ? 'ljk_uas' : 'ljk_uts'))
+                            // Pass the LJK record (SiswaDataLJK) as $record so UploadPathHelper
+                            // can resolve the student name correctly.
+                            ->directory(function ($get) use ($ljkField) {
+                                $ljk = $this->getSelectedLjkRecord();
+                                return \App\Helpers\UploadPathHelper::uploadUjianPath($get, $ljk, $ljkField);
+                            })
                             ->visibility('public')
-                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                            ->multiple()
+                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
                             ->maxSize(10240)
                             ->downloadable()
                             ->openable()
                             ->columnSpanFull(),
 
-                        RichEditor::make($this->type == 'uas' ? 'ctt_uas' : 'ctt_uts')
+                        RichEditor::make($cttField)
                             ->label('Catatan / Jawaban Text')
                             ->columnSpanFull(),
                     ])
             ])
             ->statePath('data')
+            // Pass the resolved LJK record so Filament can handle file paths correctly
             ->model($this->getSelectedLjkRecord() ?? SiswaDataLJK::class);
     }
 
@@ -157,8 +200,9 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
         try {
             $ljk = $this->getSelectedLjkRecord();
             if ($ljk) {
-                // Explicitly set the public data property and fill the form
-                $this->data = $ljk->attributesToArray();
+                // Use toArray() so model casts (e.g. ljk_uts/ljk_uas cast to array) are applied.
+                // attributesToArray() returns raw DB values (JSON string) which FileUpload cannot parse.
+                $this->data = $ljk->toArray();
                 $this->form->fill($this->data);
 
                 Log::info("Form filled for student {$this->selectedStudentId}", ['data_keys' => array_keys($this->data)]);
@@ -224,8 +268,25 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
                 $updateData[$tglField] = now();
             }
 
-            // Perform Update using Model Instance to trigger any observer/events
-            // and use withoutGlobalScopes effectively
+            // Ensure array fields are properly JSON encoded for Query Builder update
+            // because Query Builder does not use Eloquent's model casts
+            $arrayFields = ['ljk_uas', 'ljk_uts', 'artikel_uas', 'artikel_uts'];
+            foreach ($arrayFields as $field) {
+                if (array_key_exists($field, $updateData)) {
+                    $value = $updateData[$field];
+                    if ($value) {
+                        // If it's a single string, wrap it in array
+                        if (is_string($value)) {
+                            $value = [$value];
+                        }
+                        // Encode to JSON array since the DB column expects valid JSON
+                        $updateData[$field] = json_encode(array_values($value));
+                    } else {
+                        $updateData[$field] = null;
+                    }
+                }
+            }
+
             // Perform Update using the model instance
             Log::info("Updating LJK record via model instance", [
                 'id' => $ljk->id,
@@ -246,10 +307,11 @@ class InputLjkMinimal extends Component implements HasForms, HasActions
 
                 Notification::make()
                     ->title('Berhasil Disimpan')
-                    ->body('Jawaban Anda telah berhasil diperbarui.')
+                    ->body('Jawaban Anda telah berhasil diperbarui. File yang tersimpan dapat dilihat di bagian "File Jawaban Tersimpan".')
                     ->success()
                     ->send();
 
+                // Re-fetch fresh record from DB so the form shows the latest saved file paths
                 $this->updatedSelectedStudentId(); // Sync data back
             } else {
                 Log::error("Update failed for LJK ID: {$ljk->id}");

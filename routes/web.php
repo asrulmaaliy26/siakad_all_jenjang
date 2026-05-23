@@ -27,4 +27,36 @@ Route::middleware('auth')->group(function () {
     Route::get('/sarpras/surat-keluar/{id}/cetak', [App\Http\Controllers\Sarpras\SarprasSuratController::class, 'cetak'])->name('sarpras.surat-keluar.cetak');
 });
 
+Route::get('/impersonate/{id}', function ($id) {
+    if (!auth()->check() || !auth()->user()?->hasRole('super_admin')) {
+        abort(403);
+    }
+    $targetUser = \App\Models\User::findOrFail($id);
+    $impersonatorId = auth()->id();
+    
+    // Log in the target user to both default guard and Filament guard
+    auth()->login($targetUser);
+    filament()->auth()->login($targetUser);
+    
+    // Save the original superadmin ID in session so we can return back
+    session(['impersonator_id' => $impersonatorId]);
+    
+    return redirect()->to('/');
+})->name('impersonate');
+
+Route::get('/stop-impersonating', function () {
+    if (!session()->has('impersonator_id')) {
+        abort(403);
+    }
+    $user = \App\Models\User::find(session('impersonator_id'));
+    
+    // Log the superadmin back in to both guards
+    auth()->login($user);
+    filament()->auth()->login($user);
+    
+    session()->forget('impersonator_id');
+    
+    return redirect()->to('/users');
+})->name('stop-impersonating');
+
 Route::get('/library/checkin/{nim}', [App\Http\Controllers\LibraryVisitController::class, 'autoCheckin'])->name('library.checkin');

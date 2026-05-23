@@ -122,6 +122,27 @@ class MataPelajaranKelas extends Model
         $jumlahSesi = $this->jumlah_sesi_absensi;
         return ($jumlahSesi / $totalPertemuan) * 100;
     }
+    public function getJumlahMateriAttribute()
+    {
+        return $this->jurnalPengajaran()->where('type', 'Materi')->count();
+    }
+
+    public function getJumlahTugasAttribute()
+    {
+        return $this->jurnalPengajaran()->where('type', 'Tugas')->count();
+    }
+
+    public function getHasRpsAttribute()
+    {
+        return $this->jurnalPengajaran()
+            ->whereHas('dokumen', function ($query) {
+                $query->where(function ($q) {
+                    $q->whereIn('tipe_dokumen', ['rpp', 'silabus'])
+                        ->orWhere('judul_dokumen', 'like', '%RPS%');
+                });
+            })->exists();
+    }
+
     protected function statusUts(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
@@ -136,5 +157,30 @@ class MataPelajaranKelas extends Model
             get: fn($value) => $value === 'Y',
             set: fn($value) => ($value === true || $value === 'Y' || $value === 1) ? 'Y' : 'N',
         );
+    }
+
+    // Monitoring Helpers
+    public function hasAbsensiToday(): bool
+    {
+        return $this->absensiSiswa()->whereDate('waktu_absen', now()->toDateString())->exists();
+    }
+
+    public function hasAbsensiThisWeek(): bool
+    {
+        return $this->absensiSiswa()
+            ->whereBetween('waktu_absen', [now()->startOfWeek(), now()->endOfWeek()])
+            ->exists();
+    }
+
+    public function hasJurnalToday(): bool
+    {
+        return $this->jurnalPengajaran()->whereDate('created_at', now()->toDateString())->exists();
+    }
+
+    public function hasJurnalThisWeek(): bool
+    {
+        return $this->jurnalPengajaran()
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->exists();
     }
 }

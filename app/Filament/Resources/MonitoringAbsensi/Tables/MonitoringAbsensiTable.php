@@ -13,6 +13,11 @@ class MonitoringAbsensiTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordClasses(fn($record, $livewire) => match($livewire->activeTab ?? null) {
+                'today' => $record->hasAbsensiToday() ? null : 'bg-red-50/50 dark:bg-red-900/20',
+                'this_week' => $record->hasAbsensiThisWeek() ? null : 'bg-red-50/50 dark:bg-red-900/20',
+                default => null,
+            })
             ->columns([
                 TextColumn::make('No')
                     ->label('No')
@@ -21,6 +26,10 @@ class MonitoringAbsensiTable
                     ->label('Mata Pelajaran')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('hari_jam')
+                    ->label('Jadwal')
+                    ->getStateUsing(fn($record) => ($record->hari ?? '-') . ' / ' . ($record->jam ?? '-'))
+                    ->color('info'),
                 TextColumn::make('kelas.nama')
                     ->label('Kelas')
                     ->searchable()
@@ -28,19 +37,30 @@ class MonitoringAbsensiTable
                 TextColumn::make('dosenData.nama')
                     ->label('Dosen')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold')
+                    ->color(fn($record, $livewire) => match($livewire->activeTab ?? null) {
+                        'today' => $record->hasAbsensiToday() ? 'success' : 'danger',
+                        'this_week' => $record->hasAbsensiThisWeek() ? 'success' : 'danger',
+                        default => null,
+                    })
+                    ->description(fn($record, $livewire) => match($livewire->activeTab ?? null) {
+                        'today' => $record->hasAbsensiToday() ? 'Sudah mengisi hari ini' : 'BELUM MENGISI HARI INI',
+                        'this_week' => $record->hasAbsensiThisWeek() ? 'Sudah mengisi minggu ini' : 'BELUM MENGISI MINGGU INI',
+                        default => null,
+                    }),
                 TextColumn::make('jumlah_mahasiswa')
-                    ->label('Jumlah Mahasiswa')
+                    ->label('Mhs')
                     ->sortable(),
                 TextColumn::make('jumlah_sesi_absensi')
-                    ->label('Sesi Absensi')
+                    ->label('Sesi')
                     ->sortable(),
                 TextColumn::make('progress')
-                    ->label('Progress (%)')
+                    ->label('Progress')
                     ->numeric(1)
                     ->suffix('%')
                     ->sortable()
-                    ->description(fn($record) => number_format($record->progress, 1) . '% dari 16 pertemuan'),
+                    ->description(fn($record) => number_format($record->progress, 1) . '% dari 16'),
             ])
             ->filters([
                 SelectFilter::make('id_tahun_akademik')
@@ -57,6 +77,18 @@ class MonitoringAbsensiTable
                 SelectFilter::make('id_dosen_data')
                     ->label('Dosen')
                     ->relationship('dosenData', 'nama')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('id_kelas')
+                    ->label('Kelas')
+                    ->options(function () {
+                        return \App\Models\Kelas::with(['jurusan', 'programKelas'])
+                            ->get()
+                            ->mapWithKeys(function ($kelas) {
+                                $nama = ($kelas->jurusan?->nama ?? '-') . ' - ' . ($kelas->programKelas?->nilai ?? '-') . ' (Smt ' . $kelas->semester . ')';
+                                return [$kelas->id => $nama];
+                            });
+                    })
                     ->searchable()
                     ->preload(),
             ])
