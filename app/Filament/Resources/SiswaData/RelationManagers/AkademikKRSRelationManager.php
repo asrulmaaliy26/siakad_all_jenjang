@@ -85,13 +85,13 @@ class AkademikKRSRelationManager extends RelationManager
                 ->label('Kwitansi')
                 ->multiple()
                 ->disk('public')
-                ->directory('krs/kwitansi'),
+                ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadKrsPath($get, $record, 'kwitansi_krs')),
 
             Forms\Components\FileUpload::make('berkas_lain')
                 ->label('Berkas Lain')
                 ->multiple()
                 ->disk('public')
-                ->directory('krs/berkas'),
+                ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadKrsPath($get, $record, 'berkas_lain')),
         ]);
     }
 

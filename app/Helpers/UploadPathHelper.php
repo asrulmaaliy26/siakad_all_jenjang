@@ -62,10 +62,10 @@ class UploadPathHelper
         $namaSiswa = self::getNamaSiswa($record, $get);
 
         // Format:
-        // uploads/{Tahun}/{mahasiswa}/{Nama}/{Table}
+        // uploads/{typeFolder}/mahasiswa_{Tahun}/{Nama}/{Table}
         return "uploads/"
-            . Str::slug($tahun) . "/"
             . Str::slug($typeFolder) . "/"
+            . "mahasiswa_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/"
             . Str::slug($table);
     }
@@ -115,10 +115,10 @@ class UploadPathHelper
         // 3. Nama Siswa
         $namaSiswa = self::getNamaSiswa($record, $get);
 
-        // Format: uploads/{Tahun}/{mahasiswa}/{Nama Siswa}/{Table}
+        // Format: uploads/{typeFolder}/mahasiswa_{Tahun}/{Nama Siswa}/{Table}
         return "uploads/"
-            . Str::slug($tahun) . "/"
             . Str::slug($typeFolder) . "/"
+            . "mahasiswa_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/"
             . Str::slug($table);
     }
@@ -134,10 +134,10 @@ class UploadPathHelper
         // 3. Nama Siswa
         $namaSiswa = self::getNamaSiswa($record, $get);
 
-        // Format: uploads/{Tahun}/{mahasiswa}/{Nama Siswa}/tugas_{index}
+        // Format: uploads/{typeFolder}/mahasiswa_{Tahun}/{Nama Siswa}/tugas_{index}
         return "uploads/"
-            . Str::slug($tahun) . "/"
             . Str::slug($typeFolder) . "/"
+            . "mahasiswa_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/tugas_" . $taskIndex;
     }
 
@@ -181,10 +181,10 @@ class UploadPathHelper
             }
         }
 
-        // 3. Susun path
+        // Susun path
         return "uploads/"
-            . Str::slug($tahun) . "/"
             . "mahasiswa/"
+            . "mahasiswa_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/"
             . Str::slug($table);
     }
@@ -214,10 +214,10 @@ class UploadPathHelper
             $namaSiswa = $get('nama') ?? 'Tanpa Nama';
         }
 
-        // Format: uploads/mahasiswa/{Tahun}/{Nama Siswa}/{Table}
+        // Format: uploads/mahasiswa/mahasiswa_{Tahun}/{Nama Siswa}/{Table}
         return "uploads/"
             . Str::slug($typeFolder) . "/"
-            . Str::slug($tahun) . "/"
+            . "mahasiswa_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/"
             . Str::slug($table);
     }
@@ -255,10 +255,10 @@ class UploadPathHelper
             }
         }
 
-        // Format: uploads/mahasiswa/{Tahun}/{Nama Siswa}/{Table}
+        // Format: uploads/mahasiswa/pendaftar_{Tahun}/{Nama Siswa}/{Table}
         return "uploads/"
             . Str::slug($typeFolder) . "/"
-            . Str::slug($tahun) . "/"
+            . "pendaftar_" . Str::slug($tahun) . "/"
             . Str::slug($namaSiswa) . "/"
             . Str::slug($table);
     }

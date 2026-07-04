@@ -107,10 +107,10 @@ class MataPelajaranKelasRelationManager extends RelationManager
                             $note = $record->ctt_soal_uas;
                         }
 
-                        return \App\Helpers\UjianHelper::hasSubmission($file, $note) ? 'Lihat Soal' : '-';
+                        return \App\Helpers\UjianHelper::hasSubmission($file, $note) ? 'Mulai Ujian' : '-';
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'Lihat Soal' => 'info',
+                        'Mulai Ujian' => 'info',
                         '-' => 'gray',
                         default => 'gray',
                     }),
@@ -163,78 +163,129 @@ class MataPelajaranKelasRelationManager extends RelationManager
                 // Tidak perlu tambah data karena ini hanya menampilkan
             ])
             ->actions([
-                Action::make('lihat_soal')
-                    ->label('Lihat Soal')
-                    ->icon('heroicon-o-eye')
-                    ->color('info')
+                Action::make('mulai_ujian')
+                    ->label('Mulai Ujian')
+                    ->icon('heroicon-o-play')
+                    ->color('success')
                     ->visible(function ($record) {
                         $pekanUjian  = $this->getOwnerRecord();
                         $jenisUjian  = strtolower($pekanUjian->jenis_ujian ?? '');
                         $isUas       = str_contains($jenisUjian, 'uas');
                         $statusCol   = $isUas ? 'status_uas' : 'status_uts';
                         $syaratCol   = $isUas ? 'syarat_uas' : 'syarat_uts';
+                        $type        = $isUas ? 'uas' : 'uts';
+                        $cekalCol    = $isUas ? 'cekal_ujian_uas' : 'cekal_ujian_uts';
 
-                        // Sembunyikan jika status ujian di MataPelajaranKelas belum aktif
-                        if (! $record->{$statusCol}) {
-                            return false;
-                        }
+                        if (! $record->{$statusCol}) return false;
 
                         $user = \Filament\Facades\Filament::auth()->user();
+                        if (!$user || !$user->isMurid()) return false;
 
-                        // Untuk murid: cek syarat_uts/uas di AkademikKrs yang terhubung
-                        if ($user && $user->isMurid()) {
-                            $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
-                            if (! $siswa) {
-                                return false;
-                            }
+                        $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+                        if (! $siswa) return false;
 
-                            // Cek status cekal dari tabel LJK
-                            $siswaLjk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
-                                ->whereHas('akademikKrs.riwayatPendidikan', fn($q) => $q->where('id_siswa_data', $siswa->id))
-                                ->first();
+                        $siswaLjk = \App\Models\SiswaDataLJK::withoutGlobalScopes()
+                            ->where('id_mata_pelajaran_kelas', $record->id)
+                            ->whereHas('akademikKrs', function ($q) use ($siswa) {
+                                $q->withoutGlobalScopes()->whereHas('riwayatPendidikan', function ($sq) use ($siswa) {
+                                    $sq->withoutGlobalScopes()->where('id_siswa_data', $siswa->id);
+                                });
+                            })
+                            ->first();
 
-                            if ($siswaLjk && $siswaLjk->cekal_kuliah === 'Y') {
-                                return false; // Disembunyikan karena terkena cekal
-                            }
+                        if ($siswaLjk && $siswaLjk->cekal_kuliah === 'Y') return false;
 
-                            // Ambil AkademikKrs murid ini yang terhubung ke MataPelajaranKelas ini
-                            $krs = \App\Models\AkademikKrs::whereHas(
-                                'siswaDataLjk',
-                                fn($q) => $q->where('id_mata_pelajaran_kelas', $record->id)
-                            )
-                                ->whereHas(
-                                    'riwayatPendidikan',
-                                    fn($q) => $q->where('id_siswa_data', $siswa->id)
-                                )
-                                ->first();
+                        // Jika sudah tercekal ujian, sembunyikan tombol
+                        if ($siswaLjk && $siswaLjk->$cekalCol === 'Y') return false;
 
-                            if (! $krs) {
-                                return false;
-                            }
+                        $krs = \App\Models\AkademikKrs::whereHas(
+                            'siswaDataLjk', fn($q) => $q->where('id_mata_pelajaran_kelas', $record->id)
+                        )->whereHas(
+                            'riwayatPendidikan', fn($q) => $q->where('id_siswa_data', $siswa->id)
+                        )->first();
 
-                            // Cek syarat ujian hanya jika PekanUjian mewajibkan pembayaran (status_bayar = 'Y')
-                            if ($pekanUjian->status_bayar) {
-                                if (($krs->{$syaratCol} ?? 'N') !== 'Y') {
-                                    return false;
-                                }
-                            }
+                        if (! $krs) return false;
+
+                        if ($pekanUjian->status_bayar) {
+                            if (($krs->{$syaratCol} ?? 'N') !== 'Y') return false;
                         }
 
                         return true;
                     })
-                    ->modalHeading(fn($record) => 'Detail Soal - ' . $record->mataPelajaranKurikulum->mataPelajaranMaster->nama)
+                    ->url(function ($record) {
+                        $pekanUjian = $this->getOwnerRecord();
+                        $jenisUjian = strtolower($pekanUjian->jenis_ujian ?? '');
+                        $type = str_contains($jenisUjian, 'uas') ? 'uas' : 'uts';
+                        return route('ujian.fullscreen', [$record->id, $type]);
+                    })
+                    ->openUrlInNewTab(false),
+
+                Action::make('cekal_badge')
+                    ->label('Diblokir (3 Pelanggaran)')
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('danger')
+                    ->disabled()
+                    ->visible(function ($record) {
+                        $user = \Filament\Facades\Filament::auth()->user();
+                        if (!$user || !$user->isMurid()) return false;
+                        $pekanUjian = $this->getOwnerRecord();
+                        $jenisUjian = strtolower($pekanUjian->jenis_ujian ?? '');
+                        $isUas   = str_contains($jenisUjian, 'uas');
+                        $cekalCol = $isUas ? 'cekal_ujian_uas' : 'cekal_ujian_uts';
+                        $statusCol = $isUas ? 'status_uas' : 'status_uts';
+                        if (!$record->{$statusCol}) return false;
+                        $siswa = \App\Models\SiswaData::where('user_id', $user->id)->first();
+                        if (!$siswa) return false;
+                        $ljk = \App\Models\SiswaDataLJK::withoutGlobalScopes()
+                            ->where('id_mata_pelajaran_kelas', $record->id)
+                            ->whereHas('akademikKrs', function ($q) use ($siswa) {
+                                $q->withoutGlobalScopes()->whereHas('riwayatPendidikan', function ($sq) use ($siswa) {
+                                    $sq->withoutGlobalScopes()->where('id_siswa_data', $siswa->id);
+                                });
+                            })->first();
+                        return $ljk && $ljk->$cekalCol === 'Y';
+                    }),
+
+                Action::make('reset_cekal_ujian')
+                    ->label('Reset Akses Ujian')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reset Akses Ujian Mahasiswa')
+                    ->modalDescription('Apakah Anda yakin ingin mereset status cekal ujian mahasiswa ini? Log pelanggaran akan tetap tersimpan.')
+                    ->modalSubmitActionLabel('Ya, Reset')
+                    ->visible(fn() => ! auth()->user()?->isMurid())
+                    ->action(function ($record) {
+                        $pekanUjian = $this->getOwnerRecord();
+                        $jenisUjian = strtolower($pekanUjian->jenis_ujian ?? '');
+                        $isUas = str_contains($jenisUjian, 'uas');
+                        $cekalCol = $isUas ? 'cekal_ujian_uas' : 'cekal_ujian_uts';
+                        $jmlCol   = $isUas ? 'jml_pelanggaran_uas' : 'jml_pelanggaran_uts';
+
+                        \App\Models\SiswaDataLJK::withoutGlobalScopes()
+                            ->where('id_mata_pelajaran_kelas', $record->id)
+                            ->update([$cekalCol => 'N', $jmlCol => 0]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akses Ujian Berhasil Direset')
+                            ->body('Semua mahasiswa di mata pelajaran ini dapat kembali mengakses ujian.')
+                            ->success()
+                            ->send();
+                    }),
+
+                Action::make('lihat_soal_admin')
+                    ->label('Lihat Soal')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->visible(fn() => ! auth()->user()?->isMurid())
+                    ->modalHeading(fn($record) => 'Detail Soal - ' . $record->mataPelajaranKurikulum?->mataPelajaranMaster?->nama)
                     ->modalContent(function ($record, $livewire) {
                         $pekanUjian = $livewire->getOwnerRecord();
                         $jenisUjian = strtolower($pekanUjian->jenis_ujian ?? '');
-
-                        $type = 'uts'; // default
-                        if (str_contains($jenisUjian, 'uas')) {
-                            $type = 'uas';
-                        }
-
+                        $type = str_contains($jenisUjian, 'uas') ? 'uas' : 'uts';
                         return view('filament.resources.pekan-ujians.actions.view-soal', [
                             'record' => $record,
-                            'type' => $type
+                            'type'   => $type,
                         ]);
                     })
                     ->modalSubmitAction(false)

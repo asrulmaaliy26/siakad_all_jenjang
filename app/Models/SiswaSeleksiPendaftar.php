@@ -9,6 +9,22 @@ class SiswaSeleksiPendaftar extends Model
 {
     use HasFactory;
 
+    protected static function booted()
+    {
+        static::deleting(function ($seleksi) {
+            $fileFields = ['file_persyaratan', 'file_jawaban'];
+            foreach ($fileFields as $field) {
+                if (!empty($seleksi->$field)) {
+                    $files = is_array($seleksi->$field) ? $seleksi->$field : [$seleksi->$field];
+                    foreach ($files as $file) {
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                        }
+                    }
+                }
+            }
+        });
+    }
     protected $table = 'siswa_seleksi_pendaftar';
 
     protected $fillable = [

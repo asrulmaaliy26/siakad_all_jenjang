@@ -137,7 +137,11 @@ class SiswaDataLJKSTable
                     ->label('LJK UTS')
                     ->formatStateUsing(fn($state) => $state ? 'Ada' : '-')
                     ->color(fn($state) => $state ? 'success' : 'gray')
-                    ->url(fn($record) => $record->ljk_uts ? asset('storage/' . $record->ljk_uts) : null)
+                    ->url(function ($record) {
+                        if (empty($record->ljk_uts)) return null;
+                        $path = is_array($record->ljk_uts) ? ($record->ljk_uts[0] ?? null) : $record->ljk_uts;
+                        return $path ? asset('storage/' . $path) : null;
+                    })
                     ->openUrlInNewTab()
                     ->toggleable(),
 
@@ -145,7 +149,11 @@ class SiswaDataLJKSTable
                     ->label('LJK UAS')
                     ->formatStateUsing(fn($state) => $state ? 'Ada' : '-')
                     ->color(fn($state) => $state ? 'success' : 'gray')
-                    ->url(fn($record) => $record->ljk_uas ? asset('storage/' . $record->ljk_uas) : null)
+                    ->url(function ($record) {
+                        if (empty($record->ljk_uas)) return null;
+                        $path = is_array($record->ljk_uas) ? ($record->ljk_uas[0] ?? null) : $record->ljk_uas;
+                        return $path ? asset('storage/' . $path) : null;
+                    })
                     ->openUrlInNewTab()
                     ->toggleable(),
 

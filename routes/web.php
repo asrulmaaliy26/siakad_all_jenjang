@@ -25,6 +25,11 @@ Route::middleware('auth')->group(function () {
     
     // Sarpras Correspondence
     Route::get('/sarpras/surat-keluar/{id}/cetak', [App\Http\Controllers\Sarpras\SarprasSuratController::class, 'cetak'])->name('sarpras.surat-keluar.cetak');
+
+    // Ujian Fullscreen
+    Route::get('/ujian/{mpkId}/{type}', [App\Http\Controllers\UjianFullscreenController::class, 'show'])->name('ujian.fullscreen');
+    Route::post('/ujian/{mpkId}/{type}/submit', [App\Http\Controllers\UjianFullscreenController::class, 'submit'])->name('ujian.submit');
+    Route::post('/ujian/pelanggaran', [App\Http\Controllers\UjianFullscreenController::class, 'logPelanggaran'])->name('ujian.pelanggaran');
 });
 
 Route::get('/impersonate/{id}', function ($id) {

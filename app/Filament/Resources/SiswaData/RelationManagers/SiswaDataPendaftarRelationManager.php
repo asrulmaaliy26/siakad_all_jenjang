@@ -67,10 +67,10 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                     ->relationship('jalurPmbRef', 'nilai')
                                     ->label('Jalur PMB'),
                                 Forms\Components\FileUpload::make('Bukti_Jalur_PMB')
-                                    ->directory('pendaftaran/bukti_jalur'),
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Bukti_Jalur_PMB')),
                                 TextInput::make('Jenis_Pembiayaan'),
                                 Forms\Components\FileUpload::make('Bukti_Jenis_Pembiayaan')
-                                    ->directory('pendaftaran/bukti_pembiayaan'),
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Bukti_Jenis_Pembiayaan')),
                                 Forms\Components\Select::make('Status_Pendaftaran')
                                     ->options([
                                         'Y' => 'Ya',
@@ -89,9 +89,9 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                 TextInput::make('IPK_Asal')->numeric(),
                                 TextInput::make('Semester_Asal')->numeric(),
                                 Forms\Components\FileUpload::make('Pengantar_Mutasi')
-                                    ->directory('pendaftaran/mutasi'),
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Pengantar_Mutasi')),
                                 Forms\Components\FileUpload::make('Transkip_Asal')
-                                    ->directory('pendaftaran/mutasi'),
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Transkip_Asal')),
                             ])->columns(2),
 
                         Tabs\Tab::make('Dokumen & Foto')
@@ -212,7 +212,8 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                         Tabs\Tab::make('Pembayaran')
                             ->schema([
                                 TextInput::make('Biaya_Pendaftaran')->numeric()->prefix('Rp'),
-                                Forms\Components\FileUpload::make('Bukti_Biaya_Daftar')->directory('pendaftaran/pembayaran'),
+                                Forms\Components\FileUpload::make('Bukti_Biaya_Daftar')
+                                    ->directory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadPendaftarPath($get, $record, 'Bukti_Biaya_Daftar')),
                                 Forms\Components\Toggle::make('status_valid')->label('Valid')
                                     ->disabled(function () {
                                         /** @var \App\Models\User|null $user */

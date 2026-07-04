@@ -20,6 +20,30 @@ class SiswaDataPendaftar extends Model
 
             try {
                 static::$isDeletingRelated = true;
+                
+                // Delete associated files
+                $fileFields = [
+                    'Bukti_Jalur_PMB', 'Bukti_Jenis_Pembiayaan', 'Pengantar_Mutasi', 'Transkip_Asal',
+                    'Legalisir_Ijazah', 'Legalisir_SKHU', 'Copy_KTP', 'Foto_BW_3x3', 'Foto_BW_3x4',
+                    'Foto_Warna_5x6', 'File_Foto_Berwarna', 'Bukti_Biaya_Daftar'
+                ];
+
+                foreach ($fileFields as $field) {
+                    if (!empty($pendaftar->$field)) {
+                        $files = is_array($pendaftar->$field) ? $pendaftar->$field : [$pendaftar->$field];
+                        foreach ($files as $file) {
+                            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file)) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                            }
+                        }
+                    }
+                }
+
+                // Delete related seleksi to trigger its deleting event
+                $pendaftar->seleksi()->get()->each(function($seleksi) {
+                    $seleksi->delete();
+                });
+
                 if ($pendaftar->siswa && !$pendaftar->siswa->riwayatPendidikan()->exists()) {
                     $pendaftar->siswa->delete();
                 }

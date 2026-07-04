@@ -8,11 +8,13 @@ use Filament\Tables\Table;
 use Filament\Tables;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use App\Models\MataPelajaranKelas;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -83,6 +85,40 @@ class SiswaDataLjkRelationManager extends RelationManager
                 TextColumn::make('Nilai_Huruf')
                     ->label('Nilai')
                     ->placeholder('-'),
+
+                // Kolom pelanggaran UTS
+                TextColumn::make('jml_pelanggaran_uts')
+                    ->label('Plg UTS')
+                    ->badge()
+                    ->color(fn ($state) => $state >= 3 ? 'danger' : ($state >= 2 ? 'warning' : ($state > 0 ? 'info' : 'gray')))
+                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state}x" : '-')
+                    ->tooltip('Jumlah pelanggaran selama ujian UTS')
+                    ->toggleable(),
+
+                // Kolom pelanggaran UAS
+                TextColumn::make('jml_pelanggaran_uas')
+                    ->label('Plg UAS')
+                    ->badge()
+                    ->color(fn ($state) => $state >= 3 ? 'danger' : ($state >= 2 ? 'warning' : ($state > 0 ? 'info' : 'gray')))
+                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state}x" : '-')
+                    ->tooltip('Jumlah pelanggaran selama ujian UAS')
+                    ->toggleable(),
+
+                // Status cekal ujian UTS
+                TextColumn::make('cekal_ujian_uts')
+                    ->label('Cekal UTS')
+                    ->badge()
+                    ->color(fn ($state) => $state === 'Y' ? 'danger' : 'gray')
+                    ->formatStateUsing(fn ($state) => $state === 'Y' ? '🔒 Diblokir' : 'Aktif')
+                    ->toggleable(),
+
+                // Status cekal ujian UAS
+                TextColumn::make('cekal_ujian_uas')
+                    ->label('Cekal UAS')
+                    ->badge()
+                    ->color(fn ($state) => $state === 'Y' ? 'danger' : 'gray')
+                    ->formatStateUsing(fn ($state) => $state === 'Y' ? '🔒 Diblokir' : 'Aktif')
+                    ->toggleable(),
             ])
             ->filters([
                 //
@@ -149,6 +185,91 @@ class SiswaDataLjkRelationManager extends RelationManager
                         return auth()->user()?->isMurid()
                             || ($krs->syarat_krs ?? 'N') === 'Y';
                     }),
+
+                // Lihat log pelanggaran (hanya admin/dosen)
+                Action::make('lihat_pelanggaran')
+                    ->label('Log Pelanggaran')
+                    ->icon('heroicon-o-shield-exclamation')
+                    ->color('warning')
+                    ->visible(fn () => !auth()->user()?->isMurid())
+                    ->modalHeading(fn ($record) => 'Log Pelanggaran Ujian – ' . ($record->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->nama ?? '-'))
+                    ->modalContent(function ($record) {
+                        $logUts = $record->ctt_pelanggaran_uts;
+                        $logUas = $record->ctt_pelanggaran_uas;
+                        $jmlUts = $record->jml_pelanggaran_uts ?? 0;
+                        $jmlUas = $record->jml_pelanggaran_uas ?? 0;
+                        $cekalUts = $record->cekal_ujian_uts === 'Y';
+                        $cekalUas = $record->cekal_ujian_uas === 'Y';
+
+                        $html  = '<div style="font-family:monospace;font-size:13px;line-height:1.7;color:#e2e8f0;background:#0f172a;border-radius:10px;padding:20px;">';
+
+                        // UTS
+                        $html .= '<div style="margin-bottom:20px;">';
+                        $html .= '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Pelanggaran UTS</div>';
+                        $html .= '<div style="margin-bottom:8px;">';
+                        $html .= '<span style="background:' . ($cekalUts ? '#7f1d1d' : '#1e293b') . ';color:' . ($cekalUts ? '#fca5a5' : '#94a3b8') . ';padding:2px 10px;border-radius:12px;font-size:12px;">';
+                        $html .= $cekalUts ? '🔒 DIBLOKIR' : '✅ Aktif';
+                        $html .= '</span> &nbsp; <span style="color:#64748b;">' . $jmlUts . '/3 pelanggaran</span></div>';
+                        if ($logUts) {
+                            $lines = explode("\n", $logUts);
+                            foreach ($lines as $line) {
+                                $html .= '<div style="padding:4px 0;border-bottom:1px solid #1e293b;color:#fbbf24;">' . htmlspecialchars($line) . '</div>';
+                            }
+                        } else {
+                            $html .= '<div style="color:#4b5563;font-style:italic;">Tidak ada catatan pelanggaran UTS.</div>';
+                        }
+                        $html .= '</div>';
+
+                        // UAS
+                        $html .= '<div>';
+                        $html .= '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Pelanggaran UAS</div>';
+                        $html .= '<div style="margin-bottom:8px;">';
+                        $html .= '<span style="background:' . ($cekalUas ? '#7f1d1d' : '#1e293b') . ';color:' . ($cekalUas ? '#fca5a5' : '#94a3b8') . ';padding:2px 10px;border-radius:12px;font-size:12px;">';
+                        $html .= $cekalUas ? '🔒 DIBLOKIR' : '✅ Aktif';
+                        $html .= '</span> &nbsp; <span style="color:#64748b;">' . $jmlUas . '/3 pelanggaran</span></div>';
+                        if ($logUas) {
+                            $lines = explode("\n", $logUas);
+                            foreach ($lines as $line) {
+                                $html .= '<div style="padding:4px 0;border-bottom:1px solid #1e293b;color:#fbbf24;">' . htmlspecialchars($line) . '</div>';
+                            }
+                        } else {
+                            $html .= '<div style="color:#4b5563;font-style:italic;">Tidak ada catatan pelanggaran UAS.</div>';
+                        }
+                        $html .= '</div></div>';
+
+                        return new \Illuminate\Support\HtmlString($html);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(fn () => \Filament\Actions\Action::make('tutup')->label('Tutup')->close())
+                    ->modalWidth('2xl'),
+
+                // Reset cekal ujian (hanya admin/dosen)
+                Action::make('reset_cekal')
+                    ->label('Reset Cekal')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('danger')
+                    ->visible(fn () => !auth()->user()?->isMurid())
+                    ->requiresConfirmation()
+                    ->modalHeading('Reset Akses Ujian Mahasiswa')
+                    ->modalDescription('Ini akan mereset status cekal ujian UTS dan UAS. Jumlah pelanggaran akan direset ke 0. Log pelanggaran tetap tersimpan.')
+                    ->modalSubmitActionLabel('Ya, Reset Sekarang')
+                    ->action(function ($record) {
+                        \App\Models\SiswaDataLJK::withoutGlobalScopes()
+                            ->where('id', $record->id)
+                            ->update([
+                                'cekal_ujian_uts'   => 'N',
+                                'cekal_ujian_uas'   => 'N',
+                                'jml_pelanggaran_uts' => 0,
+                                'jml_pelanggaran_uas' => 0,
+                            ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akses Ujian Direset')
+                            ->body('Mahasiswa dapat kembali mengakses ujian.')
+                            ->success()
+                            ->send();
+                    }),
+
                 DeleteAction::make()
                     ->disabled(function () {
                         $krs = $this->getOwnerRecord();

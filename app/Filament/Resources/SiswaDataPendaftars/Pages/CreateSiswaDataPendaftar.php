@@ -45,6 +45,11 @@ class CreateSiswaDataPendaftar extends CreateRecord
                     'tanggal_lahir' => $data['new_tanggal_lahir'] ?? null,
                     'no_telepon' => $data['new_no_telepon'] ?? null,
                     'alamat' => $data['new_alamat'] ?? null,
+                    'agama' => $data['new_agama'] ?? null,
+                    'golongan_darah' => $data['new_golongan_darah'] ?? null,
+                    'no_ktp' => $data['new_no_ktp'] ?? null,
+                    'no_kk' => $data['new_no_kk'] ?? null,
+                    'kebutuhan_khusus' => $data['new_kebutuhan_khusus'] ?? null,
                     'kewarganegaraan' => 'WNI',
                 ]);
 
@@ -68,6 +73,11 @@ class CreateSiswaDataPendaftar extends CreateRecord
             $data['new_tempat_lahir'],
             $data['new_tanggal_lahir'],
             $data['new_no_telepon'],
+            $data['new_agama'],
+            $data['new_golongan_darah'],
+            $data['new_no_ktp'],
+            $data['new_no_kk'],
+            $data['new_kebutuhan_khusus'],
             $data['new_alamat']
         );
 

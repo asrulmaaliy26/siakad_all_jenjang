@@ -27,10 +27,27 @@ class ListSiswaDataPendaftars extends ListRecords
         }
     }
 
+    #[\Livewire\Attributes\On('filterByJurusan')]
+    public function filterByJurusan($id)
+    {
+        $this->tableFilters['id_jurusan']['values'] = [(string) $id];
+
+        if (method_exists($this, 'resetPage')) {
+            $this->resetPage();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             CreateAction::make(),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\PendaftarOverviewStats::class,
         ];
     }
 

@@ -160,30 +160,32 @@ class SiswaDataTable
             ->filters([
                 SelectFilter::make('angkatan')
                     ->label('Angkatan')
-                    ->options(fn() => \App\Models\TahunAkademik::query()
-                        ->select('nama')
-                        ->get()
-                        ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
-                        ->unique()
-                        ->sortDesc()
-                        ->mapWithKeys(fn($y) => [$y => $y])
-                        ->toArray())
+                    ->options(
+                        fn() => collect(['belum_ada' => 'Belum Ada Angkatan'])
+                            ->merge(
+                                \App\Models\TahunAkademik::query()
+                                    ->select('nama')
+                                    ->get()
+                                    ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                                    ->unique()
+                                    ->sortDesc()
+                                    ->mapWithKeys(fn($y) => [$y => $y])
+                            )->toArray()
+                    )
                     ->query(function (Builder $query, array $data) {
                         if (empty($data['value'])) return $query;
+
+                        if ($data['value'] === 'belum_ada') {
+                            return $query->doesntHave('riwayatPendidikanAktif');
+                        }
+
                         return $query->whereHas('riwayatPendidikanAktif', function ($q) use ($data) {
                             $q->whereHas('tahunAkademik', function ($q2) use ($data) {
                                 $q2->where('nama', 'like', $data['value'] . '/%');
                             });
                         });
                     })
-                    ->default(
-                        fn() => \App\Models\TahunAkademik::query()
-                            ->select('nama')
-                            ->get()
-                            ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
-                            ->unique()
-                            ->max()
-                    ),
+                    ->default('belum_ada'),
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
                     ->options(fn() => \App\Models\Jurusan::pluck('nama', 'id')->toArray())

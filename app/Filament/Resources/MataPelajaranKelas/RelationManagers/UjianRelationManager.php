@@ -39,20 +39,10 @@ class UjianRelationManager extends RelationManager
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
                             ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->deletable(fn() => auth()->user()?->hasAnyRole(['super_admin', 'admin']))
+                            ->deleteUploadedFileUsing(function ($file) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                            }),
                         RichEditor::make('ctt_uts')
                             ->label('Catatan / Jawaban UTS')
                             ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uts'))
@@ -70,20 +60,10 @@ class UjianRelationManager extends RelationManager
                             ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->downloadable()
                             ->openable()
-                            // Hapus file saat klik ❌
-                            ->afterStateUpdated(function ($state, $record) {
-                                if (blank($state) && $record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                            })
-
-                            // Hapus file lama saat upload baru
-                            ->deleteUploadedFileUsing(function ($file, $record) {
-                                if ($record?->foto_profil) {
-                                    Storage::disk('public')->delete($record->foto_profil);
-                                }
-                                return true;
-                            }), // full width,,
+                            ->deletable(fn() => auth()->user()?->hasAnyRole(['super_admin', 'admin']))
+                            ->deleteUploadedFileUsing(function ($file) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                            }),
                         RichEditor::make('ctt_uas')
                             ->label('Catatan / Jawaban UAS')
                             ->fileAttachmentsDirectory(fn($get, $record) => \App\Helpers\UploadPathHelper::uploadUjianPath($get, $record, 'ljk_uas'))
@@ -128,12 +108,45 @@ class UjianRelationManager extends RelationManager
                                     ->required(),
                             ])
                             ->action(function (SiswaDataLJK $record, array $data): void {
-                                $record->update(['cekal_kuliah' => $data['cekal_kuliah']]);
+                                $updateData = ['cekal_kuliah' => $data['cekal_kuliah']];
+                                if ($data['cekal_kuliah'] === 'N') {
+                                    $updateData['jml_pelanggaran_uts'] = 0;
+                                    $updateData['jml_pelanggaran_uas'] = 0;
+                                }
+                                $record->update($updateData);
                                 \Filament\Notifications\Notification::make()
                                     ->title('Status cekal berhasil diperbarui')
                                     ->success()
                                     ->send();
                             })
+                    ),
+
+                // Kolom Pelanggaran UTS
+                TextColumn::make('jml_pelanggaran_uts')
+                    ->label('Pelanggaran UTS')
+                    ->formatStateUsing(fn ($state) => ($state ?: 0) . 'x Melanggar')
+                    ->badge()
+                    ->color(fn ($state) => ($state ?: 0) > 0 ? 'danger' : 'success')
+                    ->action(
+                        Action::make('view_pelanggaran_uts')
+                            ->modalHeading('Catatan Pelanggaran UTS')
+                            ->modalContent(fn(SiswaDataLJK $record) => new \Illuminate\Support\HtmlString('<div style="background:#1e293b; color:#cbd5e1; padding: 16px; border-radius: 8px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">' . ($record->ctt_pelanggaran_uts ? e($record->ctt_pelanggaran_uts) : 'Tidak ada catatan pelanggaran.') . '</div>'))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(fn() => Action::make('close')->label('Tutup')->close())
+                    ),
+
+                // Kolom Pelanggaran UAS
+                TextColumn::make('jml_pelanggaran_uas')
+                    ->label('Pelanggaran UAS')
+                    ->formatStateUsing(fn ($state) => ($state ?: 0) . 'x Melanggar')
+                    ->badge()
+                    ->color(fn ($state) => ($state ?: 0) > 0 ? 'danger' : 'success')
+                    ->action(
+                        Action::make('view_pelanggaran_uas')
+                            ->modalHeading('Catatan Pelanggaran UAS')
+                            ->modalContent(fn(SiswaDataLJK $record) => new \Illuminate\Support\HtmlString('<div style="background:#1e293b; color:#cbd5e1; padding: 16px; border-radius: 8px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">' . ($record->ctt_pelanggaran_uas ? e($record->ctt_pelanggaran_uas) : 'Tidak ada catatan pelanggaran.') . '</div>'))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(fn() => Action::make('close')->label('Tutup')->close())
                     ),
 
                 // Kolom LJK UTS (gabung dengan ctt_uts)
@@ -163,7 +176,7 @@ class UjianRelationManager extends RelationManager
                     ->action(
                         Action::make('view_uts')
                             ->modalHeading('Detail LJK UTS')
-                            ->modalContent(function(SiswaDataLJK $record) {
+                            ->modalContent(function (SiswaDataLJK $record) {
                                 $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
                                 $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
                                 return view('filament.resources.mata-pelajaran-kelas.ljk-view', [
@@ -204,7 +217,7 @@ class UjianRelationManager extends RelationManager
                     ->action(
                         Action::make('view_uas')
                             ->modalHeading('Detail LJK UAS')
-                            ->modalContent(function(SiswaDataLJK $record) {
+                            ->modalContent(function (SiswaDataLJK $record) {
                                 $dir = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
                                 $files = \Illuminate\Support\Facades\Storage::disk('public')->files($dir);
                                 return view('filament.resources.mata-pelajaran-kelas.ljk-view', [
@@ -247,7 +260,14 @@ class UjianRelationManager extends RelationManager
                             ->required(),
                     ])
                     ->action(function (SiswaDataLJK $record, array $data): void {
-                        $record->update(['cekal_kuliah' => $data['cekal_kuliah']]);
+                        $updateData = ['cekal_kuliah' => $data['cekal_kuliah']];
+                        if ($data['cekal_kuliah'] === 'N') {
+                            $updateData['jml_pelanggaran_uts'] = 0;
+                            $updateData['jml_pelanggaran_uas'] = 0;
+                            $updateData['cekal_ujian_uts'] = 'N';
+                            $updateData['cekal_ujian_uas'] = 'N';
+                        }
+                        $record->update($updateData);
                         \Filament\Notifications\Notification::make()
                             ->title('Status cekal berhasil diperbarui')
                             ->success()
@@ -265,6 +285,27 @@ class UjianRelationManager extends RelationManager
 
                         // Murid hanya bisa upload miliknya sendiri
                         return $record->akademikKrs?->riwayatPendidikan?->siswaData?->user_id === $user->id;
+                    })
+                    ->after(function (SiswaDataLJK $record) {
+                        // Bersihkan file fisik UTS yang terlanjur yatim (tidak ada di DB)
+                        $dirUts = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uts');
+                        $filesUts = \Illuminate\Support\Facades\Storage::disk('public')->files($dirUts);
+                        $dbFilesUts = is_array($record->ljk_uts) ? $record->ljk_uts : json_decode($record->ljk_uts, true) ?? [];
+                        foreach ($filesUts as $file) {
+                            if (!in_array($file, $dbFilesUts)) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                            }
+                        }
+
+                        // Bersihkan file fisik UAS yang terlanjur yatim (tidak ada di DB)
+                        $dirUas = \App\Helpers\UploadPathHelper::uploadUjianPath(null, $record, 'ljk_uas');
+                        $filesUas = \Illuminate\Support\Facades\Storage::disk('public')->files($dirUas);
+                        $dbFilesUas = is_array($record->ljk_uas) ? $record->ljk_uas : json_decode($record->ljk_uas, true) ?? [];
+                        foreach ($filesUas as $file) {
+                            if (!in_array($file, $dbFilesUas)) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                            }
+                        }
                     }),
             ])
             ->bulkActions([

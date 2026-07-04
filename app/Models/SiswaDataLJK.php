@@ -160,6 +160,12 @@ class SiswaDataLJK extends Model
         'cekal_kuliah',
         'ctt_uts',
         'ctt_uas',
+        'ctt_pelanggaran_uts',
+        'ctt_pelanggaran_uas',
+        'jml_pelanggaran_uts',
+        'jml_pelanggaran_uas',
+        'cekal_ujian_uts',
+        'cekal_ujian_uas',
     ];
 
     protected $casts = [
