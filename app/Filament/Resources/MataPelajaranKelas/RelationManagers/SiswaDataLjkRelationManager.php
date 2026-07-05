@@ -66,7 +66,7 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->type('number')
                     ->step(0.01)
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: $i > 1)
+                    ->toggleable(isToggledHiddenByDefault: $i > 2)
                     ->disabled(fn() => auth()->user()?->isMurid()), range(1, 12)),
                 TextInputColumn::make('Nilai_UAS')
                     ->label('UAS')

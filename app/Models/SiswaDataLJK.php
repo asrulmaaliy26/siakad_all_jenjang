@@ -55,8 +55,12 @@ class SiswaDataLJK extends Model
                 }
             }
 
-            if ($count > 0) {
-                $average = $total / $count;
+            // Sesuai request: minimal pembagi adalah 4 (UTS, UAS, Tugas 1, Tugas 2)
+            // Jika yang diisi lebih dari 4 (misal ada Tugas 3), pembagi mengikuti jumlah yang diisi
+            if ($total > 0) {
+                $pembagi = max(4, $count);
+                
+                $average = $total / $pembagi;
                 // Batasi maksimal 4.00
                 $average = min(4.00, $average);
                 $record->Nilai_Akhir = round($average, 2);
@@ -71,7 +75,7 @@ class SiswaDataLJK extends Model
             } else {
                 // Jika tidak ada nilai sama sekali
                 $record->Nilai_Akhir = 0;
-                $record->Nilai_Huruf = 'D';
+                $record->Nilai_Huruf = 'E'; // Mengikuti standar umum (E untuk 0)
                 $record->Status_Nilai = 'TL';
             }
         });

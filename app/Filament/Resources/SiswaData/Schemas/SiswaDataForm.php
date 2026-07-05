@@ -57,15 +57,18 @@ class SiswaDataForm
                             ->dehydrated(false),
                         TextInput::make('username_account')
                             ->label('Username (Login System)')
+                            ->hint(fn($record) => $record?->user ? '✅ Akun ada: ' . $record->user->name : '⚠️ Belum punya akun, isi lalu simpan untuk membuat akun')
                             ->placeholder('Isi jika ingin custom username, kosongkan untuk auto-generate dari Nama'),
                         TextInput::make('email_account')
                             ->label('Email (Login System)')
                             ->email()
+                            ->hint(fn($record) => $record?->user ? '✅ ' . $record->user->email : '⚠️ Akan di-generate otomatis jika dikosongkan')
                             ->placeholder('Isi jika ingin custom email, kosongkan untuk auto-generate'),
                         TextInput::make('password_account')
                             ->label('Password (Login System)')
                             ->password()
                             ->revealable()
+                            ->hint(fn($record) => $record?->user?->view_password ? '🔑 Password saat ini: ' . $record->user->view_password : null)
                             ->placeholder('Default: password'),
                     ])
                     ->columns(['sm' => 1, 'md' => 2]) // Responsive columns

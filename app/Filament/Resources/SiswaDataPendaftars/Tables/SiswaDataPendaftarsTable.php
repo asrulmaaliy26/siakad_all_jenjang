@@ -20,6 +20,9 @@ class SiswaDataPendaftarsTable
     {
         return $table
             ->columns([
+                TextColumn::make('index')
+                    ->rowIndex()
+                    ->label('No'),
                 TextColumn::make('id')
                     ->label('ID')
                     ->sortable()
@@ -219,7 +222,7 @@ class SiswaDataPendaftarsTable
 
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
-                    ->relationship('jurusan', 'nama', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama', 'NOT LIKE', '%temp%'))
+                    ->relationship('jurusan', 'nama', fn(\Illuminate\Database\Eloquent\Builder $query) => $query->where('nama', 'NOT LIKE', '%temp%'))
                     ->preload()
                     ->multiple(),
             ])
@@ -231,8 +234,30 @@ class SiswaDataPendaftarsTable
                     ->iconButton()
                     ->color('warning'),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
+            ->bulkActions([
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\BulkAction::make('ubah_tahun_akademik')
+                        ->label('Ubah Tahun Akademik')
+                        ->icon('heroicon-o-calendar')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->form([
+                            \Filament\Forms\Components\Select::make('id_tahun_akademik')
+                                ->label('Pilih Tahun Akademik Baru')
+                                ->options(\App\Models\TahunAkademik::pluck('nama', 'id'))
+                                ->required(),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                            foreach ($records as $record) {
+                                $record->update(['id_tahun_akademik' => $data['id_tahun_akademik']]);
+                                if ($record->siswa && $record->siswa->riwayatPendidikanAktif) {
+                                    $record->siswa->riwayatPendidikanAktif->update([
+                                        'id_tahun_akademik' => $data['id_tahun_akademik']
+                                    ]);
+                                }
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     ExportBulkAction::make(),
                     DeleteBulkAction::make(),
                 ]),

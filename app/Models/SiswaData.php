@@ -103,6 +103,12 @@ class SiswaData extends Model
             ->latest(); // Ambil yang terbaru jika ada lebih dari satu
     }
 
+    // Riwayat pendidikan terbaru apapun statusnya (untuk menampilkan angkatan)
+    public function riwayatPendidikanTerbaru()
+    {
+        return $this->hasOne(RiwayatPendidikan::class, 'id_siswa_data')->latest();
+    }
+
     public function akademikKrs()
     {
         return $this->hasManyThrough(
