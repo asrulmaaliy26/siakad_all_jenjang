@@ -16,6 +16,9 @@ class SarprasPeminjamenTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('user.name')
                     ->label('Peminjam')
                     ->searchable()

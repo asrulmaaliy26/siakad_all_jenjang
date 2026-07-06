@@ -19,6 +19,9 @@ class PekanUjiansTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('tahunAkademik.nama')
                     ->label('Tahun Akademik')
                     ->formatStateUsing(fn($record) => $record->tahunAkademik ? "{$record->tahunAkademik->nama} - {$record->tahunAkademik->periode}" : '-')

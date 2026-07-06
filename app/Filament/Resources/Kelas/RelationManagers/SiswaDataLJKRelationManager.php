@@ -35,6 +35,9 @@ class SiswaDataLJKRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nama')
                     ->label('Nama Siswa')
                     ->searchable()
@@ -212,23 +215,46 @@ class SiswaDataLJKRelationManager extends RelationManager
                         ->color('success')
                         ->exports([
                             \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
                                 ])
                         ]),
-                    \Filament\Actions\ImportAction::make()
+                    \Filament\Tables\Actions\Action::make('importExcelCustom')
                         ->label('Import Excel')
-                        ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
-                        ->color('warning'),
+                        ->color('warning')
+                        ->icon('heroicon-o-arrow-up-tray')
+                        ->form([
+                            \Filament\Forms\Components\FileUpload::make('file')
+                                ->label('File Excel')
+                                ->storeFiles(false)
+                                ->acceptedFileTypes([
+                                    'application/vnd.ms-excel',
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (array $data) {
+                            $file = is_array($data['file']) ? $data['file'][0] : $data['file'];
+                            $filePath = $file->getRealPath();
+                            $import = new \App\Imports\SiswaDataLJKImport();
+                            \Maatwebsite\Excel\Facades\Excel::import($import, $filePath);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Import Selesai')
+                                ->body($import->successCount . ' baris berhasil diimpor.')
+                                ->success()
+                                ->send();
+                        }),
                 ])
                     ->label('Opsi Excel')
                     ->icon('heroicon-m-ellipsis-vertical')
@@ -243,13 +269,14 @@ class SiswaDataLJKRelationManager extends RelationManager
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
                         ->exports([
                             \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
@@ -261,3 +288,6 @@ class SiswaDataLJKRelationManager extends RelationManager
             ]);
     }
 }
+
+
+

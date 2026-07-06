@@ -15,6 +15,9 @@ class LibraryLoanTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('riwayatPendidikan.siswaData.nama')
                     ->label('Mahasiswa')
                     ->searchable()

@@ -49,6 +49,9 @@ class MataPelajaranKelasRelationManager extends RelationManager
             })
             ->recordTitleAttribute('id_mata_pelajaran_kelas')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
                     ->searchable()

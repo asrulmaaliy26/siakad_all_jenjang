@@ -13,6 +13,9 @@ class SarprasBarangsTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 \Filament\Tables\Columns\TextColumn::make('kode_barang')
                     ->searchable()
                     ->sortable(),

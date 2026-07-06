@@ -17,6 +17,9 @@ class JurusansTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('nama')
                     ->searchable(),
                 TextColumn::make('fakultas.nama')

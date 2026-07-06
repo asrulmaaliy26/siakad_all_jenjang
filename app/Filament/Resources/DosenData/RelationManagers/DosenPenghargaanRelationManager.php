@@ -54,6 +54,9 @@ class DosenPenghargaanRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('judul_penghargaan')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('judul_penghargaan')
                     ->label('Judul')
                     ->searchable()

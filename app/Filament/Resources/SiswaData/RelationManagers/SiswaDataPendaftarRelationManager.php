@@ -232,6 +232,9 @@ class SiswaDataPendaftarRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('Nama_Lengkap')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('Nama_Lengkap'),
                 Tables\Columns\TextColumn::make('No_Pendaftaran'),
                 Tables\Columns\TextColumn::make('jurusan.nama')

@@ -58,6 +58,9 @@ class DosenBukuRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('judul_buku')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('judul_buku')
                     ->label('Judul')
                     ->searchable()

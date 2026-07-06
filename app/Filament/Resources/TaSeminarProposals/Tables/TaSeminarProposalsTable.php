@@ -25,6 +25,9 @@ class TaSeminarProposalsTable
 
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('riwayatPendidikan.siswa.nama')
                     ->label('Mahasiswa')
                     ->searchable()

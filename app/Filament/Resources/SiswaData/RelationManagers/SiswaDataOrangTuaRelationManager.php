@@ -98,6 +98,9 @@ class SiswaDataOrangTuaRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('Nama_Ayah')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('Nama_Ayah')->label('Ayah'),
                 Tables\Columns\TextColumn::make('No_HP_ayah')->label('No HP Ayah'),
                 Tables\Columns\TextColumn::make('Nama_Ibu')->label('Ibu'),

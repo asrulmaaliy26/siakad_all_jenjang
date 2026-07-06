@@ -24,6 +24,9 @@ class DosenDataTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 ImageColumn::make('foto_profil')
                     ->label('Foto')
                     ->circular()

@@ -21,7 +21,7 @@ class SiswaDataLJKSTable
                 TextColumn::make('index')
                     ->label('No')
                     ->rowIndex()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
 
                 TextColumn::make('id')
                     ->label('ID LJK')
@@ -50,6 +50,11 @@ class SiswaDataLJKSTable
                     ->label('Program Kelas')
                     ->badge()
                     ->color('info')
+                    ->toggleable(),
+
+                TextColumn::make('akademikKrs.tahunAkademik.nama')
+                    ->label('Tahun Ajaran')
+                    ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('mapel_progress')
@@ -106,7 +111,21 @@ class SiswaDataLJKSTable
 
                 TextColumn::make('Nilai_UTS')->label('UTS')->sortable()->toggleable(),
                 TextColumn::make('Nilai_UAS')->label('UAS')->sortable()->toggleable(),
-                ...array_map(fn($i) => TextColumn::make("Nilai_TGS_{$i}")->label("Tugas $i")->sortable()->toggleable(isToggledHiddenByDefault: $i > 3), range(1, 12)),
+                TextColumn::make('Rata_Tugas')
+                    ->label('Tugas')
+                    ->getStateUsing(function ($record) {
+                        $sum = 0;
+                        $count = 0;
+                        for ($i = 1; $i <= 12; $i++) {
+                            $val = $record->{"Nilai_TGS_{$i}"};
+                            if ($val !== null && $val !== '') {
+                                $sum += (float) $val;
+                                $count++;
+                            }
+                        }
+                        return $count > 0 ? round($sum / $count, 2) : 0;
+                    })
+                    ->toggleable(),
                 TextColumn::make('Nilai_Performance')->label('Perf')->sortable()->toggleable(),
 
                 TextColumn::make('Nilai_Akhir')
@@ -236,13 +255,14 @@ class SiswaDataLJKSTable
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
                         ->exports([
                             \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
@@ -296,24 +316,49 @@ class SiswaDataLJKSTable
                     ->color('success')
                     ->exports([
                         \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                            ->fromTable()
                             ->withColumns([
                                 \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswa.nama')->heading('Nama Mahasiswa'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.nomor_induk')->heading('NIM'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                 ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
                             ])
                     ]),
-                \Filament\Actions\ImportAction::make()
+                \Filament\Actions\Action::make('importExcelCustom')
                     ->label('Import Excel')
-                    ->importer(\App\Filament\Importers\SiswaDataLJKImporter::class)
                     ->color('warning')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        \Filament\Forms\Components\FileUpload::make('file')
+                            ->label('File Excel')
+                            ->storeFiles(false)
+                            ->acceptedFileTypes([
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $file = is_array($data['file']) ? $data['file'][0] : $data['file'];
+                        $filePath = $file->getRealPath();
+                        $import = new \App\Imports\SiswaDataLJKImport();
+                        \Maatwebsite\Excel\Facades\Excel::import($import, $filePath);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Import Selesai')
+                            ->body($import->successCount . ' baris berhasil diimpor.')
+                            ->success()
+                            ->send();
+                    })
             ])
             ->defaultSort('created_at', 'desc');
     }
 }
+
+

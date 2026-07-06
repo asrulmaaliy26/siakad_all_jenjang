@@ -93,6 +93,9 @@ class JurnalPengajaranRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('judul')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('judul')
                     ->searchable()
                     ->sortable(),

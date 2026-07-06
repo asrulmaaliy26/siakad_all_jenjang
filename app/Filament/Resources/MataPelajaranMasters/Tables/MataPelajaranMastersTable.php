@@ -25,6 +25,9 @@ class MataPelajaranMastersTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('kode_feeder')
                     ->searchable(),
                 TextColumn::make('nama')
@@ -109,7 +112,6 @@ class MataPelajaranMastersTable
                         ->icon('heroicon-o-document-arrow-down')
                         ->exports([
                             ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     Column::make('kode_feeder')->heading('Kode'),
                                     Column::make('nama')->heading('Nama Mata Pelajaran'),
@@ -135,3 +137,4 @@ class MataPelajaranMastersTable
             ]);
     }
 }
+

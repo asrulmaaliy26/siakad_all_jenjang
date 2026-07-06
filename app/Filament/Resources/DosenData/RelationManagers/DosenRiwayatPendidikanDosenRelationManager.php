@@ -48,6 +48,9 @@ class DosenRiwayatPendidikanDosenRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('nama_pendidikan')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('jenjang')
                     ->label('Jenjang')
                     ->sortable(),

@@ -53,6 +53,9 @@ class TugasRelationManager extends RelationManager
             ->recordTitleAttribute('nilai')
             ->columnToggleFormColumns(3)
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nama')
                     ->label('Nama Mahasiswa')
                     ->searchable()

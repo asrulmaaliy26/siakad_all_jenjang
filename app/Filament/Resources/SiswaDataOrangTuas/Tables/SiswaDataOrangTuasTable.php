@@ -14,6 +14,9 @@ class SiswaDataOrangTuasTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('nama')
                     ->searchable(),
                 TextColumn::make('id_siswa_data')

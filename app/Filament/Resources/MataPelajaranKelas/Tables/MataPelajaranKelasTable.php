@@ -30,6 +30,9 @@ class MataPelajaranKelasTable
                 return \App\Filament\Resources\MataPelajaranKelas\MataPelajaranKelasResource::getUrl('view', ['record' => $record]);
             })
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Pelajaran')
                     ->searchable()

@@ -15,6 +15,9 @@ class UsersTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

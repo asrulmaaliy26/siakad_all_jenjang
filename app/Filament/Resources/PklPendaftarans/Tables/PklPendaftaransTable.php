@@ -16,6 +16,9 @@ class PklPendaftaransTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('siswaData.nama')
                     ->label('Mahasiswa')
                     ->searchable()

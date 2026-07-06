@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
                 ->striped() // Membuat tabel menjadi bergaris (belang-belang) agar lebih rapi
                 ->defaultPaginationPageOption(10) // Pagination default 10 baris
                 ->extremePaginationLinks() // Menggunakan link pagination prev-next & first-last
-                ->paginated([10, 25, 50, 100]); // Opsi pilihan pagination
+                ->paginated([10, 25, 50, 100, 'all']); // Opsi pilihan pagination
         });
 
         // Mempercantik form input secara default (Global Form Config)

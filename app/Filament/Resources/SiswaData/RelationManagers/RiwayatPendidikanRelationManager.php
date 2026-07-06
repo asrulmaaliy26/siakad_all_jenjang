@@ -170,6 +170,9 @@ class RiwayatPendidikanRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('id'),
                 Tables\Columns\TextColumn::make('angkatan'),
                 Tables\Columns\TextColumn::make('nomor_induk'),

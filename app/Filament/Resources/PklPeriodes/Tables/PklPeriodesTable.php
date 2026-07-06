@@ -16,6 +16,9 @@ class PklPeriodesTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('nama')
                     ->label('Nama Periode')
                     ->searchable()

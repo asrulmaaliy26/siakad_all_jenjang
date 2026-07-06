@@ -15,6 +15,9 @@ class PeriodeWisudasTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('tahun'),
                 TextColumn::make('periode_ke')
                     ->numeric()

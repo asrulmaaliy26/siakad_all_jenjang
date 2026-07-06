@@ -34,6 +34,9 @@ class LembagasRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('nama')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('nama')
                     ->label('Nama Lembaga'),
 

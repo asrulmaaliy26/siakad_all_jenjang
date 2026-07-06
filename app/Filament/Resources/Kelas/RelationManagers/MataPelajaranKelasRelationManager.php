@@ -175,6 +175,9 @@ class MataPelajaranKelasRelationManager extends RelationManager
                 }
             })
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('mataPelajaranKurikulum.mataPelajaranMaster.kode_feeder')
                     ->label('Kode Feeder')
                     ->searchable(),

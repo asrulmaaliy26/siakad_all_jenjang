@@ -15,6 +15,9 @@ class AbsensiSiswasTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 //indexing table
                 TextColumn::make('No')
                     ->label('No')

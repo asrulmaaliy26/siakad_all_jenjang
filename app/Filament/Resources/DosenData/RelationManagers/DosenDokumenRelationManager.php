@@ -73,6 +73,9 @@ class DosenDokumenRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('judul_dokumen')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('judul_dokumen')
                     ->label('Judul')
                     ->searchable()

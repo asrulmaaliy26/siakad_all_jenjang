@@ -16,6 +16,9 @@ class LibraryBookTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 ImageColumn::make('cover_image')
                     ->label('Sampul')
                     ->circular(),

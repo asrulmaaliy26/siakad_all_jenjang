@@ -183,6 +183,9 @@ class SiswaKelasRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswa.nomor_induk')
                     ->label('Nomor Induk')
                     ->searchable()

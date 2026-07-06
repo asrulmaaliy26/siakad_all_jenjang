@@ -60,6 +60,9 @@ class SiswaDataLjkRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('nilai')
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 TextColumn::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Kuliah')
                     ->searchable()

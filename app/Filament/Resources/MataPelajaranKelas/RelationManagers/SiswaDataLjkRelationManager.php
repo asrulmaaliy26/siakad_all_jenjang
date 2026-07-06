@@ -36,6 +36,9 @@ class SiswaDataLjkRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                TextColumn::make('index')
+                    ->label('No')
+                    ->rowIndex(),
                 TextColumn::make('id')
                     ->label('ID LJK')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -61,13 +64,21 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->step(0.01)
                     ->sortable()
                     ->disabled(fn() => auth()->user()?->isMurid()),
-                ...array_map(fn($i) => TextInputColumn::make("Nilai_TGS_{$i}")
-                    ->label("TGS $i")
-                    ->type('number')
-                    ->step(0.01)
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: $i > 2)
-                    ->disabled(fn() => auth()->user()?->isMurid()), range(1, 12)),
+                TextColumn::make('Rata_Tugas')
+                    ->label('Tugas')
+                    ->getStateUsing(function ($record) {
+                        $sum = 0;
+                        $count = 0;
+                        for ($i = 1; $i <= 12; $i++) {
+                            $val = $record->{"Nilai_TGS_{$i}"};
+                            if ($val !== null && $val !== '') {
+                                $sum += (float) $val;
+                                $count++;
+                            }
+                        }
+                        return $count > 0 ? round($sum / $count, 2) : 0;
+                    })
+                    ->toggleable(),
                 TextInputColumn::make('Nilai_UAS')
                     ->label('UAS')
                     ->type('number')
@@ -148,13 +159,14 @@ class SiswaDataLjkRelationManager extends RelationManager
                         ->color('success')
                         ->exports([
                             \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
@@ -214,13 +226,14 @@ class SiswaDataLjkRelationManager extends RelationManager
                     \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
                         ->exports([
                             \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                                ->fromTable()
                                 ->withColumns([
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id')->heading('ID LJK'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')->heading('NIM'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                     ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
@@ -237,3 +250,6 @@ class SiswaDataLjkRelationManager extends RelationManager
             ]);
     }
 }
+
+
+

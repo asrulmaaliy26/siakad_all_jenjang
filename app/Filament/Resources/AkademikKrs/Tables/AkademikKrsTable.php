@@ -30,6 +30,9 @@ class AkademikKrsTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
 
                 // Relasi / Foreign Key
                 TextColumn::make('riwayatPendidikan.siswaData.nama')

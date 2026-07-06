@@ -28,7 +28,7 @@ class MonitoringAbsensiResource extends Resource
             return false;
         }
 
-        return $user->hasAnyRole(['super_admin', 'admin']);
+        return $user->hasAnyRole(['super_admin', 'admin', 'admin_jenjang_s1', 'admin_jenjang_ma', 'admin_jenjang_smp']);
     }
 
     public static function getNavigationLabel(): string

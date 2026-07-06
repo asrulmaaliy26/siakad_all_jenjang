@@ -1,5 +1,5 @@
 <x-filament-widgets::widget>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="font-family: inherit;">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="font-family: inherit;">
         
         <!-- Rekap Mahasiswa Baru -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex flex-col h-full overflow-hidden">
@@ -111,6 +111,59 @@
                             <td class="p-3 border-r border-[#0a58ca] w-[16%]">{{ $totalSelesaiProdi }}</td>
                             <td class="p-3 border-r border-[#0a58ca] w-[17%]">{{ $totalProsesProdi }}</td>
                             <td class="p-3 w-[17%]">{{ $totalKeseluruhanProdi }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Berdasarkan Angkatan -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex flex-col h-full overflow-hidden">
+            <div class="bg-[#0d6efd] text-white p-3 text-sm font-semibold">
+                Berdasarkan Angkatan
+            </div>
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-sm text-center">
+                    <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold border-b dark:border-gray-700">
+                        <tr>
+                            <th class="p-2 py-3 border-r dark:border-gray-700">No</th>
+                            <th class="p-2 py-3 border-r dark:border-gray-700">Tahun Akademik</th>
+                            <th class="p-2 py-3 border-r dark:border-gray-700">Selesai (Lulus/Tolak)</th>
+                            <th class="p-2 py-3 border-r dark:border-gray-700">Proses</th>
+                            <th class="p-2 py-3">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 dark:text-gray-400">
+                        @php
+                            $totalSelesaiAngkatan = 0;
+                            $totalProsesAngkatan = 0;
+                            $totalKeseluruhanAngkatan = 0;
+                        @endphp
+                        @foreach($angkatanStats as $index => $stat)
+                        @php
+                            $totalSelesaiAngkatan += $stat['selesai'];
+                            $totalProsesAngkatan += $stat['proses'];
+                            $totalKeseluruhanAngkatan += $stat['jumlah'];
+                        @endphp
+                        <tr class="border-b dark:border-gray-700 {{ $index % 2 == 0 ? 'bg-gray-100 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900' }}">
+                            <td class="p-2 border-r dark:border-gray-700">{{ $index + 1 }}.</td>
+                            <td class="p-2 font-bold text-[#0d6efd] dark:text-blue-400 border-r dark:border-gray-700">{{ $stat['angkatan'] }}</td>
+                            <td class="p-2 border-r dark:border-gray-700">{{ $stat['selesai'] }}</td>
+                            <td class="p-2 border-r dark:border-gray-700">{{ $stat['proses'] }}</td>
+                            <td class="p-2 font-bold text-gray-800 dark:text-gray-200">{{ $stat['jumlah'] }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-[#0d6efd] text-white font-bold text-sm">
+                <table class="w-full text-center">
+                    <tbody>
+                        <tr>
+                            <td class="p-3 text-center uppercase border-r border-[#0a58ca] w-[50%]">TOTAL KESELURUHAN</td>
+                            <td class="p-3 border-r border-[#0a58ca] w-[16%]">{{ $totalSelesaiAngkatan }}</td>
+                            <td class="p-3 border-r border-[#0a58ca] w-[17%]">{{ $totalProsesAngkatan }}</td>
+                            <td class="p-3 w-[17%]">{{ $totalKeseluruhanAngkatan }}</td>
                         </tr>
                     </tbody>
                 </table>

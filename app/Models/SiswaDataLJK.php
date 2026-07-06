@@ -40,27 +40,35 @@ class SiswaDataLJK extends Model
                 }
             }
 
-            // Exclude 'nilai' from average calculation
-            $avgFields = array_diff($fields, ['nilai']);
-
-            $total = 0;
-            $count = 0;
-
-            foreach ($avgFields as $field) {
+            // Hitung rata-rata tugas terlebih dahulu
+            $tugasFields = [
+                'Nilai_TGS_1', 'Nilai_TGS_2', 'Nilai_TGS_3', 'Nilai_TGS_4',
+                'Nilai_TGS_5', 'Nilai_TGS_6', 'Nilai_TGS_7', 'Nilai_TGS_8',
+                'Nilai_TGS_9', 'Nilai_TGS_10', 'Nilai_TGS_11', 'Nilai_TGS_12'
+            ];
+            
+            $totalTugas = 0;
+            $countTugas = 0;
+            foreach ($tugasFields as $field) {
                 $val = $record->{$field};
                 // Jika tidak diisi / 0.00 / null maka tidak ikut dirata-rata
                 if (!is_null($val) && (float)$val > 0) {
-                    $total += (float) $val;
-                    $count++;
+                    $totalTugas += (float) $val;
+                    $countTugas++;
                 }
             }
+            $rataRataTugas = $countTugas > 0 ? ($totalTugas / $countTugas) : 0;
 
-            // Sesuai request: minimal pembagi adalah 4 (UTS, UAS, Tugas 1, Tugas 2)
-            // Jika yang diisi lebih dari 4 (misal ada Tugas 3), pembagi mengikuti jumlah yang diisi
-            if ($total > 0) {
-                $pembagi = max(4, $count);
+            // 4 Komponen Wajib: UTS, UAS, Performance, Rata-rata Tugas
+            $uts = (float) ($record->Nilai_UTS ?? 0);
+            $uas = (float) ($record->Nilai_UAS ?? 0);
+            $perf = (float) ($record->Nilai_Performance ?? 0);
+
+            // Jika ada nilai yang dimasukkan
+            if ($uts > 0 || $uas > 0 || $perf > 0 || $rataRataTugas > 0) {
+                // Di rata-rata dari 4 komponen tersebut
+                $average = ($uts + $uas + $perf + $rataRataTugas) / 4;
                 
-                $average = $total / $pembagi;
                 // Batasi maksimal 4.00
                 $average = min(4.00, $average);
                 $record->Nilai_Akhir = round($average, 2);

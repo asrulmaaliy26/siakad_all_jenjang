@@ -13,6 +13,9 @@ class SarprasSuratKategorisTable
     {
         return $table
             ->columns([
+                \Filament\Tables\Columns\TextColumn::make('index')
+                    ->label('No.')
+                    ->rowIndex(),
                 \Filament\Tables\Columns\TextColumn::make('nama')
                     ->searchable()
                     ->sortable(),
