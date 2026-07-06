@@ -78,6 +78,38 @@ class SiswaDataLjkRelationManager extends RelationManager
                         }
                         return $count > 0 ? round($sum / $count, 2) : 0;
                     })
+                    ->color(fn() => auth()->user()?->isMurid() ? null : 'primary')
+                    ->weight(fn() => auth()->user()?->isMurid() ? null : 'bold')
+                    ->icon(fn() => auth()->user()?->isMurid() ? null : 'heroicon-o-pencil-square')
+                    ->action(
+                        \Filament\Actions\Action::make('input_tugas')
+                            ->modalHeading(fn($record) => 'Input Nilai Tugas - ' . ($record->akademikKrs->riwayatPendidikan->siswaData->nama ?? 'Siswa'))
+                            ->form(function () {
+                                $inputs = [];
+                                for ($i = 1; $i <= 12; $i++) {
+                                    $inputs[] = \Filament\Forms\Components\TextInput::make("Nilai_TGS_{$i}")
+                                        ->label("Tugas $i")
+                                        ->numeric()
+                                        ->step(0.01)
+                                        ->minValue(0)
+                                        ->maxValue(4);
+                                }
+                                return [
+                                    \Filament\Schemas\Components\Grid::make(3)->schema($inputs)
+                                ];
+                            })
+                            ->fillForm(function ($record) {
+                                $data = [];
+                                for ($i = 1; $i <= 12; $i++) {
+                                    $data["Nilai_TGS_{$i}"] = $record->{"Nilai_TGS_{$i}"};
+                                }
+                                return $data;
+                            })
+                            ->action(function ($record, array $data) {
+                                $record->update($data);
+                            })
+                            ->disabled(fn() => auth()->user()?->isMurid())
+                    )
                     ->toggleable(),
                 TextInputColumn::make('Nilai_UAS')
                     ->label('UAS')
@@ -250,6 +282,3 @@ class SiswaDataLjkRelationManager extends RelationManager
             ]);
     }
 }
-
-
-
