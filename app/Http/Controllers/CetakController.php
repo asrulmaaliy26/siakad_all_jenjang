@@ -70,6 +70,7 @@ class CetakController extends Controller
             'riwayatPendidikan.jurusan',
             'kelas.tahunAkademik',
             'kelas.programKelas',
+            'siswaDataLjk.mataPelajaranKelas.kelas',
             'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
             'siswaDataLjk.mataPelajaranKelas.dosenData',
         ])->findOrFail($id);
@@ -83,7 +84,14 @@ class CetakController extends Controller
             }
         }
 
-        $totalSksLjk = $krs->siswaDataLjk->map(function ($ljk) {
+        $filteredLjk = $krs->siswaDataLjk->filter(function ($ljk) use ($krs) {
+            $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
+            return $idTahun == $krs->id_tahun_akademik;
+        });
+
+        $krs->setRelation('siswaDataLjk', $filteredLjk);
+
+        $totalSksLjk = $filteredLjk->map(function ($ljk) {
             return $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
         })->sum();
 
@@ -206,6 +214,7 @@ class CetakController extends Controller
             'riwayatPendidikan.siswa',
             'riwayatPendidikan.jurusan',
             'tahunAkademik',
+            'siswaDataLjk.mataPelajaranKelas.kelas',
             'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
         ])->findOrFail($id);
 
@@ -218,9 +227,16 @@ class CetakController extends Controller
             }
         }
 
+        $filteredLjk = $krs->siswaDataLjk->filter(function ($ljk) use ($krs) {
+            $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
+            return $idTahun == $krs->id_tahun_akademik;
+        });
+
+        $krs->setRelation('siswaDataLjk', $filteredLjk);
+
         $totalSks = 0;
         $totalBobot = 0;
-        foreach ($krs->siswaDataLjk as $ljk) {
+        foreach ($filteredLjk as $ljk) {
             $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
             $bobot = $ljk->bobot; // Using the new accessor
 
@@ -257,11 +273,18 @@ class CetakController extends Controller
             }
         }
 
+        $tahunRequest = request('tahun');
         $allLjk = collect();
         foreach ($siswa->riwayatPendidikan as $riwayat) {
             foreach ($riwayat->akademikKrs as $krs) {
+                if ($tahunRequest && $krs->id_tahun_akademik != $tahunRequest) {
+                    continue;
+                }
                 foreach ($krs->siswaDataLjk as $ljk) {
-                    $allLjk->push($ljk);
+                    $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
+                    if ($idTahun == $krs->id_tahun_akademik) {
+                        $allLjk->push($ljk);
+                    }
                 }
             }
         }

@@ -110,20 +110,27 @@ class SiswaDataTable
             ->filters([
                 SelectFilter::make('angkatan')
                     ->label('Angkatan')
+                    ->default(fn() => \App\Models\TahunAkademik::query()
+                        ->select('nama')
+                        ->get()
+                        ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                        ->unique()
+                        ->sortDesc()
+                        ->first() ?? 'semua'
+                    )
                     ->options(
-                        fn() => collect(['belum_ada' => 'Belum Ada Angkatan'])
-                            ->merge(
-                                \App\Models\TahunAkademik::query()
-                                    ->select('nama')
-                                    ->get()
-                                    ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
-                                    ->unique()
-                                    ->sortDesc()
-                                    ->mapWithKeys(fn($y) => [$y => $y])
-                            )->toArray()
+                        fn() => ['semua' => 'Semua Angkatan', 'belum_ada' => 'Belum Ada Angkatan'] + 
+                            \App\Models\TahunAkademik::query()
+                                ->select('nama')
+                                ->get()
+                                ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                                ->unique()
+                                ->sortDesc()
+                                ->mapWithKeys(fn($y) => [$y => $y])
+                                ->toArray()
                     )
                     ->query(function (Builder $query, array $data) {
-                        if (empty($data['value'])) return $query;
+                        if (empty($data['value']) || $data['value'] === 'semua') return $query;
 
                         if ($data['value'] === 'belum_ada') {
                             // Mahasiswa yang tidak punya riwayat apapun DAN tidak punya data pendaftar
@@ -133,15 +140,25 @@ class SiswaDataTable
                         }
 
                         return $query->where(function ($q) use ($data) {
-                            // Ada di riwayat pendidikan dengan tahun ini
-                            $q->whereHas('riwayatPendidikanTerbaru', function ($q2) use ($data) {
+                            // Prioritas 1: Ada di riwayat pendidikan aktif dengan tahun ini
+                            $q->whereHas('riwayatPendidikanAktif', function ($q2) use ($data) {
                                 $q2->whereHas('tahunAkademik', function ($q3) use ($data) {
-                                    $q3->where('nama', 'like', $data['value'] . '/%');
+                                    $q3->where('nama', 'like', $data['value'] . '%');
                                 });
                             })
-                            // ATAU tidak punya riwayat pendidikan, tapi tahun daftar pendaftar = tahun yang dicari
+                            // Prioritas 2: Jika tidak punya yang aktif, cek di riwayat pendidikan terbaru
                             ->orWhere(function ($q2) use ($data) {
-                                $q2->doesntHave('riwayatPendidikanTerbaru')
+                                $q2->doesntHave('riwayatPendidikanAktif')
+                                   ->whereHas('riwayatPendidikanTerbaru', function ($q3) use ($data) {
+                                       $q3->whereHas('tahunAkademik', function ($q4) use ($data) {
+                                           $q4->where('nama', 'like', $data['value'] . '%');
+                                       });
+                                   });
+                            })
+                            // Prioritas 3: Jika tidak punya riwayat pendidikan sama sekali, cek pendaftar
+                            ->orWhere(function ($q2) use ($data) {
+                                $q2->doesntHave('riwayatPendidikanAktif')
+                                   ->doesntHave('riwayatPendidikanTerbaru')
                                    ->whereHas('pendaftar', function ($q3) use ($data) {
                                        $q3->whereYear('Tgl_Daftar', $data['value']);
                                    });
@@ -245,8 +262,24 @@ class SiswaDataTable
                     ->label('Transkrip')
                     ->icon('heroicon-o-document-text')
                     ->color('success')
-                    ->url(fn($record) => route('cetak.transkrip', $record->id))
-                    ->openUrlInNewTab(),
+                    ->form([
+                        \Filament\Forms\Components\Select::make('id_tahun_akademik')
+                            ->label('Tahun Akademik')
+                            ->options(
+                                fn() => \App\Models\TahunAkademik::query()
+                                    ->orderBy('nama', 'desc')
+                                    ->get()
+                                    ->pluck('nama', 'id')
+                                    ->toArray()
+                            )
+                            ->required()
+                    ])
+                    ->modalHeading('Pilih Tahun Akademik')
+                    ->modalSubmitActionLabel('Cetak Transkrip')
+                    ->action(function ($record, array $data, \Livewire\Component $livewire) {
+                        $url = route('cetak.transkrip', ['id' => $record->id, 'tahun' => $data['id_tahun_akademik']]);
+                        $livewire->js("window.open('{$url}', '_blank');");
+                    }),
                 Action::make('view_grades')
                     ->label('Nilai')
                     ->icon('heroicon-o-academic-cap')

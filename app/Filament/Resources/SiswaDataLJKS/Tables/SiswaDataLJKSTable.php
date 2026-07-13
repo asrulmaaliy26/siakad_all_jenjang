@@ -311,6 +311,17 @@ class SiswaDataLJKSTable
                         return $krs ? route('cetak.transkrip', $krs->riwayatPendidikan->id_siswa_data) : '#';
                     })
                     ->openUrlInNewTab(),
+                \Filament\Actions\Action::make('export_rekap_nilai')
+                    ->label('Export Rekap Nilai (IPK/IPS)')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(function (\Livewire\Component $livewire) {
+                        $query = clone $livewire->getFilteredTableQuery();
+                        return \Maatwebsite\Excel\Facades\Excel::download(
+                            new \App\Exports\RekapNilaiMahasiswaExport($query),
+                            'Rekap-Nilai-' . date('Y-m-d-His') . '.xlsx'
+                        );
+                    }),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
                     ->label('Export Excel')
                     ->color('success')
@@ -323,7 +334,7 @@ class SiswaDataLJKSTable
                                 \pxlrbt\FilamentExcel\Columns\Column::make('id_akademik_krs')->heading('ID KRS'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('id_mata_pelajaran_kelas')->heading('ID Mapel Kelas'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')->heading('Mata Kuliah'),
-                                    \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
+                                \pxlrbt\FilamentExcel\Columns\Column::make('mataPelajaranKelas.dosenData.nama')->heading('Dosen Pengajar'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UTS')->heading('UTS'),
                                 \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_UAS')->heading('UAS'),
                                 ...\array_map(fn($i) => \pxlrbt\FilamentExcel\Columns\Column::make("Nilai_TGS_{$i}")->heading("TGS $i"), \range(1, 12)),
@@ -360,5 +371,3 @@ class SiswaDataLJKSTable
             ->defaultSort('created_at', 'desc');
     }
 }
-
-

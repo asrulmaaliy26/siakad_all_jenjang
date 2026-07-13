@@ -336,14 +336,19 @@ class AkademikKrsTable
                         $query->whereHas('riwayatPendidikan', function ($q) use ($data) {
                             $targetSemester = (int) $data['value'];
 
-                            // Logika filter ini harus sinkron dengan RiwayatPendidikan::getSemester()
-                            // getSemester() menggunakan floor(diffInMonths / 6) + 1
-                            // Maka difilter berdasarkan rentang bulan (6 * (semester - 1) <= diff <= 6 * semester - 1)
+                            // Logika filter ini disinkronkan dengan RiwayatPendidikan::getSemester()
+                            // Semester = (refPeriod - startPeriod) + 1
+                            // refPeriod = YEAR(refDate) * 2 + IF(MONTH(refDate) <= 6, 0, 1)
+                            // startPeriod = YEAR(tanggal_mulai) * 2 + IF(MONTH(tanggal_mulai) <= 6, 0, 1)
 
-                            $startMonth = ($targetSemester - 1) * 6;
-                            $endMonth = ($targetSemester * 6) - 1;
-
-                            $q->whereRaw("TIMESTAMPDIFF(MONTH, tanggal_mulai, COALESCE(akademik_krs.tgl_krs, akademik_krs.created_at)) BETWEEN ? AND ?", [$startMonth, $endMonth]);
+                            $q->whereRaw("
+                                (
+                                    (YEAR(COALESCE(akademik_krs.tgl_krs, akademik_krs.created_at)) * 2 + IF(MONTH(COALESCE(akademik_krs.tgl_krs, akademik_krs.created_at)) <= 6, 0, 1))
+                                    - 
+                                    (YEAR(tanggal_mulai) * 2 + IF(MONTH(tanggal_mulai) <= 6, 0, 1))
+                                    + 1
+                                ) = ?
+                            ", [$targetSemester]);
                         });
                     })
                     ->searchable()
