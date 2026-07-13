@@ -52,9 +52,17 @@ class SiswaDataLJKSTable
                     ->color('info')
                     ->toggleable(),
 
-                TextColumn::make('akademikKrs.tahunAkademik.nama')
-                    ->label('Tahun Ajaran')
+                TextColumn::make('mataPelajaranKelas.kelas.tahunAkademik.nama')
+                    ->label('Tahun Ajaran Kelas')
                     ->sortable()
+                    ->toggleable(),
+                    
+                TextColumn::make('mataPelajaranKelas.kelas.semester')
+                    ->label('Semester Kelas')
+                    ->sortable()
+                    ->badge()
+                    ->color('info')
+                    ->formatStateUsing(fn($state) => "Semester {$state}")
                     ->toggleable(),
 
                 TextColumn::make('mapel_progress')
@@ -238,7 +246,7 @@ class SiswaDataLJKSTable
                     ->query(function ($query, array $data) {
                         return $query->when($data['value'], function ($query, $value) {
                             $query->whereHas(
-                                'akademikKrs',
+                                'mataPelajaranKelas.kelas',
                                 fn($q) => $q->where('id_tahun_akademik', $value)
                             );
                         });
@@ -368,6 +376,18 @@ class SiswaDataLJKSTable
                             ->send();
                     })
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->groups([
+                \Filament\Tables\Grouping\Group::make('akademikKrs.riwayatPendidikan.siswa.nama')
+                    ->label('Mahasiswa')
+                    ->collapsible(),
+                \Filament\Tables\Grouping\Group::make('mataPelajaranKelas.kelas.tahunAkademik.nama')
+                    ->label('Tahun Akademik Kelas')
+                    ->collapsible(),
+                \Filament\Tables\Grouping\Group::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
+                    ->label('Mata Kuliah')
+                    ->collapsible(),
+            ])
+            ->defaultGroup('akademikKrs.riwayatPendidikan.siswa.nama');
     }
 }

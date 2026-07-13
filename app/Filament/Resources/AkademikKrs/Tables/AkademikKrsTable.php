@@ -596,6 +596,8 @@ class AkademikKrsTable
             ->poll('60s')
             ->deferLoading()
             ->persistFiltersInSession()
+            ->paginated([10, 25, 50, 100, 250])
+            ->defaultPaginationPageOption(25)
             ->headerActions([
                 Action::make('advisor_chat')
                     ->label('Diskusi Pembimbing')

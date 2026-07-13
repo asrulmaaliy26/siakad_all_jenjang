@@ -24,16 +24,45 @@ class SiswaDataLJKForm
                 Section::make('Informasi Dasar')
                     ->columns(2)
                     ->schema([
+                        Select::make('tahun_akademik_filter')
+                            ->label('Tahun Ajaran')
+                            ->options(
+                                \App\Models\TahunAkademik::orderByDesc('id')
+                                    ->pluck('nama', 'id')
+                            )
+                            ->live()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function ($component, $state, $record) {
+                                if ($record && $record->mataPelajaranKelas && $record->mataPelajaranKelas->kelas) {
+                                    $component->state($record->mataPelajaranKelas->kelas->id_tahun_akademik);
+                                }
+                            })
+                            ->columnSpanFull(),
+                            
                         Select::make('id_akademik_krs')
                             ->label('Mahasiswa (KRS)')
-                            ->relationship('akademikKrs', 'id')
+                            ->relationship('akademikKrs', 'id', modifyQueryUsing: function ($query, $get) {
+                                $tahunId = $get('tahun_akademik_filter');
+                                if ($tahunId) {
+                                    $query->where('id_tahun_akademik', $tahunId);
+                                }
+                            })
                             ->getOptionLabelFromRecordUsing(fn($record) => $record->riwayatPendidikan->siswa->nama . ' - ' . $record->riwayatPendidikan->nomor_induk)
                             ->searchable()
                             ->preload()
+                            ->live()
                             ->required(),
+                            
                         Select::make('id_mata_pelajaran_kelas')
                             ->label('Mata Kuliah')
-                            ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function ($query) {
+                            ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function ($query, $get) {
+                                $tahunId = $get('tahun_akademik_filter');
+                                if ($tahunId) {
+                                    $query->whereHas('kelas', function ($q) use ($tahunId) {
+                                        $q->where('id_tahun_akademik', $tahunId);
+                                    });
+                                }
+
                                 $user = \Illuminate\Support\Facades\Auth::user();
                                 if ($user && $user->isPengajar()) {
                                     $query->whereHas('dosenData', function ($q) use ($user) {
@@ -41,7 +70,7 @@ class SiswaDataLJKForm
                                     });
                                 }
                             })
-                            ->getOptionLabelFromRecordUsing(fn($record) => $record->mataPelajaranKurikulum->mataPelajaranMaster->nama . ' - ' . ($record->kelas->programKelas->nilai ?? '-'))
+                            ->getOptionLabelFromRecordUsing(fn($record) => $record->mataPelajaranKurikulum->mataPelajaranMaster->nama . ' - ' . ($record->kelas->programKelas->nilai ?? '-') . ' (' . ($record->kelas->tahunAkademik->nama ?? '-') . ')')
                             ->searchable()
                             ->preload()
                             ->required(),
