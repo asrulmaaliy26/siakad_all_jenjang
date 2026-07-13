@@ -20,6 +20,7 @@ class RekapNilaiMahasiswaExport implements FromCollection, WithHeadings, WithMap
 
     public function collection()
     {
+        ini_set('memory_limit', '512M');
         // Get all LJK data based on the current table query (which includes filters)
         $ljks = $this->query->with([
             'akademikKrs.riwayatPendidikan.siswa',

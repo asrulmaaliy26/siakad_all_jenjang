@@ -45,6 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('logokampus.jpg'))
             ->font('Outfit')
             ->sidebarCollapsibleOnDesktop()
+            ->maxContentWidth(\Filament\Support\Enums\Width::Full)
             ->spa()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
