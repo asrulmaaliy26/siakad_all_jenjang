@@ -47,7 +47,7 @@ class SiswaDataLJKForm
                                     $query->where('id_tahun_akademik', $tahunId);
                                 }
                             })
-                            ->getOptionLabelFromRecordUsing(fn($record) => $record->riwayatPendidikan->siswa->nama . ' - ' . $record->riwayatPendidikan->nomor_induk)
+                            ->getOptionLabelFromRecordUsing(fn($record) => ($record->riwayatPendidikan?->siswa?->nama ?? 'Unknown') . ' - ' . ($record->riwayatPendidikan?->nomor_induk ?? 'Unknown'))
                             ->searchable()
                             ->preload()
                             ->live()
@@ -70,7 +70,7 @@ class SiswaDataLJKForm
                                     });
                                 }
                             })
-                            ->getOptionLabelFromRecordUsing(fn($record) => $record->mataPelajaranKurikulum->mataPelajaranMaster->nama . ' - ' . ($record->kelas->programKelas->nilai ?? '-') . ' (' . ($record->kelas->tahunAkademik->nama ?? '-') . ')')
+                            ->getOptionLabelFromRecordUsing(fn($record) => ($record->mataPelajaranKurikulum?->mataPelajaranMaster?->nama ?? 'Unknown') . ' - ' . ($record->kelas?->programKelas?->nilai ?? '-') . ' (' . ($record->kelas?->tahunAkademik?->nama ?? '-') . ')')
                             ->searchable()
                             ->preload()
                             ->required(),

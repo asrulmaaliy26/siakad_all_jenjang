@@ -388,6 +388,8 @@ class SiswaDataLJKSTable
                     ->label('Mata Kuliah')
                     ->collapsible(),
             ])
-            ->defaultGroup('akademikKrs.riwayatPendidikan.siswa.nama');
+            ->defaultGroup('akademikKrs.riwayatPendidikan.siswa.nama')
+            ->paginated([10, 25, 50, 100, 250])
+            ->defaultPaginationPageOption(25);
     }
 }
