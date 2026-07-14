@@ -56,7 +56,7 @@ class SiswaDataLJKSTable
                     ->label('Tahun Ajaran Kelas')
                     ->sortable()
                     ->toggleable(),
-                    
+
                 TextColumn::make('mataPelajaranKelas.kelas.semester')
                     ->label('Semester Kelas')
                     ->sortable()
@@ -381,15 +381,14 @@ class SiswaDataLJKSTable
                 \Filament\Tables\Grouping\Group::make('akademikKrs.riwayatPendidikan.siswa.nama')
                     ->label('Mahasiswa')
                     ->collapsible(),
-                \Filament\Tables\Grouping\Group::make('mataPelajaranKelas.kelas.tahunAkademik.nama')
-                    ->label('Tahun Akademik Kelas')
-                    ->collapsible(),
+
                 \Filament\Tables\Grouping\Group::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
                     ->label('Mata Kuliah')
                     ->collapsible(),
             ])
             ->defaultGroup('akademikKrs.riwayatPendidikan.siswa.nama')
-            ->paginated([10, 25, 50, 100, 250])
-            ->defaultPaginationPageOption(25);
+            ->paginated([10, 25, 50, 100, 250, 'all'])
+            ->defaultPaginationPageOption(25)
+            ->deferLoading();
     }
 }

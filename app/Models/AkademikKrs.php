@@ -49,17 +49,16 @@ class AkademikKrs extends Model
         return $this->belongsTo(RiwayatPendidikan::class, 'id_riwayat_pendidikan');
     }
 
-    // Relationship to Kelas via SiswaDataLJK
-    public function kelas()
+    // Attribute to get all Kelas related to this KRS via SiswaDataLJK -> MataPelajaranKelas
+    public function getKelasAttribute()
     {
-        return $this->hasManyThrough(
-            Kelas::class,
-            SiswaDataLJK::class,
-            'id_akademik_krs',
-            'id',
-            'id',
-            'id_mata_pelajaran_kelas'
-        );
+        return $this->siswaDataLjk()
+            ->with('mataPelajaranKelas.kelas')
+            ->get()
+            ->map(fn($ljk) => $ljk->mataPelajaranKelas?->kelas)
+            ->filter()
+            ->unique('id')
+            ->values();
     }
 
     public function tahunAkademik()
@@ -97,11 +96,22 @@ class AkademikKrs extends Model
             }
 
             // 2. Hitung Nilai Akhir / IPS dari LJK data
-            // Rata-rata Nilai_Akhir dari semua LJK di KRS ini
-            $ips = $this->siswaDataLjk()->avg('Nilai_Akhir') ?? 0;
+            $ljks = $this->siswaDataLjk()->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')->get();
+            $totalBobotSks = 0;
+            $totalSks = 0;
+
+            foreach ($ljks as $ljk) {
+                $sks = (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+                $bobotNilai = $ljk->bobot; // Uses the updated getBobotAttribute() which returns 0-4.0 scale
+                
+                $totalBobotSks += ($sks * $bobotNilai);
+                $totalSks += $sks;
+            }
+
+            $ips = $totalSks > 0 ? ($totalBobotSks / $totalSks) : 0;
 
             // 3. Tentukan jumlah SKS berdasarkan IPS
-            // Aturan: 3 -> 24 SKS, 2 -> 18 SKS, <2 -> 12 SKS
+            // Aturan: >= 3 -> 24 SKS, >= 2 -> 18 SKS, <2 -> 12 SKS
             $newSks = 12;
             if ($ips >= 3.0) {
                 $newSks = 24;
@@ -158,5 +168,64 @@ class AkademikKrs extends Model
 
             return $newKrs;
         });
+    }
+
+    public function getSksDiambilAttribute()
+    {
+        return $this->siswaDataLjk->sum(function ($ljk) {
+            return (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+        });
+    }
+
+    public function getIpsAttribute()
+    {
+        $ljks = $this->siswaDataLjk()->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')->get();
+        $totalBobotSks = 0;
+        $totalSks = 0;
+
+        foreach ($ljks as $ljk) {
+            $sks = (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+            $bobotNilai = $ljk->bobot;
+            
+            $totalBobotSks += ($sks * $bobotNilai);
+            $totalSks += $sks;
+        }
+
+        return $totalSks > 0 ? round($totalBobotSks / $totalSks, 2) : 0;
+    }
+
+    public function getSksTotalAttribute()
+    {
+        if (!$this->id_riwayat_pendidikan) return 0;
+
+        return \App\Models\SiswaDataLJK::whereHas('akademikKrs', function ($q) {
+            $q->where('id_riwayat_pendidikan', $this->id_riwayat_pendidikan)
+              ->where('created_at', '<=', $this->created_at);
+        })->get()->sum(function ($ljk) {
+            return (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+        });
+    }
+
+    public function getIpkAttribute()
+    {
+        if (!$this->id_riwayat_pendidikan) return 0;
+
+        $ljks = \App\Models\SiswaDataLJK::whereHas('akademikKrs', function ($q) {
+            $q->where('id_riwayat_pendidikan', $this->id_riwayat_pendidikan)
+              ->where('created_at', '<=', $this->created_at);
+        })->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')->get();
+
+        $totalBobotSks = 0;
+        $totalSks = 0;
+
+        foreach ($ljks as $ljk) {
+            $sks = (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+            $bobotNilai = $ljk->bobot;
+            
+            $totalBobotSks += ($sks * $bobotNilai);
+            $totalSks += $sks;
+        }
+
+        return $totalSks > 0 ? round($totalBobotSks / $totalSks, 2) : 0;
     }
 }

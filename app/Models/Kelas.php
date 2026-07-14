@@ -16,8 +16,49 @@ class Kelas extends Model
         'semester',
         'id_tahun_akademik',
         'id_jurusan',
-        'status_aktif'
+        'status_aktif',
+        'kode_pddikti'
     ];
+
+    protected static function booted()
+    {
+        static::saving(function ($kelas) {
+            if (!empty($kelas->id_jurusan) && !empty($kelas->ro_program_kelas)) {
+                $jurusan = \App\Models\Jurusan::find($kelas->id_jurusan);
+                $programKelas = \App\Models\RefOption\ProgramKelas::find($kelas->ro_program_kelas);
+
+                $jurNama = $jurusan->nama ?? '';
+                $progNama = $programKelas->nilai ?? '';
+                $smt = $kelas->semester ?? '';
+
+                $prefix = '';
+                if (str_contains(strtolower($jurNama), 'manajemen pendidikan')) {
+                    $prefix = 'MPI';
+                } elseif (str_contains(strtolower($jurNama), 'studi islam')) {
+                    $prefix = 'SI';
+                } elseif (str_contains(strtolower($jurNama), 'al-qur')) {
+                    $prefix = 'IAT';
+                } else {
+                    $prefix = strtoupper(substr($jurNama, 0, 3));
+                }
+
+                $suffix = 'A';
+                if (str_contains(strtolower($progNama), 'kelas a')) {
+                    $suffix = 'A';
+                } elseif (str_contains(strtolower($progNama), 'kelas b')) {
+                    $suffix = 'B';
+                } elseif (str_contains(strtolower($progNama), 'kelas c') || str_contains(strtolower($progNama), 'afiliasi')) {
+                    $suffix = 'C';
+                } elseif (str_contains(strtolower($progNama), 'reguler')) {
+                    $suffix = 'A';
+                } elseif (str_contains(strtolower($progNama), 'karyawan')) {
+                    $suffix = 'B';
+                }
+
+                $kelas->kode_pddikti = strtoupper($prefix . $smt . $suffix);
+            }
+        });
+    }
 
     public function tahunAkademik()
     {

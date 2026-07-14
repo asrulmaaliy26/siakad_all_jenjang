@@ -14,16 +14,7 @@ class ListSiswaData extends ListRecords
 {
     protected static string $resource = SiswaDataResource::class;
 
-    public function getTabs(): array
-    {
-        return [
-            'all' => Tab::make('Semua Siswa'),
-            'aktif' => Tab::make('Siswa Aktif')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status_siswa', 'aktif')),
-            'tidak aktif' => Tab::make('Siswa Tidak Aktif')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status_siswa', 'tidak aktif')->orWhereNull('status_siswa')),
-        ];
-    }
+
 
     protected function getHeaderActions(): array
     {
@@ -35,6 +26,50 @@ class ListSiswaData extends ListRecords
                 ->color('success')
                 ->url(fn(): string => SiswaDataResource::getUrl('download-files'))
                 ->disabled(fn() => !\Filament\Facades\Filament::auth()->user()?->hasAnyRole(['super_admin', 'admin'])),
+            Action::make('export_pddikti')
+                ->label('Export PDDIKTI')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('warning')
+                ->action(function () {
+                    return \Maatwebsite\Excel\Facades\Excel::download(
+                        new \App\Exports\MahasiswaPddiktiExport,
+                        'mahasiswa_pddikti_' . date('Ymd_His') . '.xlsx'
+                    );
+                })
+                ->requiresConfirmation()
+                ->modalHeading('Export Data Mahasiswa (PDDIKTI)')
+                ->modalDescription('Apakah Anda yakin ingin mengekspor seluruh data mahasiswa ke dalam format Excel PDDIKTI?'),
+            Action::make('import_pddikti')
+                ->label('Import PDDIKTI')
+                ->icon('heroicon-o-document-arrow-up')
+                ->color('info')
+                ->form([
+                    \Filament\Forms\Components\FileUpload::make('file')
+                        ->label('File Excel PDDIKTI')
+                        ->disk('local')
+                        ->directory('imports')
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $filePath = storage_path('app/private/' . $data['file']);
+                    try {
+                        \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\MahasiswaPddiktiImport, $filePath);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Berhasil di-import')
+                            ->body('Data mahasiswa PDDIKTI berhasil disinkronisasi.')
+                            ->success()
+                            ->send();
+                    } catch (\Exception $e) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Gagal meng-import')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                })
+                ->modalHeading('Import Data Mahasiswa (PDDIKTI)')
+                ->modalDescription('Unggah file template Excel PDDIKTI (format .xlsx) yang telah diisi untuk menambahkan/menyinkronkan data mahasiswa.'),
         ];
     }
 }

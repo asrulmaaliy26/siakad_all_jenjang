@@ -5,7 +5,7 @@ namespace App\Filament\Resources\MataPelajaranKelasDistribusis\Tables;
 use App\Filament\Resources\MataPelajaranKelasDistribusis\Actions\ExportMataPelajaranKelasAction;
 use App\Filament\Resources\MataPelajaranKelasDistribusis\Actions\ImportMataPelajaranKelasAction;
 use App\Models\Jurusan;
-use App\Models\MataPelajaranKelasDistribusi;
+use App\Models\MataPelajaranKelas;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -49,7 +49,7 @@ class MataPelajaranKelasDistribusisTable
                     ->label('Kode MK')
                     ->toggleable(),
 
-                TextColumn::make('dosen.nama')
+                TextColumn::make('dosenData.nama')
                     ->label('Dosen')
                     ->sortable()
                     ->toggleable(),
@@ -200,9 +200,9 @@ class MataPelajaranKelasDistribusisTable
                     ->preload(),
 
                 // Filter berdasarkan Dosen
-                SelectFilter::make('dosen')
+                SelectFilter::make('dosenData')
                     ->label('Dosen')
-                    ->relationship('dosen', 'nama')
+                    ->relationship('dosenData', 'nama')
                     ->searchable()
                     ->preload(),
 
@@ -277,7 +277,7 @@ class MataPelajaranKelasDistribusisTable
                             $jumlah = (int) $data['jumlah'];
                             $ids    = $action->getSelectedRecords()->pluck('id');
 
-                            $affected = MataPelajaranKelasDistribusi::whereIn('id', $ids)
+                            $affected = MataPelajaranKelas::whereIn('id', $ids)
                                 ->update(['jumlah' => $jumlah]);
 
                             Notification::make()
@@ -321,7 +321,7 @@ class MataPelajaranKelasDistribusisTable
         static::$bentrokIds = [];
 
         try {
-            $records = MataPelajaranKelasDistribusi::query()
+            $records = MataPelajaranKelas::query()
                 ->whereNotNull('hari')
                 ->whereNotNull('jam')
                 ->where('jam', '!=', '')

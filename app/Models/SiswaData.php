@@ -88,8 +88,34 @@ class SiswaData extends Model
         'kebutuhan_khusus',
         'status_siswa',
         'user_id',
+        'npwp',
+        'no_hp',
     ];
 
+    public static $pddikti_jenis_tinggal = [
+        '1' => 'Bersama orang tua',
+        '2' => 'Wali',
+        '3' => 'Kost',
+        '4' => 'Asrama',
+        '5' => 'Panti asuhan',
+        '10' => 'Rumah sendiri',
+        '99' => 'Lainnya'
+    ];
+
+    public static $pddikti_alat_transportasi = [
+        '1' => 'Jalan kaki',
+        '3' => 'Angkutan umum/bus/pete-pete',
+        '4' => 'Mobil/bus antar jemput',
+        '5' => 'Kereta api',
+        '6' => 'Ojek',
+        '7' => 'Andong/bendi/sado/dokar/delman/becak',
+        '8' => 'Perahu penyeberangan/rakit/getek',
+        '11' => 'Kuda',
+        '12' => 'Sepeda',
+        '13' => 'Sepeda motor',
+        '14' => 'Mobil pribadi',
+        '99' => 'Lainnya'
+    ];
 
     public function riwayatPendidikan()
     {

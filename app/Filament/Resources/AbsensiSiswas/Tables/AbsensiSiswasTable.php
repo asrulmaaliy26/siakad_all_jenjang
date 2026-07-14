@@ -18,12 +18,7 @@ class AbsensiSiswasTable
                 \Filament\Tables\Columns\TextColumn::make('index')
                     ->label('No.')
                     ->rowIndex(),
-                //indexing table
-                TextColumn::make('No')
-                    ->label('No')
-                    ->getStateUsing(
-                        fn($rowLoop) => $rowLoop->iteration
-                    ),
+
                 TextColumn::make('krs.riwayatPendidikan.siswa.nomor_induk')
                     ->label('NIS / NIM')
                     ->sortable()

@@ -7,6 +7,7 @@ use App\Filament\Resources\MataPelajaranKelasDistribusis\Pages\EditMataPelajaran
 use App\Filament\Resources\MataPelajaranKelasDistribusis\Pages\ListMataPelajaranKelasDistribusis;
 use App\Filament\Resources\MataPelajaranKelasDistribusis\Schemas\MataPelajaranKelasDistribusiForm;
 use App\Filament\Resources\MataPelajaranKelasDistribusis\Tables\MataPelajaranKelasDistribusisTable;
+use App\Models\MataPelajaranKelas;
 use App\Models\MataPelajaranKelasDistribusi;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -17,7 +18,7 @@ use UnitEnum;
 
 class MataPelajaranKelasDistribusiResource extends Resource
 {
-    protected static ?string $model = MataPelajaranKelasDistribusi::class;
+    protected static ?string $model = MataPelajaranKelas::class;
 
     public static function canViewAny(): bool
     {

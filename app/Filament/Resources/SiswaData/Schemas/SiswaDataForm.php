@@ -103,7 +103,21 @@ class SiswaDataForm
                                 TextInput::make('rt'),
                                 TextInput::make('rw'),
                                 TextInput::make('desa'),
-                                TextInput::make('kecamatan'),
+                                Select::make('kecamatan')
+                                    ->searchable()
+                                    ->getSearchResultsUsing(function (string $search) {
+                                        return \App\Models\RefWilayah::where('kecamatan', 'like', "%{$search}%")
+                                            ->orWhere('kabupaten', 'like', "%{$search}%")
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(function ($wilayah) {
+                                                return [$wilayah->id_wil => "{$wilayah->kecamatan} - {$wilayah->kabupaten} - {$wilayah->provinsi}"];
+                                            });
+                                    })
+                                    ->getOptionLabelUsing(function ($value) {
+                                        $wilayah = \App\Models\RefWilayah::find($value);
+                                        return $wilayah ? "{$wilayah->kecamatan} - {$wilayah->kabupaten} - {$wilayah->provinsi}" : $value;
+                                    }),
                                 TextInput::make('kabupaten'),
                                 TextInput::make('kode_pos'),
                                 TextInput::make('provinsi'),

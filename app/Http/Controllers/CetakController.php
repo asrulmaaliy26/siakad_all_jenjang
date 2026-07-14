@@ -260,10 +260,14 @@ class CetakController extends Controller
 
     public function transkrip($id)
     {
-        $siswa = SiswaData::with([
-            'riwayatPendidikan.jurusan',
-            'riwayatPendidikan.akademikKrs.siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
+        // Parameter $id di sini sekarang merujuk pada ID Riwayat Pendidikan (seperti id_his_pdk di sistem lama)
+        $riwayat = RiwayatPendidikan::with([
+            'siswa',
+            'jurusan',
+            'akademikKrs.siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
         ])->findOrFail($id);
+
+        $siswa = $riwayat->siswa;
 
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
@@ -275,16 +279,15 @@ class CetakController extends Controller
 
         $tahunRequest = request('tahun');
         $allLjk = collect();
-        foreach ($siswa->riwayatPendidikan as $riwayat) {
-            foreach ($riwayat->akademikKrs as $krs) {
-                if ($tahunRequest && $krs->id_tahun_akademik != $tahunRequest) {
-                    continue;
-                }
-                foreach ($krs->siswaDataLjk as $ljk) {
-                    $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
-                    if ($idTahun == $krs->id_tahun_akademik) {
-                        $allLjk->push($ljk);
-                    }
+        
+        foreach ($riwayat->akademikKrs as $krs) {
+            if ($tahunRequest && $krs->id_tahun_akademik != $tahunRequest) {
+                continue;
+            }
+            foreach ($krs->siswaDataLjk as $ljk) {
+                $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
+                if ($idTahun == $krs->id_tahun_akademik) {
+                    $allLjk->push($ljk);
                 }
             }
         }
@@ -301,15 +304,11 @@ class CetakController extends Controller
 
         $ipk = $totalSks > 0 ? round($totalBobot / $totalSks, 2) : 0;
 
-        $riwayatAktif = $siswa->riwayatPendidikanAktif;
-        $kaprodi = null;
-        if ($riwayatAktif) {
-            $kaprodi = DosenData::where('id_jurusan', $riwayatAktif->id_jurusan)
-                ->whereHas('user', fn($q) => $q->role('kaprodi'))
-                ->first();
-        }
+        $kaprodi = DosenData::where('id_jurusan', $riwayat->id_jurusan)
+            ->whereHas('user', fn($q) => $q->role('kaprodi'))
+            ->first();
 
-        $pdf = Pdf::loadView('cetak.transkrip', compact('siswa', 'allLjk', 'totalSks', 'totalBobot', 'ipk', 'kaprodi'))
+        $pdf = Pdf::loadView('cetak.transkrip', compact('siswa', 'riwayat', 'allLjk', 'totalSks', 'totalBobot', 'ipk', 'kaprodi'))
             ->setPaper('a4', 'portrait');
 
         $namaSiswa = Str::slug($siswa->nama ?? 'transkrip');

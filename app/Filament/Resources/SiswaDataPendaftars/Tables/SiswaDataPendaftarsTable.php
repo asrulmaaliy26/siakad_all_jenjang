@@ -267,6 +267,6 @@ class SiswaDataPendaftarsTable
                 ExportAction::make()
             ])
             ->striped()
-            ->paginated([10, 25, 50, 100]);
+            ->paginated([10, 25, 50, 100, 250, 'all']);
     }
 }

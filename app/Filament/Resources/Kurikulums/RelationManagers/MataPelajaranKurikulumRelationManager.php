@@ -114,7 +114,7 @@ class MataPelajaranKurikulumRelationManager extends RelationManager
                     ->rules(['required', 'numeric', 'min:1'])
                     ->sortable(),
             ])
-            ->paginated([10, 25, 50, 100])
+            ->paginated([10, 25, 50, 100, 250, 'all'])
             ->defaultPaginationPageOption(10)
             ->filters([
                 \Filament\Tables\Filters\SelectFilter::make('semester')

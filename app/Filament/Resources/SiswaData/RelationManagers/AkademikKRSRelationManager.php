@@ -17,7 +17,7 @@ use Filament\Actions\DeleteBulkAction;
 class AkademikKRSRelationManager extends RelationManager
 {
     protected static string $relationship = 'akademikKrs';
-    protected static ?string $title = 'Akademik KRS';
+    protected static ?string $title = 'KRS';
 
     public function form(Schema $schema): Schema
     {

@@ -34,8 +34,11 @@ class KelasForm
                     ->searchable()
                     ->required(),
                 Select::make('status_aktif')
-
                     ->options(['Y' => 'Y', 'N' => 'N']),
+                TextInput::make('kode_pddikti')
+                    ->label('Kode Kelas (PDDIKTI)')
+                    ->helperText('Contoh: SI2A')
+                    ->maxLength(255),
             ]);
     }
 }

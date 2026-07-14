@@ -61,7 +61,9 @@ class RiwayatPendidikan extends Model
         'tgl_sk_yudisium',
         'ipk',
         'nm_pt_asal',
+        'kode_pt_asal',
         'nm_prodi_asal',
+        'kode_prodi_asal',
         'ro_jns_daftar',
         'ro_jns_keluar',
         'keluar_smt',
@@ -69,6 +71,19 @@ class RiwayatPendidikan extends Model
         'pembiayaan',
         'status',
         'id_wali_dosen',
+    ];
+
+    public static $pddikti_jenis_pembiayaan = [
+        '1' => 'Mandiri',
+        '2' => 'Beasiswa Tidak Penuh',
+        '3' => 'Beasiswa Penuh'
+    ];
+
+    public static $pddikti_jenis_pendaftaran = [
+        '1' => 'Peserta didik baru',
+        '2' => 'Pindahan',
+        '11' => 'Alih Jenjang',
+        '12' => 'Lintas Jalur'
     ];
 
     public function waliDosen()
@@ -163,14 +178,14 @@ class RiwayatPendidikan extends Model
             get: function () {
                 if ($this->tahunAkademik) {
                     $nama = $this->tahunAkademik->nama;
-                    if (str_contains($nama, '/')) {
-                        // Hilangkan suffix periode jika ada, misalnya "2024/2025 Genap" -> "2024/2025"
-                        $namaClean = explode(' ', $nama)[0];
-                        $parts = explode('/', $namaClean);
-                        return $parts[0]; // Selalu ambil tahun pertama (e.g. 2024/2025 -> 2024)
+                    // Look for 4 consecutive digits (e.g. 2024)
+                    if (preg_match('/\b(20\d{2})\b/', $nama, $matches)) {
+                        return $matches[1];
                     }
-                    // Jika tidak ada garis miring, ambil saja bagian pertama
-                    return explode(' ', $nama)[0];
+                    // Fallback to exploding
+                    $namaClean = explode(' ', $nama)[0];
+                    $parts = explode('/', $namaClean);
+                    return $parts[0];
                 }
                 return null;
             }

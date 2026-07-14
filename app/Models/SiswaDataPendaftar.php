@@ -147,6 +147,16 @@ class SiswaDataPendaftar extends Model
         'File_Foto_Berwarna' => 'array',
     ];
 
+    public static $pddikti_jalur_pendaftaran = [
+        '1' => 'SBMPTN',
+        '2' => 'SNMPTN',
+        '3' => 'PMDK',
+        '4' => 'Prestasi',
+        '5' => 'Seleksi Mandiri',
+        '6' => 'Tidak memakai jalur',
+        '7' => 'Lainnya'
+    ];
+
     public function referalCode()
     {
         return $this->belongsTo(ReferalCode::class, 'id_referal_code');

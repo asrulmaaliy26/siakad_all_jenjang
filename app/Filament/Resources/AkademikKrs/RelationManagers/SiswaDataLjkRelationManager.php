@@ -28,13 +28,20 @@ class SiswaDataLjkRelationManager extends RelationManager
             ->components([
                 Select::make('id_mata_pelajaran_kelas')
                     ->label('Mata Pelajaran Kelas')
-                    ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function (Builder $query) {
+                    ->relationship('mataPelajaranKelas', 'id', modifyQueryUsing: function (Builder $query, RelationManager $livewire) {
                         $query->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas', 'kelas.programKelas']);
 
                         $user = auth()->user();
                         if ($user && $user->isPengajar()) {
                             $query->whereHas('dosenData', function ($q) use ($user) {
                                 $q->where('user_id', $user->id);
+                            });
+                        }
+
+                        $krs = $livewire->getOwnerRecord();
+                        if ($krs && $krs->id_tahun_akademik) {
+                            $query->whereHas('kelas', function ($q) use ($krs) {
+                                $q->where('id_tahun_akademik', $krs->id_tahun_akademik);
                             });
                         }
                     })

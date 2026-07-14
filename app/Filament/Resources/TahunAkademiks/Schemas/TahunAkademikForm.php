@@ -22,6 +22,10 @@ class TahunAkademikForm
                     ->options(['Genap' => 'Genap', 'Ganjil' => 'Ganjil']),
                 Select::make('status')
                     ->options(['Y' => 'Y', 'N' => 'N']),
+                TextInput::make('kode_pddikti')
+                    ->label('Kode Semester (PDDIKTI)')
+                    ->helperText('Contoh: 20211 (Ganjil), 20212 (Genap)')
+                    ->maxLength(255),
             ]);
     }
 }

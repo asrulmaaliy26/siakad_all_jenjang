@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
 class RiwayatPendidikanRelationManager extends RelationManager
 {
     protected static string $relationship = 'riwayatPendidikan';
-    protected static ?string $title = 'Riwayat Pendidikan';
+    protected static ?string $title = 'Histori Pendidikan';
 
     public function form(Schema $form): Schema
     {

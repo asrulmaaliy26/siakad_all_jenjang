@@ -98,6 +98,12 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Sarpras / Inventaris')
                     ->icon('heroicon-o-archive-box'),
 
+                NavigationGroup::make('Monitoring')
+                    ->icon('heroicon-o-computer-desktop'),
+
+                NavigationGroup::make('PKL')
+                    ->icon('heroicon-o-briefcase'),
+
                 NavigationGroup::make('Temp')
                     ->icon('heroicon-o-folder'),
             ])

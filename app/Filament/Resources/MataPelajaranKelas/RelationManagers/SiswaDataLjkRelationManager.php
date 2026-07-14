@@ -48,16 +48,32 @@ class SiswaDataLjkRelationManager extends RelationManager
                 TextColumn::make('id_mata_pelajaran_kelas')
                     ->label('ID Mapel Kelas')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.nama')
+                    ->label('Mata Kuliah')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->hidden(fn($livewire) => $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas),
+                TextColumn::make('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster.bobot')
+                    ->label('SKS')
+                    ->badge()
+                    ->color('info')
+                    ->hidden(fn($livewire) => $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas),
+                TextColumn::make('mataPelajaranKelas.dosenData.nama')
+                    ->label('Dosen')
+                    ->searchable()
+                    ->sortable()
+                    ->hidden(fn($livewire) => $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nama')
                     ->label('Nama Mahasiswa')
                     ->searchable()
                     ->sortable()
-                    ->hidden(fn() => auth()->user()?->isMurid()),
+                    ->hidden(fn($livewire) => auth()->user()?->isMurid() || $livewire->getOwnerRecord() instanceof \App\Models\AkademikKrs),
                 TextColumn::make('akademikKrs.riwayatPendidikan.siswaData.nomor_induk')
                     ->label('NIM')
                     ->searchable()
                     ->sortable()
-                    ->hidden(fn() => auth()->user()?->isMurid()),
+                    ->hidden(fn($livewire) => auth()->user()?->isMurid() || $livewire->getOwnerRecord() instanceof \App\Models\AkademikKrs),
                 TextInputColumn::make('Nilai_UTS')
                     ->label('UTS')
                     ->type('number')
@@ -166,7 +182,7 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->label('Sync Mahasiswa')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
-                    ->visible(fn() => ! auth()->user()?->isMurid())
+                    ->visible(fn($livewire) => ! auth()->user()?->isMurid() && $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas)
                     ->action(function () {
                         $record = $this->getOwnerRecord();
                         $krsList = AkademikKRS::where('id_kelas', $record->id_kelas)->get();
@@ -206,16 +222,19 @@ class SiswaDataLjkRelationManager extends RelationManager
                                 ])
                                 ->withFilename(function () {
                                     $record = $this->getOwnerRecord();
+                                    if ($record instanceof \App\Models\AkademikKrs) {
+                                        return 'Export_Nilai_AKM_' . str($record->riwayatPendidikan->nomor_induk)->slug('_') . '_' . now()->format('YmdHis');
+                                    }
                                     return 'Export_Nilai_' . str($record->mataPelajaranKurikulum->mataPelajaranMaster->nama)->slug('_') . '_' . now()->format('YmdHis');
                                 }),
                         ]),
                     ImportSiswaDataLjkAction::make()
-                        ->visible(fn() => ! auth()->user()?->isMurid()),
+                        ->visible(fn($livewire) => ! auth()->user()?->isMurid() && $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas),
                     Action::make('cetak_pdf')
                         ->label('Cetak PDF Resmi')
                         ->icon('heroicon-o-printer')
                         ->color('danger')
-                        ->visible(fn() => ! auth()->user()?->isMurid())
+                        ->visible(fn($livewire) => ! auth()->user()?->isMurid() && $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas)
                         ->action(function ($livewire) {
                             $record = $this->getOwnerRecord();
                             $record->load([

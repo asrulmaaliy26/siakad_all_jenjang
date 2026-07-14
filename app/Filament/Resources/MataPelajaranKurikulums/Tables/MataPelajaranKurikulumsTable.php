@@ -60,8 +60,31 @@ class MataPelajaranKurikulumsTable
                 ]),
             ])
             ->headerActions([
-                \Filament\Actions\ImportAction::make()
-                    ->importer(\App\Filament\Imports\MataPelajaranKurikulumImporter::class),
+                \Filament\Actions\Action::make('import')
+                    ->label('Import Distribusi MP')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        \Filament\Forms\Components\FileUpload::make('file')
+                            ->label('File Excel')
+                            ->storeFiles(false)
+                            ->acceptedFileTypes([
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $file = is_array($data['file']) ? $data['file'][0] : $data['file'];
+                        $filePath = $file->getRealPath();
+                        $import = new \App\Imports\MataPelajaranKurikulumImport();
+                        \Maatwebsite\Excel\Facades\Excel::import($import, $filePath);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Import Selesai')
+                            ->body($import->successCount . ' baris berhasil diimpor.')
+                            ->success()
+                            ->send();
+                    }),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
             ]);
     }

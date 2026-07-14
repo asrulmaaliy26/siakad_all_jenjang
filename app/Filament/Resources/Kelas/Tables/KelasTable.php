@@ -25,16 +25,17 @@ class KelasTable
                 TextColumn::make('programKelas.nilai')
                     ->label('Program Kelas')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->description(fn($record) => $record->kode_pddikti ? "Kode: {$record->kode_pddikti}" : 'Kode: Belum diset'),
                 TextColumn::make('semester')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('jurusan.nama')
-                    ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn($record) => $record->jurusan && $record->jurusan->kode_prodi ? "Kode Prodi: {$record->jurusan->kode_prodi}" : 'Kode Prodi: Belum diset'),
                 TextColumn::make('tahunAkademik.nama')
-                    ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn($record) => $record->tahunAkademik && $record->tahunAkademik->kode_pddikti ? "Kode Smt: {$record->tahunAkademik->kode_pddikti}" : 'Kode Smt: Belum diset'),
                 ToggleColumn::make('status_aktif')
                     ->label('Status')
                     ->updateStateUsing(function ($state, $record) {

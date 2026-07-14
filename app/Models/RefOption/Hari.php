@@ -55,9 +55,9 @@ class Hari extends Model
      * Relasi ke tabel Kelas
      * Misal, satu hari bisa punya banyak Kelas
      */
-    public function MataPelajaranKelasDistribusi()
+    public function MataPelajaranKelas()
     {
-        return $this->hasMany(\App\Models\MataPelajaranKelasDistribusi::class, 'hari');
+        return $this->hasMany(\App\Models\MataPelajaranKelas::class, 'hari');
     }
 
     /**

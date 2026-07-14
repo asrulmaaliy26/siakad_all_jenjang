@@ -422,6 +422,13 @@ class AkademikKrsTable
                         ->url(fn($record) => route('cetak.khs', $record->id))
                         ->openUrlInNewTab(),
 
+                    Action::make('cetak_transkrip')
+                        ->label('Cetak Transkrip')
+                        ->icon('heroicon-o-document-text')
+                        ->color('primary')
+                        ->url(fn($record) => route('cetak.transkrip', ['id' => $record->id_riwayat_pendidikan]))
+                        ->openUrlInNewTab(),
+
                     ViewAction::make()
                         ->label('Lihat')
                         ->icon('heroicon-o-eye')
@@ -596,7 +603,7 @@ class AkademikKrsTable
             ->poll('60s')
             ->deferLoading()
             ->persistFiltersInSession()
-            ->paginated([10, 25, 50, 100, 250])
+            ->paginated([10, 25, 50, 100, 250, 'all'])
             ->defaultPaginationPageOption(25)
             ->headerActions([
                 Action::make('advisor_chat')

@@ -59,50 +59,71 @@ class SiswaDataLJK extends Model
             }
             $rataRataTugas = $countTugas > 0 ? ($totalTugas / $countTugas) : 0;
 
-            // 4 Komponen Wajib: UTS, UAS, Performance, Rata-rata Tugas
+            // 4 Komponen Wajib: UTS, UAS, Performance, Rata-rata Tugas (skala 0-100)
             $uts = (float) ($record->Nilai_UTS ?? 0);
             $uas = (float) ($record->Nilai_UAS ?? 0);
             $perf = (float) ($record->Nilai_Performance ?? 0);
 
-            // Jika ada nilai yang dimasukkan
+            // Hitung rata-rata komponen (hanya komponen yang memiliki nilai > 0 yang dihitung, atau jika didefinisikan semuanya dibagi 4)
+            // Standar: Asumsi input dosen adalah 0-100.
             if ($uts > 0 || $uas > 0 || $perf > 0 || $rataRataTugas > 0) {
-                // Di rata-rata dari 4 komponen tersebut
-                $average = ($uts + $uas + $perf + $rataRataTugas) / 4;
+                // Jika ingin menggunakan pembagi dinamis (hanya komponen yang ada):
+                $komponen = [];
+                if ($uts > 0) $komponen[] = $uts;
+                if ($uas > 0) $komponen[] = $uas;
+                if ($perf > 0) $komponen[] = $perf;
+                if ($rataRataTugas > 0) $komponen[] = $rataRataTugas;
+
+                // Rata-rata skala 100
+                $average100 = array_sum($komponen) / count($komponen);
                 
-                // Batasi maksimal 4.00
-                $average = min(4.00, $average);
-                $record->Nilai_Akhir = round($average, 2);
+                $record->Nilai_Akhir = round($average100, 2); // Simpan skala 100 di Nilai_Akhir
 
                 // Map to Nilai_Huruf (Standar A, B, C +/-)
-                $record->Nilai_Huruf = self::calculateGradeLetter($average);
+                $record->Nilai_Huruf = self::calculateGradeLetter($average100);
 
-                // Otomatis set Status Nilai berdasarkan ambang batas (>= 2.00 Lulus)
+                // Otomatis set Status Nilai berdasarkan ambang batas (>= C atau > 55 Lulus)
                 if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance')) {
-                    $record->Status_Nilai = ($average >= 2.00) ? 'LULUS' : 'TL';
+                    $record->Status_Nilai = ($average100 >= 55.00) ? 'LULUS' : 'TL';
                 }
             } else {
                 // Jika tidak ada nilai sama sekali
                 $record->Nilai_Akhir = 0;
-                $record->Nilai_Huruf = 'E'; // Mengikuti standar umum (E untuk 0)
+                $record->Nilai_Huruf = 'E'; 
                 $record->Status_Nilai = 'TL';
             }
         });
     }
 
-    public static function calculateGradeLetter($average)
+    public static function calculateGradeLetter($average100)
     {
         return match (true) {
-            $average >= 3.76 => 'A+',
-            $average >= 3.51 => 'A',
-            $average >= 3.26 => 'A-',
-            $average >= 3.01 => 'B+',
-            $average >= 2.76 => 'B',
-            $average >= 2.51 => 'B-',
-            $average >= 2.26 => 'C+',
-            $average >= 2.00 => 'C',
-            $average >= 1.76 => 'C-',
-            $average >= 0    => 'D',
-            default          => 'Tidak Valid',
+            $average100 >= 85 => 'A',
+            $average100 >= 80 => 'A-',
+            $average100 >= 75 => 'B+',
+            $average100 >= 70 => 'B',
+            $average100 >= 65 => 'B-',
+            $average100 >= 60 => 'C+',
+            $average100 >= 55 => 'C',
+            $average100 >= 40 => 'D',
+            default           => 'E',
+        };
+    }
+
+    public static function getBobotDariHuruf($huruf)
+    {
+        return match ($huruf) {
+            'A', 'A+' => 4.00,
+            'A-' => 3.75,
+            'B+' => 3.50,
+            'B'  => 3.00,
+            'B-' => 2.75,
+            'C+' => 2.50,
+            'C'  => 2.00,
+            'C-' => 1.75,
+            'D'  => 1.00,
+            'E'  => 0.00,
+            default => 0.00,
         };
     }
 
@@ -224,7 +245,7 @@ class SiswaDataLJK extends Model
     /* ================= RELATIONS ================= */
     public function getBobotAttribute()
     {
-        return $this->Nilai_Akhir ?? 0.0;
+        return self::getBobotDariHuruf($this->Nilai_Huruf);
     }
 
     public function akademikKrs()

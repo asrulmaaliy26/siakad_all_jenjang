@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\MataPelajaranKelasDistribusis\Actions;
 
 use App\Exports\MataPelajaranKelasExport;
-use App\Models\MataPelajaranKelasDistribusi;
+use App\Models\MataPelajaranKelas;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
@@ -192,17 +192,28 @@ class ExportMataPelajaranKelasAction
                     ->pluck('mata_pelajaran_kelas.id')
                     ->toArray();
 
-                // Re-fetch records dengan urutan yang sudah benar (preserve order via FIELD())
-                $records = MataPelajaranKelasDistribusi::whereIn('id', $sortedIds)
-                    ->with([
-                        'mataPelajaranKurikulum.mataPelajaranMaster',
-                        'kelas.programKelas',
-                        'dosen',
-                        'ruangKelas',
-                        'pelaksanaanKelas',
-                    ])
-                    ->orderByRaw('FIELD(id, ' . implode(',', $sortedIds) . ')')
-                    ->get();
+                // If no search and no selected records, sort logic may be applied to all
+                if (empty($sortedIds)) {
+                    $records = MataPelajaranKelas::query()
+                        ->with([
+                            'mataPelajaranKurikulum.mataPelajaranMaster',
+                            'kelas.jurusan',
+                            'dosenData'
+                        ])
+                        ->get();
+                } else {
+                    // If there are sortedIds, fetch them in order
+                    $records = MataPelajaranKelas::whereIn('id', $sortedIds)
+                        ->with([
+                            'mataPelajaranKurikulum.mataPelajaranMaster',
+                            'kelas.programKelas',
+                            'dosenData',
+                            'ruangKelas',
+                            'pelaksanaanKelas',
+                        ])
+                        ->orderByRaw('FIELD(id, ' . implode(',', $sortedIds) . ')')
+                        ->get();
+                }
 
                 // Urutkan: kolom kunci di depan
                 $keyColumns     = array_filter(['id', 'kode_feeder'], fn($k) => in_array($k, $selectedColumns));

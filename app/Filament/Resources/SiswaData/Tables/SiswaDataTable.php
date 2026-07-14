@@ -10,6 +10,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\Action;
 use App\Filament\Resources\SiswaData\SiswaDataResource;
 use Illuminate\Database\Eloquent\Builder;
@@ -57,7 +58,8 @@ class SiswaDataTable
                         if (!empty($record->user?->name)) return $record->user->name;
                         return '(Nama belum diisi)';
                     })
-                    ->searchable()
+                    ->searchable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $search) => $query->where('siswa_data.nama_lengkap', 'like', "%{$search}%"))
+                    ->sortable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) => $query->orderBy('siswa_data.nama_lengkap', $direction))
                     ->description(fn($record) => $record->user?->email
                         ? '🔑 ' . $record->user->email
                         : '⚠️ Belum punya akun')
@@ -80,18 +82,18 @@ class SiswaDataTable
                     ->label('Jurusan')
                     ->toggleable(),
                 TextColumn::make('riwayatPendidikanAktif.statusSiswa.nilai')
-                    ->label('Status Pendidikan')
+                    ->label('S_Pend')
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('status_siswa')
-                    ->label('Status Siswa')
+                    ->label('S_Siswa')
                     ->badge()
-                    ->color(fn($state) => match($state) {
+                    ->color(fn($state) => match ($state) {
                         'aktif' => 'success',
                         'tidak aktif' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'aktif' => 'Aktif',
                         'tidak aktif' => 'Tidak Aktif',
                         default => ucfirst($state ?? '-'),
@@ -108,26 +110,40 @@ class SiswaDataTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                TernaryFilter::make('status_siswa')
+                    ->label('Status Siswa')
+                    ->placeholder('Semua Siswa')
+                    ->trueLabel('Siswa Aktif')
+                    ->falseLabel('Siswa Tidak Aktif')
+                    ->queries(
+                        true: fn(Builder $query) => $query->where('status_siswa', 'aktif'),
+                        false: fn(Builder $query) => $query->where(function ($q) {
+                            $q->where('status_siswa', 'tidak aktif')
+                                ->orWhereNull('status_siswa');
+                        }),
+                        blank: fn(Builder $query) => $query,
+                    ),
                 SelectFilter::make('angkatan')
                     ->label('Angkatan')
-                    ->default(fn() => \App\Models\TahunAkademik::query()
-                        ->select('nama')
-                        ->get()
-                        ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
-                        ->unique()
-                        ->sortDesc()
-                        ->first() ?? 'semua'
+                    ->default(
+                        fn() => \App\Models\TahunAkademik::query()
+                            ->select('nama')
+                            ->get()
+                            ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                            ->unique()
+                            ->sortDesc()
+                            ->first() ?? 'semua'
                     )
                     ->options(
-                        fn() => ['semua' => 'Semua Angkatan', 'belum_ada' => 'Belum Ada Angkatan'] + 
+                        fn() => ['semua' => 'Semua Angkatan', 'belum_ada' => 'Belum Ada Angkatan'] +
                             \App\Models\TahunAkademik::query()
-                                ->select('nama')
-                                ->get()
-                                ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
-                                ->unique()
-                                ->sortDesc()
-                                ->mapWithKeys(fn($y) => [$y => $y])
-                                ->toArray()
+                            ->select('nama')
+                            ->get()
+                            ->map(fn($t) => explode('/', explode(' ', $t->nama)[0])[0])
+                            ->unique()
+                            ->sortDesc()
+                            ->mapWithKeys(fn($y) => [$y => $y])
+                            ->toArray()
                     )
                     ->query(function (Builder $query, array $data) {
                         if (empty($data['value']) || $data['value'] === 'semua') return $query;
@@ -146,26 +162,25 @@ class SiswaDataTable
                                     $q3->where('nama', 'like', $data['value'] . '%');
                                 });
                             })
-                            // Prioritas 2: Jika tidak punya yang aktif, cek di riwayat pendidikan terbaru
-                            ->orWhere(function ($q2) use ($data) {
-                                $q2->doesntHave('riwayatPendidikanAktif')
-                                   ->whereHas('riwayatPendidikanTerbaru', function ($q3) use ($data) {
-                                       $q3->whereHas('tahunAkademik', function ($q4) use ($data) {
-                                           $q4->where('nama', 'like', $data['value'] . '%');
-                                       });
-                                   });
-                            })
-                            // Prioritas 3: Jika tidak punya riwayat pendidikan sama sekali, cek pendaftar
-                            ->orWhere(function ($q2) use ($data) {
-                                $q2->doesntHave('riwayatPendidikanAktif')
-                                   ->doesntHave('riwayatPendidikanTerbaru')
-                                   ->whereHas('pendaftar', function ($q3) use ($data) {
-                                       $q3->whereYear('Tgl_Daftar', $data['value']);
-                                   });
-                            });
+                                // Prioritas 2: Jika tidak punya yang aktif, cek di riwayat pendidikan terbaru
+                                ->orWhere(function ($q2) use ($data) {
+                                    $q2->doesntHave('riwayatPendidikanAktif')
+                                        ->whereHas('riwayatPendidikanTerbaru', function ($q3) use ($data) {
+                                            $q3->whereHas('tahunAkademik', function ($q4) use ($data) {
+                                                $q4->where('nama', 'like', $data['value'] . '%');
+                                            });
+                                        });
+                                })
+                                // Prioritas 3: Jika tidak punya riwayat pendidikan sama sekali, cek pendaftar
+                                ->orWhere(function ($q2) use ($data) {
+                                    $q2->doesntHave('riwayatPendidikanAktif')
+                                        ->doesntHave('riwayatPendidikanTerbaru')
+                                        ->whereHas('pendaftar', function ($q3) use ($data) {
+                                            $q3->whereYear('Tgl_Daftar', $data['value']);
+                                        });
+                                });
                         });
-                    })
-                    ,
+                    }),
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
                     ->options(fn() => \App\Models\Jurusan::pluck('nama', 'id')->toArray())
@@ -192,111 +207,131 @@ class SiswaDataTable
                     ]),
             ])
             ->recordActions([
-                Action::make('aktifkan')
-                    ->label('Aktifkan')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Aktifkan Mahasiswa?')
-                    ->modalDescription('Riwayat Pendidikan, KRS perdana, dan hak akses murid akan otomatis dibuat.')
-                    ->modalSubmitActionLabel('Ya, Aktifkan')
-                    ->visible(fn($record) => $record->status_siswa !== 'aktif')
-                    ->hidden(function () {
-                        $user = \Illuminate\Support\Facades\Auth::user();
-                        return $user && $user->isMurid();
-                    })
-                    ->action(function ($record) {
-                        $success = app(\App\Services\StudentActivationService::class)->activateStudent($record);
-                        if ($success) {
+                \Filament\Actions\ActionGroup::make([
+                    Action::make('aktifkan')
+                        ->label('Aktifkan')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Aktifkan Mahasiswa?')
+                        ->modalDescription('Riwayat Pendidikan, KRS perdana, dan hak akses murid akan otomatis dibuat.')
+                        ->modalSubmitActionLabel('Ya, Aktifkan')
+                        ->visible(fn($record) => $record->status_siswa !== 'aktif')
+                        ->hidden(function () {
+                            $user = \Illuminate\Support\Facades\Auth::user();
+                            return $user && $user->isMurid();
+                        })
+                        ->action(function ($record) {
+                            $success = app(\App\Services\StudentActivationService::class)->activateStudent($record);
+                            if ($success) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Aktivasi Berhasil')
+                                    ->body('Mahasiswa berhasil diaktifkan.')
+                                    ->success()->send();
+                            } else {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Aktivasi Gagal')
+                                    ->body('Periksa data jurusan dan program sekolah di data pendaftar.')
+                                    ->danger()->send();
+                            }
+                        }),
+                    Action::make('nonaktifkan')
+                        ->label('Nonaktifkan')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Nonaktifkan Mahasiswa?')
+                        ->modalDescription('Status riwayat pendidikan aktif akan diubah dan hak akses murid akan dicabut.')
+                        ->modalSubmitActionLabel('Ya, Nonaktifkan')
+                        ->form([
+                            \Filament\Forms\Components\Select::make('alasan')
+                                ->label('Alasan Penonaktifan')
+                                ->options([
+                                    'Tidak Aktif' => 'Tidak Aktif',
+                                    'Cuti'        => 'Cuti',
+                                    'Keluar'      => 'Keluar / Drop Out',
+                                    'Lulus'       => 'Lulus',
+                                ])
+                                ->default('Tidak Aktif')
+                                ->required(),
+                        ])
+                        ->visible(fn($record) => $record->status_siswa === 'aktif')
+                        ->hidden(function () {
+                            $user = \Illuminate\Support\Facades\Auth::user();
+                            return $user && $user->isMurid();
+                        })
+                        ->action(function ($record, array $data) {
+                            app(\App\Services\StudentActivationService::class)->deactivateStudent($record, $data['alasan']);
                             \Filament\Notifications\Notification::make()
-                                ->title('Aktivasi Berhasil')
-                                ->body('Mahasiswa berhasil diaktifkan.')
-                                ->success()->send();
-                        } else {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Aktivasi Gagal')
-                                ->body('Periksa data jurusan dan program sekolah di data pendaftar.')
-                                ->danger()->send();
-                        }
-                    }),
-                Action::make('nonaktifkan')
-                    ->label('Nonaktifkan')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Nonaktifkan Mahasiswa?')
-                    ->modalDescription('Status riwayat pendidikan aktif akan diubah dan hak akses murid akan dicabut.')
-                    ->modalSubmitActionLabel('Ya, Nonaktifkan')
-                    ->form([
-                        \Filament\Forms\Components\Select::make('alasan')
-                            ->label('Alasan Penonaktifan')
-                            ->options([
-                                'Tidak Aktif' => 'Tidak Aktif',
-                                'Cuti'        => 'Cuti',
-                                'Keluar'      => 'Keluar / Drop Out',
-                                'Lulus'       => 'Lulus',
-                            ])
-                            ->default('Tidak Aktif')
-                            ->required(),
-                    ])
-                    ->visible(fn($record) => $record->status_siswa === 'aktif')
-                    ->hidden(function () {
-                        $user = \Illuminate\Support\Facades\Auth::user();
-                        return $user && $user->isMurid();
-                    })
-                    ->action(function ($record, array $data) {
-                        app(\App\Services\StudentActivationService::class)->deactivateStudent($record, $data['alasan']);
-                        \Filament\Notifications\Notification::make()
-                            ->title('Mahasiswa Dinonaktifkan')
-                            ->body('Status mahasiswa telah diubah: ' . $data['alasan'])
-                            ->warning()->send();
-                    }),
-                Action::make('cetak_ktm')
-                    ->label('KTM')
-                    ->icon('heroicon-o-identification')
-                    ->color('warning')
-                    ->url(fn($record) => route('cetak.ktm', $record->id))
-                    ->openUrlInNewTab()
-                    ->visible(fn($record) => $record->status_siswa === 'aktif' && $record->riwayatPendidikanAktif !== null),
-                Action::make('cetak_transkrip')
-                    ->label('Transkrip')
-                    ->icon('heroicon-o-document-text')
-                    ->color('success')
-                    ->form([
-                        \Filament\Forms\Components\Select::make('id_tahun_akademik')
-                            ->label('Tahun Akademik')
-                            ->options(
-                                fn() => \App\Models\TahunAkademik::query()
-                                    ->orderBy('nama', 'desc')
-                                    ->get()
-                                    ->pluck('nama', 'id')
-                                    ->toArray()
-                            )
-                            ->required()
-                    ])
-                    ->modalHeading('Pilih Tahun Akademik')
-                    ->modalSubmitActionLabel('Cetak Transkrip')
-                    ->action(function ($record, array $data, \Livewire\Component $livewire) {
-                        $url = route('cetak.transkrip', ['id' => $record->id, 'tahun' => $data['id_tahun_akademik']]);
-                        $livewire->js("window.open('{$url}', '_blank');");
-                    }),
-                Action::make('view_grades')
-                    ->label('Nilai')
-                    ->icon('heroicon-o-academic-cap')
-                    ->color('info')
-                    ->url(fn($record) => \App\Filament\Resources\SiswaDataLJKS\SiswaDataLJKResource::getUrl('index', [
-                        'tableFilters' => [
-                            'id_akademik_krs' => [
-                                'value' => $record->akademikKrs->first()?->id,
+                                ->title('Mahasiswa Dinonaktifkan')
+                                ->body('Status mahasiswa telah diubah: ' . $data['alasan'])
+                                ->warning()->send();
+                        }),
+                    Action::make('cetak_ktm')
+                        ->label('KTM')
+                        ->icon('heroicon-o-identification')
+                        ->color('warning')
+                        ->url(fn($record) => route('cetak.ktm', $record->id))
+                        ->openUrlInNewTab()
+                        ->visible(fn($record) => $record->status_siswa === 'aktif' && $record->riwayatPendidikanAktif !== null),
+                    Action::make('cetak_transkrip')
+                        ->label('Transkrip')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->form([
+                            \Filament\Forms\Components\Select::make('id_tahun_akademik')
+                                ->label('Tahun Akademik')
+                                ->options(
+                                    fn() => \App\Models\TahunAkademik::query()
+                                        ->orderBy('nama', 'desc')
+                                        ->get()
+                                        ->pluck('nama', 'id')
+                                        ->toArray()
+                                )
+                                ->required()
+                        ])
+                        ->modalHeading('Pilih Tahun Akademik')
+                        ->modalSubmitActionLabel('Cetak Transkrip')
+                        ->visible(fn($record) => $record->riwayatPendidikanAktif !== null)
+                        ->action(function ($record, array $data, \Livewire\Component $livewire) {
+                            $url = route('cetak.transkrip', ['id' => $record->riwayatPendidikanAktif->id, 'tahun' => $data['id_tahun_akademik']]);
+                            $livewire->js("window.open('{$url}', '_blank');");
+                        }),
+                    Action::make('view_grades')
+                        ->label('Nilai')
+                        ->icon('heroicon-o-academic-cap')
+                        ->color('info')
+                        ->url(fn($record) => \App\Filament\Resources\SiswaDataLJKS\SiswaDataLJKResource::getUrl('index', [
+                            'tableFilters' => [
+                                'id_akademik_krs' => [
+                                    'value' => $record->akademikKrs->first()?->id,
+                                ],
                             ],
-                        ],
-                    ])),
-                ViewAction::make(),
-                EditAction::make(),
+                        ])),
+                    ViewAction::make(),
+                    EditAction::make(),
+                ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->fromModel(),
+                        ]),
+                    \Filament\Actions\BulkAction::make('export_pddikti')
+                        ->label('Export PDDIKTI')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('warning')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\MahasiswaPddiktiExport($records),
+                                'mahasiswa_pddikti_' . date('Ymd_His') . '.xlsx'
+                            );
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Export Data Mahasiswa (PDDIKTI)')
+                        ->modalDescription('Apakah Anda yakin ingin mengekspor data mahasiswa yang dipilih ke dalam format Excel PDDIKTI?'),
                     \Filament\Actions\BulkAction::make('hapus_permanen')
                         ->label('Hapus Permanen')
                         ->icon('heroicon-o-trash')
@@ -394,11 +429,40 @@ class SiswaDataTable
             ->modifyQueryUsing(function ($query) {
                 // Sort berdasarkan tanggal daftar terbaru (angkatan terakhir di atas)
                 $query->leftJoin('siswa_data_pendaftar as sdp_sort', 'sdp_sort.id_siswa_data', '=', 'siswa_data.id')
-                      ->orderBy('sdp_sort.Tgl_Daftar', 'desc')
-                      ->select('siswa_data.*');
+                    ->orderBy('sdp_sort.Tgl_Daftar', 'desc')
+                    ->select('siswa_data.*');
             })
             ->headerActions([
-                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make(),
+                \Filament\Actions\Action::make('import')
+                    ->label('Import Mahasiswa')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        \Filament\Forms\Components\FileUpload::make('file')
+                            ->label('File Excel')
+                            ->storeFiles(false)
+                            ->acceptedFileTypes([
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $file = is_array($data['file']) ? $data['file'][0] : $data['file'];
+                        $filePath = $file->getRealPath();
+                        $import = new \App\Imports\SiswaDataImport();
+                        \Maatwebsite\Excel\Facades\Excel::import($import, $filePath);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Import Selesai')
+                            ->body($import->successCount . ' baris berhasil diimpor.')
+                            ->success()
+                            ->send();
+                    }),
+                \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
+                    ->exports([
+                        \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                            ->fromModel(),
+                    ]),
             ])
             ->paginationPageOptions([25, 50, 100, 'all']);
     }

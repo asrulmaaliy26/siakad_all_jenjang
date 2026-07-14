@@ -3,7 +3,7 @@
 namespace App\Models\RefOption;
 
 use App\Models\MataPelajaranKelas;
-use App\Models\MataPelajaranKelasDistribusi;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\ReferenceOption;
@@ -42,10 +42,7 @@ class PelaksanaanKelas extends Model
     {
         return $this->hasMany(MataPelajaranKelas::class, 'ro_pelaksanaan_kelas');
     }
-    public function MataPelajaranKelasDistribusi()
-    {
-        return $this->hasMany(MataPelajaranKelasDistribusi::class, 'ro_pelaksanaan_kelas');
-    }
+
 }
 
 // use App\Models\RuangKelas;

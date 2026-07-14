@@ -25,6 +25,11 @@ class SiswaDataLJKResource extends Resource
     protected static ?int $navigationSort = 25;
     protected static ?string $navigationLabel = 'Nilai';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return SiswaDataLJKForm::configure($schema);

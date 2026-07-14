@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\MataPelajaranKelasDistribusis\Actions;
 
-use App\Models\MataPelajaranKelasDistribusi;
+use App\Models\MataPelajaranKelas;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -166,12 +166,12 @@ class ImportMataPelajaranKelasAction
                 $kodeFeeder = $row['kode_feeder'] ?? '';
 
                 if (filled($id) && is_numeric($id) && (int) $id > 0) {
-                    $record    = MataPelajaranKelasDistribusi::find((int) $id);
+                    $record    = MataPelajaranKelas::find((int) $id);
                     $lookupKey = "ID={$id}";
                 }
 
                 if (! $record && filled($kodeFeeder)) {
-                    $record = MataPelajaranKelasDistribusi::whereHas(
+                    $record = MataPelajaranKelas::whereHas(
                         'mataPelajaranKurikulum.mataPelajaranMaster',
                         fn($q) => $q->where('kode_feeder', $kodeFeeder)
                     )->first();

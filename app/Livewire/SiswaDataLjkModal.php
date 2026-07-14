@@ -33,6 +33,7 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
     public int $recordId;
     public array $takenSubjectIds = [];
     public ?int $studentJurusanId = null;
+    public ?int $tahunAkademikId = null;
     public bool $excludeTaken = false;
     public bool $isKrsLocked = false;
     public bool $isBayarLunas = true;
@@ -44,8 +45,11 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
         $this->refreshTakenSubjects();
 
         $krs = AkademikKrs::with('riwayatPendidikan')->find($recordId);
-        if ($krs && $krs->riwayatPendidikan) {
-            $this->studentJurusanId = $krs->riwayatPendidikan->id_jurusan;
+        if ($krs) {
+            $this->tahunAkademikId = $krs->id_tahun_akademik;
+            if ($krs->riwayatPendidikan) {
+                $this->studentJurusanId = $krs->riwayatPendidikan->id_jurusan;
+            }
         }
 
         // Kunci jika syarat_krs = 'Y'
@@ -68,6 +72,11 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
             ->query(
                 MataPelajaranKelas::query()
                     ->with(['mataPelajaranKurikulum.mataPelajaranMaster', 'dosenData', 'ruangKelas', 'kelas.programKelas'])
+                    ->whereHas('kelas', function (Builder $query) {
+                        if ($this->tahunAkademikId) {
+                            $query->where('id_tahun_akademik', $this->tahunAkademikId);
+                        }
+                    })
             )
             ->modifyQueryUsing(function (Builder $query) {
                 if ($this->excludeTaken && !empty($this->takenSubjectIds)) {
