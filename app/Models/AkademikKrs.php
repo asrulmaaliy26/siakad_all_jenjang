@@ -77,33 +77,40 @@ class AkademikKrs extends Model
     }
 
     /**
-     * Deactivates current KRS and creates a new one for the next semester.
-     * 
-     * @return AkademikKrs
+     * Lanjutkan Studi: Menonaktifkan KRS saat ini dan membuat KRS baru
+     * untuk Tahun Akademik yang dipilih oleh Wali Dosen/Admin.
+     *
+     * Semester pada KRS baru dihitung berdasarkan urutan KRS aktif mahasiswa,
+     * sehingga periode cuti (tidak ada KRS) otomatis tidak terhitung.
+     *
+     * @param int $targetTahunAkademikId  ID TahunAkademik tujuan yang dipilih
+     * @return AkademikKrs  KRS baru yang dibuat
      * @throws \Exception
      */
-    public function deactivateAndCreateNew()
+    public function lanjutkanStudi(int $targetTahunAkademikId): AkademikKrs
     {
-        return DB::transaction(function () {
-            // 1. Validasi: Apakah ada KRS lain di riwayat pendidikan yang sama yang masih disetujui (syarat_krs = Y)
-            $hasOtherApproved = self::where('id_riwayat_pendidikan', $this->id_riwayat_pendidikan)
+        return DB::transaction(function () use ($targetTahunAkademikId) {
+            // 1. Validasi: tidak boleh ada KRS aktif lain untuk mahasiswa yang sama di TA tujuan
+            $alreadyExists = self::where('id_riwayat_pendidikan', $this->id_riwayat_pendidikan)
+                ->where('id_tahun_akademik', $targetTahunAkademikId)
                 ->where('id', '!=', $this->id)
-                ->where('syarat_krs', 'Y')
                 ->exists();
 
-            if ($hasOtherApproved) {
-                throw new \Exception('Gagal menonaktifkan: Terdapat data KRS lain untuk mahasiswa ini yang masih berstatus Disetujui.');
+            if ($alreadyExists) {
+                throw new \Exception('KRS untuk Tahun Akademik yang dipilih sudah ada untuk mahasiswa ini.');
             }
 
-            // 2. Hitung Nilai Akhir / IPS dari LJK data
-            $ljks = $this->siswaDataLjk()->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')->get();
+            // 2. Hitung IPS dari LJK KRS saat ini
+            $ljks = $this->siswaDataLjk()
+                ->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')
+                ->get();
+
             $totalBobotSks = 0;
             $totalSks = 0;
 
             foreach ($ljks as $ljk) {
                 $sks = (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
-                $bobotNilai = $ljk->bobot; // Uses the updated getBobotAttribute() which returns 0-4.0 scale
-                
+                $bobotNilai = $ljk->bobot;
                 $totalBobotSks += ($sks * $bobotNilai);
                 $totalSks += $sks;
             }
@@ -111,7 +118,7 @@ class AkademikKrs extends Model
             $ips = $totalSks > 0 ? ($totalBobotSks / $totalSks) : 0;
 
             // 3. Tentukan jumlah SKS berdasarkan IPS
-            // Aturan: >= 3 -> 24 SKS, >= 2 -> 18 SKS, <2 -> 12 SKS
+            // Aturan: >= 3 → 24 SKS, >= 2 → 18 SKS, < 2 → 12 SKS
             $newSks = 12;
             if ($ips >= 3.0) {
                 $newSks = 24;
@@ -119,43 +126,13 @@ class AkademikKrs extends Model
                 $newSks = 18;
             }
 
-            // 4. Hitung Semester berdasarkan tanggal_mulai riwayat pendidikan
-            $riwayat = $this->riwayatPendidikan;
-            if (!$riwayat || !$riwayat->tanggal_mulai) {
-                throw new \Exception('Data riwayat pendidikan atau tanggal mulai tidak ditemukan.');
-            }
-
-            $startDate = Carbon::parse($riwayat->tanggal_mulai);
-            $now = now();
-
-            // Logika Periode Akademik:
-            // Jan–Jun tahun Y  = Periode Genap  (indeks: Y*2 + 0)
-            // Jul–Des tahun Y  = Periode Ganjil (indeks: Y*2 + 1)
-            $isGenap      = $now->month <= 6;
-            $startPeriod  = $startDate->year * 2 + ($startDate->month <= 6 ? 0 : 1);
-            $nowPeriod    = $now->year        * 2 + ($isGenap ? 0 : 1);
-
-            $newSemester = ($nowPeriod - $startPeriod) + 1;
-
-            // Jika untuk alasan tertentu semester hasil hitung <= semester sekarang, paksa naik 1
-            if ($newSemester <= $this->semester) {
-                $newSemester = $this->semester + 1;
-            }
-
-            // 5. Tentukan id Tahun Akademik
-            $isGenap      = $now->month <= 6;
-            $tahunLabel   = $isGenap
-                ? ($now->year - 1) . '/' . $now->year
-                : $now->year . '/' . ($now->year + 1);
-
-            $tahunAkademikRecord = \App\Models\TahunAkademik::where('nama', 'like', $tahunLabel . '%')->first();
-
-            // 6. Buat Akademik KRS baru
+            // 4. Buat KRS baru
             $newKrs = self::create([
                 'id_riwayat_pendidikan' => $this->id_riwayat_pendidikan,
+                'ro_program_kelas'      => $this->ro_program_kelas,
                 'jumlah_sks'            => $newSks,
-                'tgl_krs'               => $now,
-                'id_tahun_akademik'     => $tahunAkademikRecord?->id,
+                'tgl_krs'               => now(),
+                'id_tahun_akademik'     => $targetTahunAkademikId,
                 'status_bayar'          => 'N',
                 'syarat_uts'            => 'N',
                 'syarat_uas'            => 'N',
@@ -163,11 +140,22 @@ class AkademikKrs extends Model
                 'status_aktif'          => 'Y',
             ]);
 
-            // Nonaktifkan record saat ini
+            // 5. Nonaktifkan KRS saat ini
             $this->update(['status_aktif' => 'N']);
 
             return $newKrs;
         });
+    }
+
+    /**
+     * @deprecated Gunakan lanjutkanStudi() sebagai gantinya.
+     */
+    public function deactivateAndCreateNew()
+    {
+        return $this->lanjutkanStudi(
+            \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id
+                ?? $this->id_tahun_akademik
+        );
     }
 
     public function getSksDiambilAttribute()

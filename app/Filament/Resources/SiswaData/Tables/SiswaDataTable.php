@@ -47,6 +47,10 @@ class SiswaDataTable
                         return '-';
                     })
                     ->toggleable(),
+                TextColumn::make('riwayatPendidikanAktif.nomor_induk')
+                    ->label('Nomor Induk')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('nama_lengkap')
                     ->label('Nama lengkap')
                     ->state(function ($record) {
@@ -64,15 +68,7 @@ class SiswaDataTable
                         ? '🔑 ' . $record->user->email
                         : '⚠️ Belum punya akun')
                     ->toggleable(),
-                TextColumn::make('pendaftar.Tgl_Daftar')
-                    ->label('Tgl Daftar')
-                    ->date('d M Y')
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('riwayatPendidikanAktif.nomor_induk')
-                    ->label('Nomor Induk')
-                    ->searchable()
-                    ->toggleable(),
+
                 TextColumn::make('riwayatPendidikanAktif.programSekolah.nilai')
                     ->searchable()
                     ->label('Program Sekolah')

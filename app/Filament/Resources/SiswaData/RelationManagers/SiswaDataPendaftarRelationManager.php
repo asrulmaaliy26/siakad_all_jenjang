@@ -51,6 +51,7 @@ class SiswaDataPendaftarRelationManager extends RelationManager
                                 Select::make('id_tahun_akademik')
                                     ->label('Tahun Akademik')
                                     ->relationship('tahunAkademik', 'nama')
+                                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->nama} - {$record->periode}")
                                     ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                                     ->required()
                                     ->disabled(fn() => auth()->user()->isMurid()),

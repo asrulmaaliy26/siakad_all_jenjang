@@ -46,7 +46,7 @@ class AkademikKRSRelationManager extends RelationManager
                 ->options(
                     \App\Models\TahunAkademik::orderByDesc('id')
                         ->get()
-                        ->pluck('nama', 'id')
+                        ->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])
                 )
                 ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                 ->searchable()

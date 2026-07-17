@@ -85,8 +85,6 @@
         .summary-box {
             width: 100%;
             margin-top: 10px;
-            border: 1px solid #000;
-            padding: 10px;
             font-size: 10pt;
         }
 
@@ -248,16 +246,33 @@
     </table>
 
     <div class="summary-box">
-        <table>
+        <table style="width: 100%; border: none; font-size: 10pt;">
             <tr>
-                <td width="200">Total SKS Diambil</td>
-                <td width="10">:</td>
-                <td>{{ $totalSksRow }} SKS</td>
-            </tr>
-            <tr>
-                <td>Indeks Prestasi Semester (IPS)</td>
-                <td>:</td>
-                <td><strong>{{ $ips }}</strong></td>
+                <td width="60%" style="vertical-align: top; padding-right: 15px;">
+                    Ket.<br>
+                    Nilai kurang dari 2.00 / C- dan lebih kecil dinyatakan Tidak Lulus.<br>
+                    Salah satu komponen nilai kosong dinyatakan tidak lulus<br>
+                    <table style="width: 100%; border: none; margin-top: 5px; font-size: 10pt;">
+                        <tr><td width="40">K/SKS</td><td width="10">:</td><td>Sistem Kredit Semester</td></tr>
+                        <tr><td>UTS</td><td>:</td><td>Ujian Tengah Semester</td></tr>
+                        <tr><td>TGS</td><td>:</td><td>Tugas</td></tr>
+                        <tr><td>UAS</td><td>:</td><td>Ujian Akhir Semester</td></tr>
+                        <tr><td>P</td><td>:</td><td>Performance</td></tr>
+                        <tr><td>HM</td><td>:</td><td>Huruf Mutu</td></tr>
+                        <tr><td>AM</td><td>:</td><td>Angka Mutu</td></tr>
+                        <tr><td>M</td><td>:</td><td>Mutu (sks x Angka Mutu)</td></tr>
+                    </table>
+                </td>
+                <td width="40%" style="vertical-align: top;">
+                    <table style="width: 100%; border: none; font-size: 10pt;">
+                        <tr><td width="170">SKS Semester Ini</td><td width="10">:</td><td>{{ $totalSksRow }}</td></tr>
+                        <tr><td>SKS yang telah diselesaikan</td><td>:</td><td>{{ $totalSksKumulatif }}</td></tr>
+                        <tr><td>SKS maks. yang dapat diambil</td><td>:</td><td>24</td></tr>
+                        <tr><td>Total Nilai Semester Ini</td><td>:</td><td>{{ number_format($totalBobot, 2) }}</td></tr>
+                        <tr><td>IPK Semester Ini</td><td>:</td><td>{{ number_format($ips, 2) }}</td></tr>
+                        <tr><td>IPK Terakhir</td><td>:</td><td>{{ number_format($ipk, 2) }}</td></tr>
+                    </table>
+                </td>
             </tr>
         </table>
     </div>

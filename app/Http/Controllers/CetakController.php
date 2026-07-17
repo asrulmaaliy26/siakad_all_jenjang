@@ -250,7 +250,34 @@ class CetakController extends Controller
             ->whereHas('user', fn($q) => $q->role('kaprodi'))
             ->first();
 
-        $pdf = Pdf::loadView('cetak.khs', compact('krs', 'totalSks', 'totalBobot', 'ips', 'kaprodi'))->setPaper('a4', 'portrait');
+        // IPK & Kumulatif Calculation
+        $riwayat = $krs->riwayatPendidikan;
+        $allKrs = \App\Models\AkademikKrs::with([
+            'siswaDataLjk.mataPelajaranKelas.kelas',
+            'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster'
+        ])->where('id_riwayat_pendidikan', $riwayat->id)->get();
+
+        $totalSksKumulatif = 0;
+        $totalBobotKumulatif = 0;
+        
+        foreach ($allKrs as $krsItem) {
+            foreach ($krsItem->siswaDataLjk as $ljk) {
+                $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
+                if ($idTahun == $krsItem->id_tahun_akademik) {
+                    $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
+                    $bobot = $ljk->bobot;
+                    
+                    if ($bobot > 0) {
+                        $totalSksKumulatif += $sks;
+                        $totalBobotKumulatif += ($bobot * $sks);
+                    }
+                }
+            }
+        }
+
+        $ipk = $totalSksKumulatif > 0 ? round($totalBobotKumulatif / $totalSksKumulatif, 2) : 0;
+
+        $pdf = Pdf::loadView('cetak.khs', compact('krs', 'totalSks', 'totalBobot', 'ips', 'ipk', 'totalSksKumulatif', 'kaprodi'))->setPaper('a4', 'portrait');
 
         $namaSiswa = Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'khs');
         $semester = $krs->semester ?? 'x';

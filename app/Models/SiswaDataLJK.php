@@ -269,6 +269,13 @@ class SiswaDataLJK extends Model
     /* ================= RELATIONS ================= */
     public function getBobotAttribute()
     {
+        // Jika nilai akhir sudah berada dalam rentang skala 4.00, 
+        // gunakan nilai akhir asli secara persis sebagai Angka Mutu (AM).
+        if ($this->Nilai_Akhir > 0 && $this->Nilai_Akhir <= 4.00) {
+            return $this->Nilai_Akhir;
+        }
+        
+        // Jika menggunakan skala 100, konversi dari Huruf Mutu
         return self::getBobotDariHuruf($this->Nilai_Huruf);
     }
 

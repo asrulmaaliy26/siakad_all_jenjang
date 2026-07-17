@@ -23,6 +23,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Actions\ActionGroup;
 use Carbon\Carbon;
+use App\Models\TahunAkademik;
 
 class AkademikKrsTable
 {
@@ -74,7 +75,7 @@ class AkademikKrsTable
                     ->badge()
                     ->color('info')
                     ->getStateUsing(function ($record) {
-                        return $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at);
+                        return $record->riwayatPendidikan?->getSemester(null, $record->id_tahun_akademik);
                     })
                     ->formatStateUsing(fn($state) => "Semester {$state}")
                     ->icon('heroicon-o-academic-cap')
@@ -103,147 +104,221 @@ class AkademikKrsTable
                     ->toggleable(),
 
                 // Status Bayar dengan SelectColumn yang mendukung dark mode
-                SelectColumn::make('status_bayar')
+                TextColumn::make('status_bayar')
                     ->label('Status Bayar')
-                    ->options([
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Y' => 'success',
+                        'N' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'Y' => 'Lunas',
                         'N' => 'Belum Lunas',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->sortable()
-                    ->disabled(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
-                        return $user && ($user->isMurid() || $user->isPengajar());
+                        default => $state,
                     })
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-success',
-                            'N' => 'status-badge status-danger',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
+                    ->sortable()
+                    ->action(
+                        \Filament\Actions\Action::make('edit_status_bayar')
+                            ->modalHeading('Update Status Bayar')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('status_bayar')
+                                    ->label('Status Bayar')
+                                    ->options([
+                                        'Y' => 'Lunas',
+                                        'N' => 'Belum Lunas',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->status_bayar)
+                            ])
+                            ->action(function ($record, array $data) {
+                                $record->update(['status_bayar' => $data['status_bayar']]);
+                            })
+                            ->visible(function () {
+                                $user = auth()->user();
+                                return ! ($user && ($user->isMurid() || $user->isPengajar()));
+                            })
+                    ),
+
 
                 // Syarat UTS dengan SelectColumn
-                SelectColumn::make('syarat_uts')
+                TextColumn::make('syarat_uts')
                     ->label('Syarat UTS')
-                    ->options([
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Y' => 'success',
+                        'N' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'Y' => 'Terpenuhi',
                         'N' => 'Belum',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-success',
-                            'N' => 'status-badge status-warning',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
+                        default => $state,
+                    })
+                    ->action(
+                        \Filament\Actions\Action::make('edit_syarat_uts')
+                            ->modalHeading('Update Syarat UTS')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('syarat_uts')
+                                    ->label('Syarat UTS')
+                                    ->options([
+                                        'Y' => 'Terpenuhi',
+                                        'N' => 'Belum',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->syarat_uts)
+                            ])
+                            ->action(function ($record, array $data) {
+                                $record->update(['syarat_uts' => $data['syarat_uts']]);
+                            })
+                            ->visible(fn() => ! (auth()->user()?->isMurid() || auth()->user()?->isPengajar()))
+                    ),
+
 
                 // Syarat UAS dengan SelectColumn
-                SelectColumn::make('syarat_uas')
+                TextColumn::make('syarat_uas')
                     ->label('Syarat UAS')
-                    ->options([
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Y' => 'success',
+                        'N' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'Y' => 'Terpenuhi',
                         'N' => 'Belum',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid() || auth()->user()?->isPengajar())
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-success',
-                            'N' => 'status-badge status-warning',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
+                        default => $state,
+                    })
+                    ->action(
+                        \Filament\Actions\Action::make('edit_syarat_uas')
+                            ->modalHeading('Update Syarat UAS')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('syarat_uas')
+                                    ->label('Syarat UAS')
+                                    ->options([
+                                        'Y' => 'Terpenuhi',
+                                        'N' => 'Belum',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->syarat_uas)
+                            ])
+                            ->action(function ($record, array $data) {
+                                $record->update(['syarat_uas' => $data['syarat_uas']]);
+                            })
+                            ->visible(fn() => ! (auth()->user()?->isMurid() || auth()->user()?->isPengajar()))
+                    ),
+
 
                 // Syarat KRS dengan SelectColumn
-                SelectColumn::make('syarat_krs')
+                TextColumn::make('syarat_krs')
                     ->label('Syarat KRS')
-                    ->options([
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Y' => 'success',
+                        'N' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'Y' => 'Disetujui',
                         'N' => 'Menunggu Persetujuan',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->disabled(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
-                        return $user && $user->isMurid();
+                        default => $state,
                     })
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-success',
-                            'N' => 'status-badge status-warning',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                    }),
+                    ->action(
+                        \Filament\Actions\Action::make('edit_syarat_krs')
+                            ->modalHeading('Update Syarat KRS')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('syarat_krs')
+                                    ->label('Syarat KRS')
+                                    ->options([
+                                        'Y' => 'Disetujui',
+                                        'N' => 'Menunggu Persetujuan',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->syarat_krs)
+                            ])
+                            ->action(function ($record, array $data) {
+                                $record->update(['syarat_krs' => $data['syarat_krs']]);
+                            })
+                            ->visible(fn() => ! auth()->user()?->isMurid())
+                    ),
+
 
                 // Status Aktif dengan SelectColumn
-                SelectColumn::make('status_aktif')
+                TextColumn::make('status_aktif')
                     ->label('Status Aktif')
-                    ->options([
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Y' => 'success',
+                        'N' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'Y' => 'Aktif',
                         'N' => 'Tidak Aktif',
-                    ])
-                    ->selectablePlaceholder(false)
-                    ->disabled(fn() => auth()->user()?->isMurid())
-                    ->extraAttributes(function ($state) {
-                        $classes = [
-                            'Y' => 'status-badge status-success',
-                            'N' => 'status-badge status-danger',
-                        ];
-                        return ['class' => $classes[$state] ?? 'status-badge status-default'];
+                        default => $state,
                     })
-                    ->afterStateUpdated(function ($record, $state) {
-                        if ($state === 'N') {
-                            // Cek syarat bayar
-                            if ($record->status_bayar !== 'Y') {
-                                // Revert status_aktif jika belum bayar
-                                $record->update(['status_aktif' => 'Y']);
+                    ->action(
+                        \Filament\Actions\Action::make('edit_status_aktif')
+                            ->modalHeading('Update Status Aktif')
+                            ->form([
+                                \Filament\Forms\Components\Select::make('status_aktif')
+                                    ->label('Status Aktif')
+                                    ->options([
+                                        'Y' => 'Aktif',
+                                        'N' => 'Tidak Aktif',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->status_aktif)
+                            ])
+                            ->action(function ($record, array $data) {
+                                $state = $data['status_aktif'];
+                                if ($state === 'N' && $record->status_aktif !== 'N') {
+                                    // Cek syarat bayar
+                                    if ($record->status_bayar !== 'Y') {
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Gagal Menonaktifkan')
+                                            ->body('KRS tidak dapat dinonaktifkan karena status pembayaran belum disetujui atau belum lunas.')
+                                            ->danger()
+                                            ->send();
+                                        return;
+                                    }
 
-                                Notification::make()
-                                    ->title('Gagal Menonaktifkan')
-                                    ->body('KRS tidak dapat dinonaktifkan karena status pembayaran belum disetujui atau belum lunas.')
-                                    ->danger()
-                                    ->send();
-                                return;
-                            }
+                                    // Cek status mahasiswa (Aktif/Tidak)
+                                    $statusMhs = $record->riwayatPendidikan?->statusSiswa?->nilai ?? 'Tidak Diketahui';
+                                    if (strtolower($statusMhs) !== 'aktif') {
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Gagal Menonaktifkan')
+                                            ->body("KRS tidak dapat dinonaktifkan karena status Mahasiswa saat ini adalah: {$statusMhs}. Mahasiswa harus berstatus 'Aktif'.")
+                                            ->warning()
+                                            ->send();
+                                        return;
+                                    }
 
-                            // Cek status mahasiswa (Aktif/Tidak)
-                            $statusMhs = $record->riwayatPendidikan?->statusSiswa?->nilai ?? 'Tidak Diketahui';
-                            if (strtolower($statusMhs) !== 'aktif') {
-                                // Revert status_aktif jika mahasiswa tidak aktif
-                                $record->update(['status_aktif' => 'Y']);
-
-                                Notification::make()
-                                    ->title('Gagal Menonaktifkan')
-                                    ->body("KRS tidak dapat dinonaktifkan karena status Mahasiswa saat ini adalah: {$statusMhs}. Mahasiswa harus berstatus 'Aktif'.")
-                                    ->warning()
-                                    ->send();
-                                return;
-                            }
-
-                            try {
-                                $record->deactivateAndCreateNew();
-                                Notification::make()
-                                    ->title('Berhasil')
-                                    ->body('KRS telah dinonaktifkan dan KRS baru untuk semester berikutnya telah dibuat otomatis.')
-                                    ->success()
-                                    ->send();
-                            } catch (\Exception $e) {
-                                // Revert status_aktif jika gagal proses deaktifasi
-                                $record->update(['status_aktif' => 'Y']);
-
-                                Notification::make()
-                                    ->title('Gagal')
-                                    ->body($e->getMessage())
-                                    ->danger()
-                                    ->persistent()
-                                    ->send();
-                            }
-                        }
-                    }),
+                                    try {
+                                        // Update state temporarily so it triggers the logic
+                                        $record->update(['status_aktif' => 'N']);
+                                        $record->deactivateAndCreateNew();
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Berhasil')
+                                            ->body('KRS telah dinonaktifkan dan KRS baru untuk semester berikutnya telah dibuat otomatis.')
+                                            ->success()
+                                            ->send();
+                                    } catch (\Exception $e) {
+                                        // Revert status_aktif jika gagal
+                                        $record->update(['status_aktif' => 'Y']);
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Gagal')
+                                            ->body($e->getMessage())
+                                            ->danger()
+                                            ->persistent()
+                                            ->send();
+                                    }
+                                } elseif ($state === 'Y' && $record->status_aktif !== 'Y') {
+                                    $record->update(['status_aktif' => 'Y']);
+                                }
+                            })
+                            ->visible(fn() => ! auth()->user()?->isMurid())
+                    ),
 
                 TextColumn::make('kwitansi_krs')
                     ->label('Kwitansi')
@@ -407,6 +482,67 @@ class AkademikKrsTable
             ])
             ->headerActions([])
             ->actions([
+                Action::make('lanjutkan_studi')
+                    ->label('Lanjutkan Studi')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color('warning')
+                    ->button()
+                    ->modalHeading('Lanjutkan Studi Mahasiswa')
+                    ->modalDescription('KRS semester ini akan dinonaktifkan dan KRS baru akan dibuat untuk Tahun Akademik yang dipilih.')
+                    ->modalSubmitActionLabel('Lanjutkan Studi')
+                    ->modalCancelActionLabel('Batal')
+                    ->form([
+                        Select::make('target_ta_id')
+                            ->label('Tahun Akademik Tujuan')
+                            ->options(
+                                TahunAkademik::orderByDesc('id')
+                                    ->get()
+                                    ->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])
+                            )
+                            ->default(fn() => TahunAkademik::orderByDesc('id')->first()?->id)
+                            ->required()
+                            ->searchable()
+                            ->native(false)
+                            ->placeholder('Pilih Tahun Akademik...'),
+                    ])
+                    ->action(function ($record, array $data) {
+                        try {
+                            $record->lanjutkanStudi((int) $data['target_ta_id']);
+
+                            $nama = $record->riwayatPendidikan?->siswaData?->nama ?? 'Mahasiswa';
+                            Notification::make()
+                                ->title('Studi Dilanjutkan')
+                                ->body("KRS baru untuk {$nama} berhasil dibuat.")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Gagal Melanjutkan Studi')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
+                    })
+                    ->visible(function ($record) {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        if ($user->isMurid()) return false;
+                        if ($record->status_aktif !== 'Y') return false;
+
+                        // Admin bisa untuk semua mahasiswa
+                        if ($user->isAdmin()) return true;
+
+                        // Wali Dosen hanya bisa untuk waliannya sendiri
+                        if ($user->isPengajar()) {
+                            $dosenId = $user->getDosenId();
+                            return $dosenId
+                                && $record->riwayatPendidikan?->id_wali_dosen == $dosenId;
+                        }
+
+                        return false;
+                    }),
+
                 ActionGroup::make([
                     Action::make('cetak_krs')
                         ->label('Cetak KRS')
@@ -455,6 +591,7 @@ class AkademikKrsTable
                         ->modalHeading('Edit KRS')
                         ->modalWidth('2xl'),
 
+
                     DeleteAction::make()
                         ->label('Hapus')
                         ->icon('heroicon-o-trash')
@@ -468,7 +605,8 @@ class AkademikKrsTable
                 ])
                     ->icon('heroicon-m-ellipsis-vertical')
                     ->tooltip('Aksi')
-            ])
+                    ->dropdownPlacement('bottom-start')
+            ], position: \Filament\Tables\Enums\RecordActionsPosition::BeforeCells)
             ->bulkActions([
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                 BulkAction::make('update_status')
@@ -514,15 +652,19 @@ class AkademikKrsTable
                                 'Y' => 'Disetujui',
                                 'N' => 'Menunggu Persetujuan',
                             ])
-                            ->selectablePlaceholder(false)
-                            ->disabled(fn() => auth()->user()?->isMurid())
-                            ->extraAttributes(function ($state) {
-                                $classes = [
-                                    'Y' => 'status-badge status-success',
-                                    'N' => 'status-badge status-warning',
-                                ];
-                                return ['class' => $classes[$state] ?? 'status-badge status-default'];
-                            }),
+                            ->placeholder('Pilih Syarat KRS...')
+                            ->disabled(fn() => auth()->user()?->isMurid()),
+                            
+                        Select::make('id_tahun_akademik')
+                            ->label('Tahun Akademik (Koreksi)')
+                            ->options(
+                                \App\Models\TahunAkademik::orderByDesc('id')
+                                    ->get()
+                                    ->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])
+                            )
+                            ->placeholder('Pilih Tahun Akademik...')
+                            ->searchable()
+                            ->disabled(fn() => auth()->user()?->isMurid()),
                     ])
                     ->action(function (Collection $records, array $data): void {
                         $updateData = array_filter($data, fn($value) => $value !== null);

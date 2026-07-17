@@ -208,8 +208,31 @@ class RiwayatPendidikan extends Model
      * @param mixed $date Reference date (optional, defaults to now)
      * @return int|null
      */
-    public function getSemester($date = null)
+    public function getSemester($date = null, $targetTahunAkademikId = null)
     {
+        // 1. Jika ada targetTahunAkademikId, kita hitung selisih dari tahun akademik awal
+        if ($targetTahunAkademikId && $this->id_tahun_akademik) {
+            $startTa = \App\Models\TahunAkademik::find($this->id_tahun_akademik);
+            $targetTa = \App\Models\TahunAkademik::find($targetTahunAkademikId);
+
+            if ($startTa && $targetTa && $startTa->kode_pddikti && $targetTa->kode_pddikti) {
+                $startYear = (int) substr($startTa->kode_pddikti, 0, 4);
+                $startPeriod = (int) substr($startTa->kode_pddikti, 4, 1);
+
+                $targetYear = (int) substr($targetTa->kode_pddikti, 0, 4);
+                $targetPeriod = (int) substr($targetTa->kode_pddikti, 4, 1);
+
+                // Normalisasi period: jika ganjil = 1, genap = 2. Semester pendek (3) dianggap genap
+                $startPeriod = $startPeriod > 2 ? 2 : $startPeriod;
+                $targetPeriod = $targetPeriod > 2 ? 2 : $targetPeriod;
+
+                $semester = (($targetYear - $startYear) * 2) + ($targetPeriod - $startPeriod) + 1;
+                
+                return max(1, $semester);
+            }
+        }
+
+        // 2. Fallback ke logika tanggal (current time) jika tidak ada target TA
         if (!$this->tanggal_mulai) return null;
 
         $startDate = \Carbon\Carbon::parse($this->tanggal_mulai);

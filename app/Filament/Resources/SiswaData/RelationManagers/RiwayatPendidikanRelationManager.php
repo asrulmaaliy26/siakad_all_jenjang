@@ -55,6 +55,7 @@ class RiwayatPendidikanRelationManager extends RelationManager
 
             Select::make('id_tahun_akademik')
                 ->relationship('tahunAkademik', 'nama')
+                ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->nama} - {$record->periode}")
                 ->label('Tahun Akademik')
                 ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id),
 

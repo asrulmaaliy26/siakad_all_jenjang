@@ -163,7 +163,7 @@ class RiwayatPendidikansTable
                         ->form([
                             Select::make('id_tahun_akademik')
                                 ->label('Tahun Akademik')
-                                ->options(\App\Models\TahunAkademik::orderBy('nama', 'desc')->get()->pluck('nama', 'id'))
+                                ->options(\App\Models\TahunAkademik::orderBy('nama', 'desc')->get()->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"]))
                                 ->placeholder('Pilih Tahun Akademik...')
                                 ->searchable()
                                 ->required(),

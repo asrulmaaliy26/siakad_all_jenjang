@@ -92,6 +92,16 @@ class SiswaData extends Model
         'no_hp',
     ];
 
+    public static $pddikti_agama = [
+        '1' => 'Islam',
+        '2' => 'Kristen',
+        '3' => 'Katolik',
+        '4' => 'Hindu',
+        '5' => 'Budha',
+        '6' => 'Konghucu',
+        '99' => 'Lainnya'
+    ];
+
     public static $pddikti_jenis_tinggal = [
         '1' => 'Bersama orang tua',
         '2' => 'Wali',

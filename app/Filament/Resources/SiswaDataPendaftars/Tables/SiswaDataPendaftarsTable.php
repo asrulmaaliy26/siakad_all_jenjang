@@ -217,7 +217,7 @@ class SiswaDataPendaftarsTable
 
                 SelectFilter::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::all()->pluck('nama', 'id')->toArray())
+                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])->toArray())
                     ->multiple(),
 
                 SelectFilter::make('id_jurusan')
@@ -244,7 +244,7 @@ class SiswaDataPendaftarsTable
                         ->form([
                             \Filament\Forms\Components\Select::make('id_tahun_akademik')
                                 ->label('Pilih Tahun Akademik Baru')
-                                ->options(\App\Models\TahunAkademik::pluck('nama', 'id'))
+                                ->options(\App\Models\TahunAkademik::all()->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"]))
                                 ->required(),
                         ])
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {

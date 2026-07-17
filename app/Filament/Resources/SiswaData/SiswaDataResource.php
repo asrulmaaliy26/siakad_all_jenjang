@@ -92,7 +92,10 @@ class SiswaDataResource extends Resource
                                     TextEntry::make('nisn')->label('NISN')->default('-'),
                                     TextEntry::make('nik')->label('NIK')->default('-'),
                                     TextEntry::make('jenis_kelamin')->label('Gender')->default('-'),
-                                    TextEntry::make('agama')->label('Agama')->default('-'),
+                                    TextEntry::make('agama')
+                                        ->label('Agama')
+                                        ->formatStateUsing(fn ($state) => \App\Models\SiswaData::$pddikti_agama[$state] ?? $state)
+                                        ->default('-'),
                                     TextEntry::make('kewarganegaraan')->label('Kewarganegaraan')->default('-'),
                                     TextEntry::make('alamat')->label('Alamat')->columnSpanFull()->default('-'),
                                     TextEntry::make('email_account')->label('Email')->default('-'),
@@ -130,13 +133,25 @@ class SiswaDataResource extends Resource
                                         TextEntry::make('orangTua.tempat_tanggal_lahir_ayah')
                                             ->label('Tempat, Tgl. lahir')
                                             ->state(fn ($record) => ($record->orangTua?->Tempat_Lhr_Ayah ?? '-') . ', ' . ($record->orangTua?->Tgl_Lhr_Ayah ? \Carbon\Carbon::parse($record->orangTua->Tgl_Lhr_Ayah)->format('d-m-Y') : '-')),
-                                        TextEntry::make('orangTua.Agama_Ayah')->label('Agama')->default('-'),
+                                        TextEntry::make('orangTua.Agama_Ayah')
+                                            ->label('Agama')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaData::$pddikti_agama[$state] ?? $state)
+                                            ->default('-'),
                                         TextEntry::make('orangTua.Gol_Darah_Ayah')->label('Gol. Darah')->default('-'),
                                         TextEntry::make('orangTua.Kewarganegaraan_Ayah')->label('Kewarganegaraan')->default('-'),
                                         TextEntry::make('orangTua.Alamat_Ayah')->label('Alamat')->default('-'),
-                                        TextEntry::make('orangTua.Pendidikan_Terakhir_Ayah')->label('Pendidikan')->default('-'),
-                                        TextEntry::make('orangTua.Penghasilan_Ayah')->label('Penghasilan')->default('-'),
-                                        TextEntry::make('orangTua.Pekerjaan_Ayah')->label('Pekerjaan')->default('-'),
+                                        TextEntry::make('orangTua.Pendidikan_Terakhir_Ayah')
+                                            ->label('Pendidikan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_pendidikan[$state] ?? $state)
+                                            ->default('-'),
+                                        TextEntry::make('orangTua.Penghasilan_Ayah')
+                                            ->label('Penghasilan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_penghasilan[$state] ?? $state)
+                                            ->default('-'),
+                                        TextEntry::make('orangTua.Pekerjaan_Ayah')
+                                            ->label('Pekerjaan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_pekerjaan[$state] ?? $state)
+                                            ->default('-'),
                                     ])->columns(1),
 
                                     Fieldset::make('Profil Ibu')->schema([
@@ -145,13 +160,25 @@ class SiswaDataResource extends Resource
                                         TextEntry::make('orangTua.tempat_tanggal_lahir_ibu')
                                             ->label('Tempat, Tgl. lahir')
                                             ->state(fn ($record) => ($record->orangTua?->Tempat_Lhr_Ibu ?? '-') . ', ' . ($record->orangTua?->Tgl_Lhr_Ibu ? \Carbon\Carbon::parse($record->orangTua->Tgl_Lhr_Ibu)->format('d-m-Y') : '-')),
-                                        TextEntry::make('orangTua.Agama_Ibu')->label('Agama')->default('-'),
+                                        TextEntry::make('orangTua.Agama_Ibu')
+                                            ->label('Agama')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaData::$pddikti_agama[$state] ?? $state)
+                                            ->default('-'),
                                         TextEntry::make('orangTua.Gol_Darah_Ibu')->label('Gol. Darah')->default('-'),
                                         TextEntry::make('orangTua.Kewarganegaraan_Ibu')->label('Kewarganegaraan')->default('-'),
                                         TextEntry::make('orangTua.Alamat_Ibu')->label('Alamat')->default('-'),
-                                        TextEntry::make('orangTua.Pendidikan_Terakhir_Ibu')->label('Pendidikan')->default('-'),
-                                        TextEntry::make('orangTua.Penghasilan_Ibu')->label('Penghasilan')->default('-'),
-                                        TextEntry::make('orangTua.Pekerjaan_Ibu')->label('Pekerjaan')->default('-'),
+                                        TextEntry::make('orangTua.Pendidikan_Terakhir_Ibu')
+                                            ->label('Pendidikan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_pendidikan[$state] ?? $state)
+                                            ->default('-'),
+                                        TextEntry::make('orangTua.Penghasilan_Ibu')
+                                            ->label('Penghasilan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_penghasilan[$state] ?? $state)
+                                            ->default('-'),
+                                        TextEntry::make('orangTua.Pekerjaan_Ibu')
+                                            ->label('Pekerjaan')
+                                            ->formatStateUsing(fn ($state) => \App\Models\SiswaDataOrangTua::$pddikti_pekerjaan[$state] ?? $state)
+                                            ->default('-'),
                                     ])->columns(1),
                                 ]),
                             ]),

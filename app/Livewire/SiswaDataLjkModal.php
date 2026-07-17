@@ -34,6 +34,8 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
     public array $takenSubjectIds = [];
     public ?int $studentJurusanId = null;
     public ?int $tahunAkademikId = null;
+    public ?int $studentSemester = null;
+    public ?int $studentProgramKelasId = null;
     public bool $excludeTaken = false;
     public bool $isKrsLocked = false;
     public bool $isBayarLunas = true;
@@ -48,7 +50,19 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
         if ($krs) {
             $this->tahunAkademikId = $krs->id_tahun_akademik;
             if ($krs->riwayatPendidikan) {
-                $this->studentJurusanId = $krs->riwayatPendidikan->id_jurusan;
+                $riwayat = $krs->riwayatPendidikan;
+                $this->studentJurusanId = $riwayat->id_jurusan;
+                $this->studentProgramKelasId = $riwayat->ro_program_kelas;
+
+                // Semester aktif = urutan KRS ini di antara semua KRS mahasiswa (diurutkan id)
+                // Mahasiswa cuti tidak punya KRS → semester cuti otomatis tidak terhitung
+                $krsOrder = AkademikKrs::where('id_riwayat_pendidikan', $riwayat->id)
+                    ->orderBy('id')
+                    ->pluck('id')
+                    ->search($krs->id);
+
+                // search() return 0-based index, +1 untuk semester
+                $this->studentSemester = $krsOrder !== false ? ($krsOrder + 1) : 1;
             }
         }
 
@@ -179,6 +193,7 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                 SelectFilter::make('ro_program_kelas')
                     ->label('Program Kelas')
                     ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                    ->default($this->studentProgramKelasId)
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['value'])) {
                             $query->whereHas('kelas', function (Builder $q) use ($data) {
@@ -198,6 +213,7 @@ class SiswaDataLjkModal extends Component implements HasForms, HasTable, HasActi
                         '7' => 'Semester 7',
                         '8' => 'Semester 8',
                     ])
+                    ->default($this->studentSemester ? (string) $this->studentSemester : null)
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['value'])) {
                             $query->whereHas('kelas', function (Builder $q) use ($data) {
