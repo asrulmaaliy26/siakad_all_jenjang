@@ -19,44 +19,16 @@
             line-height: 1.5;
         }
 
-        /* ── KOP SURAT ── */
+                /* -- KOP SURAT -- */
         .kop {
-            display: table;
             width: 100%;
-            border-bottom: 3px double #000;
-            padding-bottom: 8px;
-            margin-bottom: 20px;
-        }
-
-        .kop-logo {
-            display: table-cell;
-            width: 80px;
-            vertical-align: middle;
+            margin-bottom: 15px;
             text-align: center;
         }
 
-        .kop-logo img {
-            width: 70px;
-            height: 70px;
-        }
-
-        .kop-teks {
-            display: table-cell;
-            vertical-align: middle;
-            text-align: center;
-            padding: 0 10px;
-        }
-
-        .kop-teks .nama-institusi {
-            font-size: 16pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .kop-teks .alamat {
-            font-size: 9pt;
-            margin-top: 2px;
+        .kop img {
+            width: 100%;
+            height: auto;
         }
 
         /* ── INFO SURAT ── */
@@ -141,14 +113,8 @@
 <body>
 
     {{-- ══ KOP SURAT ══ --}}
-    <div class="kop">
-        <div class="kop-logo">
-            <img src="{{ public_path('logokampus.jpg') }}" alt="Logo">
-        </div>
-        <div class="kop-teks">
-            <div class="nama-institusi">{{ config('app.name', 'NAMA INSTITUSI KAMPUS') }}</div>
-            <div class="alamat">Alamat Lengkap Kampus &nbsp;|&nbsp; Telepon: (021) 123456 &nbsp;|&nbsp; Email: info@kampus.ac.id</div>
-        </div>
+        <div class="kop">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
     </div>
 
     <div class="tgl-surat">
@@ -246,10 +212,6 @@
                 </td>
             </tr>
         </table>
-    </div>
-
-    <div class="footer-doc">
-        Surat pengajuan ini dicetak secara otomatis dari Sistem Informasi Akademik (SIAKAD) pada {{ date('d/m/Y H:i') }}.
     </div>
 
 </body>

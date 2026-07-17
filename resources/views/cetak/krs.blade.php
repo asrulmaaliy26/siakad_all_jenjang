@@ -18,49 +18,16 @@
             padding: 20px 30px;
         }
 
-        /* ── KOP SURAT ── */
+                /* -- KOP SURAT -- */
         .kop {
-            display: table;
             width: 100%;
-            border-bottom: 3px double #000;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-
-        .kop-logo {
-            display: table-cell;
-            width: 80px;
-            vertical-align: middle;
+            margin-bottom: 15px;
             text-align: center;
         }
 
-        .kop-logo img {
-            width: 70px;
-            height: 70px;
-        }
-
-        .kop-teks {
-            display: table-cell;
-            vertical-align: middle;
-            text-align: center;
-            padding: 0 10px;
-        }
-
-        .kop-teks .nama-institusi {
-            font-size: 16pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .kop-teks .nama-prodi {
-            font-size: 11pt;
-            font-weight: bold;
-        }
-
-        .kop-teks .alamat {
-            font-size: 9pt;
-            margin-top: 2px;
+        .kop img {
+            width: 100%;
+            height: auto;
         }
 
         /* ── JUDUL DOKUMEN ── */
@@ -201,17 +168,8 @@
 <body>
 
     {{-- ══ KOP SURAT ══ --}}
-    <div class="kop">
-        <div class="kop-logo">
-            <img src="{{ public_path('logokampus.jpg') }}" alt="Logo Kampus">
-        </div>
-        <div class="kop-teks">
-            <div class="nama-institusi">{{ config('app.name', 'Nama Institusi') }}</div>
-            <div class="nama-prodi">
-                {{ $krs->riwayatPendidikan?->jurusan?->nama ?? 'Program Studi' }}
-            </div>
-            <div class="alamat">Alamat Institusi &nbsp;|&nbsp; Telepon &nbsp;|&nbsp; Email</div>
-        </div>
+        <div class="kop">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
     </div>
 
     {{-- ══ JUDUL DOKUMEN ══ --}}
@@ -367,8 +325,6 @@
 
     {{-- ══ FOOTER ══ --}}
     <div class="footer-doc">
-        Dicetak oleh sistem pada: {{ \Carbon\Carbon::now()->translatedFormat('d F Y, H:i') }}
-        &nbsp;|&nbsp; Dokumen ini sah tanpa tanda tangan basah jika dicetak dari sistem resmi.
     </div>
 
 </body>

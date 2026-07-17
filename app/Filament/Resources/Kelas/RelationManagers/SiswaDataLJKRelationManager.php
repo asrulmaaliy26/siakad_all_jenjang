@@ -229,7 +229,7 @@ class SiswaDataLJKRelationManager extends RelationManager
                                     \pxlrbt\FilamentExcel\Columns\Column::make('Nilai_Performance')->heading('Perf'),
                                 ])
                         ]),
-                    \Filament\Tables\Actions\Action::make('importExcelCustom')
+                    \Filament\Actions\Action::make('importExcelCustom')
                         ->label('Import Excel')
                         ->color('warning')
                         ->icon('heroicon-o-arrow-up-tray')

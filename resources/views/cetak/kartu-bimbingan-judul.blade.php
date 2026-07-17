@@ -167,39 +167,9 @@
 
     <div class="card-section {{ ($idx + 1 == $totalP) ? 'last-page' : '' }}">
         {{-- KOP SURAT --}}
-        <div class="header">
-            <div class="header-logo">
-                <img src="{{ public_path('logokampus.jpg') }}" alt="Logo">
-            </div>
-            <div class="header-text">
-                <h3>MAJELIS PENDIDIKAN TINGGI PENELITIAN DAN PENGEMBANGAN</h3>
-                <h2>{{ config('app.name', 'SIAKAD') }}</h2>
-                <p>TERAKREDITASI B</p>
-                <p>Alamat Institusi Terupdate | Telp: 08XXXXXXXX | Email: admin@siakad.com</p>
-            </div>
-            <div class="line-double"></div>
-        </div>
-
-        <div class="doc-title">KARTU BIMBINGAN SEMINAR PROPOSAL</div>
-
-        <table class="info-table">
-            <tr>
-                <td class="info-label">Nama</td>
-                <td>{{ $ta->riwayatPendidikan?->siswa?->nama }}</td>
-            </tr>
-            <tr>
-                <td class="info-label">Program Studi</td>
-                <td>{{ $ta->riwayatPendidikan?->jurusan?->nama }}</td>
-            </tr>
-            <tr>
-                <td class="info-label">Usulan Judul</td>
-                <td>{{ $ta->judul }}</td>
-            </tr>
-            <tr>
-                <td class="info-label">Dosen Pembimbing {{ $pNum }}</td>
-                <td>{{ $dosen?->nama }}</td>
-            </tr>
-        </table>
+    <div class="kop">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
+    </div>
 
         <table class="consult-table">
             <thead>

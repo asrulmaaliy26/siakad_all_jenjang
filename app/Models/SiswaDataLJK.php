@@ -82,9 +82,13 @@ class SiswaDataLJK extends Model
                 // Map to Nilai_Huruf (Standar A, B, C +/-)
                 $record->Nilai_Huruf = self::calculateGradeLetter($average100);
 
-                // Otomatis set Status Nilai berdasarkan ambang batas (>= C atau > 55 Lulus)
-                if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance')) {
-                    $record->Status_Nilai = ($average100 >= 55.00) ? 'LULUS' : 'TL';
+                // Otomatis set Status Nilai berdasarkan ambang batas (>= C Lulus)
+                if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance', 'Nilai_TGS_1')) {
+                    if ($average100 > 0 && $average100 <= 4.00) {
+                        $record->Status_Nilai = ($average100 >= 2.00) ? 'LULUS' : 'TL';
+                    } else {
+                        $record->Status_Nilai = ($average100 >= 55.00) ? 'LULUS' : 'TL';
+                    }
                 }
             } else {
                 // Jika tidak ada nilai sama sekali
@@ -95,18 +99,38 @@ class SiswaDataLJK extends Model
         });
     }
 
-    public static function calculateGradeLetter($average100)
+    public static function calculateGradeLetter($average)
     {
+        if ($average <= 0) return 'E';
+
+        // Deteksi Skala 4.00
+        if ($average <= 4.00) {
+            return match (true) {
+                $average >= 3.80 => 'A',
+                $average >= 3.60 => 'A-',
+                $average >= 3.30 => 'B+',
+                $average >= 3.00 => 'B',
+                $average >= 2.75 => 'B-',
+                $average >= 2.50 => 'C+',
+                $average >= 2.00 => 'C',
+                $average >= 1.75 => 'C-',
+                $average >= 1.00 => 'D',
+                default          => 'E',
+            };
+        }
+
+        // Skala 100
         return match (true) {
-            $average100 >= 85 => 'A',
-            $average100 >= 80 => 'A-',
-            $average100 >= 75 => 'B+',
-            $average100 >= 70 => 'B',
-            $average100 >= 65 => 'B-',
-            $average100 >= 60 => 'C+',
-            $average100 >= 55 => 'C',
-            $average100 >= 40 => 'D',
-            default           => 'E',
+            $average >= 85 => 'A',
+            $average >= 80 => 'A-',
+            $average >= 75 => 'B+',
+            $average >= 70 => 'B',
+            $average >= 65 => 'B-',
+            $average >= 60 => 'C+',
+            $average >= 55 => 'C',
+            $average >= 50 => 'C-',
+            $average >= 40 => 'D',
+            default        => 'E',
         };
     }
 

@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
-    <title>Transkrip Nilai Sementara - {{ $siswa->nama }}</title>
+    <title>Cetak Transkrip Nilai - {{ $siswa->nama }}</title>
     <style>
         * {
             margin: 0;
@@ -12,215 +11,218 @@
         }
 
         body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 10pt;
+            font-family: 'Arial', sans-serif;
+            font-size: 11pt;
             color: #000;
-            padding: 30px 40px;
-        }
-
-        .kop {
-            display: table;
-            width: 100%;
-            border-bottom: 3px double #000;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-
-        .kop-logo {
-            display: table-cell;
-            width: 80px;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .kop-logo img {
-            width: 70px;
-        }
-
-        .kop-teks {
-            display: table-cell;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .kop-teks .inst {
-            font-size: 16pt;
-            font-weight: bold;
-            text-transform: uppercase;
+            padding: 20px;
         }
 
         .judul-dok {
             text-align: center;
-            margin: 15px 0;
+            margin: 15px 0 25px 0;
         }
 
-        .judul-dok h2 {
-            font-size: 12pt;
-            text-decoration: underline;
-            text-transform: uppercase;
+        .judul-dok h3 {
+            font-size: 14pt;
+            font-weight: bold;
         }
 
-        .info-mhs {
+        .table-mhs {
             width: 100%;
             margin-bottom: 15px;
+            display: table;
+        }
+        
+        .table-mhs-col {
+            display: table-cell;
+            width: 50%;
         }
 
-        .info-mhs td {
-            padding: 2px 0;
+        .table-mhs-inner {
+            width: 100%;
+            font-size: 11pt;
+            line-height: 1.3;
         }
 
         .tabel-nilai {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 10pt;
+            line-height: 1.5;
         }
 
-        .tabel-nilai th {
+        .tabel-nilai th, .tabel-nilai td {
             border: 1px solid #000;
-            padding: 5px;
-            background: #eee;
-        }
-
-        .tabel-nilai td {
-            border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 4px;
         }
 
         .text-center {
             text-align: center;
         }
 
-        .text-right {
-            text-align: right;
-        }
-
-        .summary {
-            margin-top: 15px;
-            width: 100%;
-            border: 1px solid #000;
-            padding: 8px;
-        }
-
-        .ttd-area {
-            margin-top: 30px;
-            width: 100%;
+        .row-tables {
             display: table;
+            width: 100%;
+            margin-bottom: 15px;
         }
 
-        .ttd-box {
+        .col-table {
             display: table-cell;
             width: 50%;
-            text-align: center;
+            vertical-align: top;
+            padding: 0 5px;
         }
 
-        .ttd-line {
-            margin-top: 60px;
-            display: inline-block;
-            border-bottom: 1px solid #000;
-            min-width: 180px;
-            font-weight: bold;
+        .summary-area {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
         }
+
+        .summary-left {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+        
+        .summary-right {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding-left: 40px;
+        }
+
+        .summary-table {
+            width: 100%;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+
     </style>
 </head>
-
 <body>
 
-    <div class="kop">
-        <div class="kop-logo">
-            <img src="{{ public_path('logokampus.jpg') }}" alt="Logo">
+    <div style="text-align: center; margin-bottom: 15px;">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
+    </div>
+
+    <div class="judul-dok">
+        <h3><b>TRANSKRIP HASIL STUDI</b></h3>
+    </div>
+
+    <div class="table-mhs">
+        <div class="table-mhs-col">
+            <table class="table-mhs-inner">
+                <tr>
+                    <td width="35%">Nama Mahasiswa</td>
+                    <td width="65%">: <strong>{{ $siswa->nama }}</strong></td>
+                </tr>
+                <tr>
+                    <td>NIM / NPM</td>
+                    <td>: {{ $riwayat->nomor_induk ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Tahun Masuk</td>
+                    <td>: {{ $riwayat->tahunAkademik->nama ?? '-' }}</td>
+                </tr>
+            </table>
         </div>
-        <div class="kop-teks">
-            <div class="inst">{{ config('app.name') }}</div>
-            <div>TRANSKRIP NILAI AKADEMIK (SEMENTARA)</div>
+        <div class="table-mhs-col">
+            <table class="table-mhs-inner">
+                <tr>
+                    <td width="35%">Fakultas</td>
+                    <td width="65%">: {{ $riwayat->jurusan->fakultas->nama ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Program Studi</td>
+                    <td>: {{ $riwayat->jurusan->nama ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Kelas Perkuliahan</td>
+                    <td>: {{ $riwayat->programKelas->nilai ?? '-' }}</td>
+                </tr>
+            </table>
         </div>
     </div>
 
-    <table class="info-mhs">
-        <tr>
-            <td width="100">Nama</td>
-            <td width="10">:</td>
-            <td><strong>{{ $siswa->nama }}</strong></td>
-            <td width="100">NIM</td>
-            <td width="10">:</td>
-            <td>{{ $siswa->riwayatPendidikanAktif?->nomor_induk }}</td>
-        </tr>
-        <td>Program Studi</td>
-        <td>:</td>
-        <td>{{ $siswa->riwayatPendidikanAktif?->jurusan?->nama }}</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        </tr>
-    </table>
+    <div class="row-tables">
+        @php 
+            $count = $allLjk->count();
+            // We use max(1) to avoid division by zero if count is 0
+            $chunkSize = ceil(max($count, 1) / 2);
+            $chunked = $allLjk->chunk($chunkSize); 
+            $no = 1;
+        @endphp
 
-    <table class="tabel-nilai">
-        <thead>
-            <tr>
-                <th width="30">No</th>
-                <th width="80">Kode</th>
-                <th>Mata Kuliah</th>
-                <th width="40">SKS</th>
-                <th width="40">Nilai</th>
-                <th width="40">Bobot</th>
-                <th width="60">SKS x B</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php $totalSksRow = 0; $totalSkxBobot = 0; @endphp
-            @foreach($allLjk as $i => $ljk)
-            @php
-            $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
-            $huruf = $ljk->Nilai_Huruf ?? '-';
-            $bobot = $ljk->bobot;
-            $val = $sks * $bobot;
-            $totalSksRow += $sks;
-            $totalSkxBobot += $val;
-            @endphp
-            <tr>
-                <td class="text-center">{{ $i + 1 }}</td>
-                <td class="text-center">{{ $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->kode_feeder }}</td>
-                <td>{{ $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->nama }}</td>
-                <td class="text-center">{{ $sks }}</td>
-                <td class="text-center">{{ $huruf }}</td>
-                <td class="text-center">{{ number_format($bobot, 1) }}</td>
-                <td class="text-center">{{ number_format($val, 1) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <div class="summary">
-        <table>
-            <tr>
-                <td width="150">Total SKS Akumulatif</td>
-                <td width="10">:</td>
-                <td>{{ $totalSksRow }} SKS</td>
-            </tr>
-            <tr>
-                <td>Indeks Prestasi Kumulatif (IPK)</td>
-                <td>:</td>
-                <td><strong>{{ number_format($ipk, 2) }}</strong></td>
-            </tr>
-        </table>
+        @forelse($chunked as $chunk)
+            <div class="col-table">
+                <table class="tabel-nilai">
+                    <thead>
+                        <tr>
+                            <th width="10%">No</th>
+                            <th width="60%">Mata Kuliah</th>
+                            <th width="10%">SKS</th>
+                            <th width="10%">NA</th>
+                            <th width="10%">NH</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($chunk as $ljk)
+                        @php 
+                            $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
+                        @endphp
+                        <tr>
+                            <td class="text-center">{{ $no++ }}</td>
+                            <td>{{ $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->nama ?? '-' }}</td>
+                            <td class="text-center">{{ $sks }}</td>
+                            <td class="text-center">{{ number_format($ljk->bobot, 2) }}</td>
+                            <td class="text-center">{{ $ljk->Nilai_Huruf ?? '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @empty
+            <div class="col-table" style="width: 100%;">
+                <table class="tabel-nilai">
+                    <tr><td class="text-center">Belum ada data nilai.</td></tr>
+                </table>
+            </div>
+        @endforelse
     </div>
 
-    <div class="ttd-area">
-        <div class="ttd-box">
-            Mengetahui,<br>
-            Ketua Program Studi
-            <br><br><br><br>
-            <span class="ttd-line">{{ $kaprodi?->nama ?? '____________________' }}</span><br>
-            NIDN. {{ $kaprodi?->NIPDN ?? '__________' }}
+    <div class="summary-area">
+        <div class="summary-left">
+            <table class="summary-table">
+                <tr>
+                    <td width="55%">TOTAL SKS</td>
+                    <td width="45%">: {{ $totalSks }}</td>
+                </tr>
+                <tr>
+                    <td>INDEKS PRESTASI KUMULATIF</td>
+                    <td>: {{ number_format($ipk, 2) }}</td>
+                </tr>
+                <tr>
+                    <td>PREDIKAT KELULUSAN</td>
+                    <td>: 
+                        @php
+                            if($ipk > 3.75) echo "Cumlaude";
+                            elseif($ipk > 3.50 && $ipk <= 3.75) echo "Sangat Memuaskan";
+                            elseif($ipk > 3.00 && $ipk <= 3.50) echo "Memuaskan";
+                            else echo "-";
+                        @endphp
+                    </td>
+                </tr>
+            </table>
         </div>
-        <div class="ttd-box">
-            {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>
-            Mahasiswa,
+        <div class="summary-right">
+            Jombang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>
+            Kaprodi
             <br><br><br><br>
-            <span class="ttd-line">{{ $siswa->nama }}</span><br>
-            NIM. {{ $siswa->riwayatPendidikanAktif?->nomor_induk }}
+            <strong>{{ $kaprodi?->nama ?? '____________________' }}</strong><br>
+            {{ $kaprodi?->NIPDN ?? 'NIDN. __________' }}
         </div>
     </div>
 
 </body>
-
 </html>

@@ -20,50 +20,17 @@
 
         /* ── KOP SURAT ── */
         .kop {
-            display: table;
             width: 100%;
-            border-bottom: 3px double #000;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-
-        .kop-logo {
-            display: table-cell;
-            width: 80px;
-            vertical-align: middle;
+            margin-bottom: 15px;
             text-align: center;
         }
 
-        .kop-logo img {
-            width: 70px;
-            height: 70px;
+        .kop img {
+            width: 100%;
+            height: auto;
         }
 
-        .kop-teks {
-            display: table-cell;
-            vertical-align: middle;
-            text-align: center;
-            padding: 0 10px;
-        }
-
-        .kop-teks .nama-institusi {
-            font-size: 16pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .kop-teks .nama-prodi {
-            font-size: 11pt;
-            font-weight: bold;
-        }
-
-        .kop-teks .alamat {
-            font-size: 9pt;
-            margin-top: 2px;
-        }
-
-        /* ── JUDUL DOKUMEN ── */
+        /* ÔöÇÔöÇ JUDUL DOKUMEN ÔöÇÔöÇ */
         .judul-dok {
             text-align: center;
             margin: 12px 0 10px;
@@ -77,7 +44,7 @@
             text-decoration: underline;
         }
 
-        /* ── INFO MAHASISWA ── */
+        /* ÔöÇÔöÇ INFO MAHASISWA ÔöÇÔöÇ */
         .info-tabel {
             width: 100%;
             margin-bottom: 14px;
@@ -88,25 +55,25 @@
             padding: 2px 4px;
         }
 
-        /* ── TABEL NILAI ── */
+        /* ÔöÇÔöÇ TABEL NILAI ÔöÇÔöÇ */
         .tabel-mk {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 14px;
-            font-size: 10pt;
+            font-size: 8.5pt;
         }
 
         .tabel-mk th {
             border: 1px solid #000;
             background-color: #f0f0f0;
-            padding: 5px 6px;
+            padding: 5px 2px;
             text-align: center;
             font-weight: bold;
         }
 
         .tabel-mk td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 4px 2px;
             vertical-align: middle;
         }
 
@@ -114,7 +81,7 @@
             text-align: center;
         }
 
-        /* ── SUMMARY ── */
+        /* ÔöÇÔöÇ SUMMARY ÔöÇÔöÇ */
         .summary-box {
             width: 100%;
             margin-top: 10px;
@@ -127,7 +94,7 @@
             width: 100%;
         }
 
-        /* ── TANDA TANGAN ── */
+        /* ÔöÇÔöÇ TANDA TANGAN ÔöÇÔöÇ */
         .ttd-area {
             width: 100%;
             margin-top: 30px;
@@ -166,14 +133,7 @@
 <body>
 
     <div class="kop">
-        <div class="kop-logo">
-            <img src="{{ public_path('logokampus.jpg') }}" alt="Logo">
-        </div>
-        <div class="kop-teks">
-            <div class="nama-institusi">{{ config('app.name', 'SIAKAD') }}</div>
-            <div class="nama-prodi">{{ $krs->riwayatPendidikan?->jurusan?->nama }}</div>
-            <div class="alamat">Alamat Institusi Terupdate | Telp: 08XXXXXXXX | Email: admin@siakad.com</div>
-        </div>
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
     </div>
 
     <div class="judul-dok">
@@ -207,13 +167,22 @@
     <table class="tabel-mk">
         <thead>
             <tr>
-                <th width="30">No</th>
-                <th>Kode</th>
-                <th>Mata Kuliah</th>
-                <th width="40">SKS</th>
-                <th width="40">Nilai</th>
-                <th width="40">Bobot</th>
-                <th width="60">SKS x Bobot</th>
+                <th rowspan="2" width="25">NO</th>
+                <th rowspan="2" width="55">KODE</th>
+                <th rowspan="2">MATA KULIAH</th>
+                <th colspan="8">PRESTASI</th>
+                <th rowspan="2" width="60">Predikat</th>
+                <th rowspan="2" width="70">Rekomendasi</th>
+            </tr>
+            <tr>
+                <th width="25">SKS</th>
+                <th width="30">UTS</th>
+                <th width="30">TGS</th>
+                <th width="30">UAS</th>
+                <th width="30">P</th>
+                <th width="30">AM</th>
+                <th width="30">HM</th>
+                <th width="30">M</th>
             </tr>
         </thead>
         <tbody>
@@ -221,22 +190,49 @@
             @foreach($krs->siswaDataLjk as $i => $ljk)
             @php
             $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
-            $huruf = $ljk->Nilai_Huruf ?? '-';
+            
+            // Komponen Nilai
+            $uts = $ljk->Nilai_UTS ?? 0;
+            $uas = $ljk->Nilai_UAS ?? 0;
+            $p = $ljk->Nilai_Performance ?? 0;
+            
+            // Hitung rata-rata TGS
+            $tugasFields = ['Nilai_TGS_1', 'Nilai_TGS_2', 'Nilai_TGS_3', 'Nilai_TGS_4', 'Nilai_TGS_5', 'Nilai_TGS_6', 'Nilai_TGS_7', 'Nilai_TGS_8', 'Nilai_TGS_9', 'Nilai_TGS_10', 'Nilai_TGS_11', 'Nilai_TGS_12'];
+            $totalTugas = 0;
+            $countTugas = 0;
+            foreach ($tugasFields as $field) {
+                $val = $ljk->{$field};
+                if (!is_null($val) && (float)$val > 0) {
+                    $totalTugas += (float) $val;
+                    $countTugas++;
+                }
+            }
+            $tgs = $countTugas > 0 ? ($totalTugas / $countTugas) : 0;
 
-            $bobot = $ljk->bobot;
-            $skxBobot = $sks * $bobot;
+            $am = $ljk->bobot; // Angka Mutu
+            $hm = $ljk->Nilai_Huruf ?? '-'; // Huruf Mutu
+            $m = $sks * $am; // Mutu (SKS x Bobot)
+            
+            $predikat = $ljk->Status_Nilai ?? '-'; // LULUS / TIDAK LULUS
+            $rekomendasi = ''; // Dikosongkan sesuai format lama
 
             $totalSksRow += $sks;
-            $totalSkxBobot += $skxBobot;
+            $totalSkxBobot += $m;
             @endphp
             <tr>
                 <td class="center">{{ $i + 1 }}</td>
                 <td class="center">{{ $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->kode_feeder }}</td>
                 <td>{{ $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->nama }}</td>
                 <td class="center">{{ $sks }}</td>
-                <td class="center">{{ $huruf }}</td>
-                <td class="center">{{ number_format($bobot, 1) }}</td>
-                <td class="center">{{ number_format($skxBobot, 1) }}</td>
+                <td class="center">{{ number_format($uts, 2) }}</td>
+                <td class="center">{{ number_format($tgs, 2) }}</td>
+                <td class="center">{{ number_format($uas, 2) }}</td>
+                <td class="center">{{ number_format($p, 2) }}</td>
+                <td class="center">{{ number_format($am, 2) }}</td>
+                <td class="center">{{ $hm }}</td>
+                <td class="center">{{ number_format($m, 2) }}</td>
+                <td class="center">{{ $predikat }}</td>
+                <td class="center">{{ $rekomendasi }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -244,8 +240,9 @@
             <tr style="background-color: #f9f9f9; font-weight: bold;">
                 <td colspan="3" style="text-align: right; padding-right: 10px;">TOTAL</td>
                 <td class="center">{{ $totalSksRow }}</td>
+                <td colspan="6"></td>
+                <td class="center">{{ number_format($totalSkxBobot, 2) }}</td>
                 <td colspan="2"></td>
-                <td class="center">{{ number_format($totalSkxBobot, 1) }}</td>
             </tr>
         </tfoot>
     </table>
@@ -286,9 +283,6 @@
         </div>
     </div>
 
-    <div class="footer-doc">
-        Dicetak melalui Sistem Informasi Akademik pada {{ date('d/m/Y H:i') }}
-    </div>
 
 </body>
 

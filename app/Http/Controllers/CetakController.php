@@ -68,9 +68,9 @@ class CetakController extends Controller
             'riwayatPendidikan.siswa',
             'riwayatPendidikan.waliDosen',
             'riwayatPendidikan.jurusan',
-            'kelas.tahunAkademik',
-            'kelas.programKelas',
-            'siswaDataLjk.mataPelajaranKelas.kelas',
+            'tahunAkademik',
+            'siswaDataLjk.mataPelajaranKelas.kelas.tahunAkademik',
+            'siswaDataLjk.mataPelajaranKelas.kelas.programKelas',
             'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster',
             'siswaDataLjk.mataPelajaranKelas.dosenData',
         ])->findOrFail($id);

@@ -58,8 +58,8 @@ class SiswaDataTable
                         if (!empty($record->user?->name)) return $record->user->name;
                         return '(Nama belum diisi)';
                     })
-                    ->searchable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $search) => $query->where('siswa_data.nama_lengkap', 'like', "%{$search}%"))
-                    ->sortable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) => $query->orderBy('siswa_data.nama_lengkap', $direction))
+                    ->searchable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $search) => $query->where('siswa_data.nama_lengkap', 'like', "%{$search}%")->orWhere('sdp_sort.Nama_Lengkap', 'like', "%{$search}%")->orWhere('usr_sort.name', 'like', "%{$search}%"))
+                    ->sortable(query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) => $query->orderByRaw('COALESCE(siswa_data.nama_lengkap, sdp_sort.Nama_Lengkap, usr_sort.name) ' . $direction))
                     ->description(fn($record) => $record->user?->email
                         ? '🔑 ' . $record->user->email
                         : '⚠️ Belum punya akun')
@@ -427,9 +427,10 @@ class SiswaDataTable
                 ]),
             ])
             ->modifyQueryUsing(function ($query) {
-                // Sort berdasarkan tanggal daftar terbaru (angkatan terakhir di atas)
+                // Join pendaftar and users to sort by the same fallback name logic
                 $query->leftJoin('siswa_data_pendaftar as sdp_sort', 'sdp_sort.id_siswa_data', '=', 'siswa_data.id')
-                    ->orderBy('sdp_sort.Tgl_Daftar', 'desc')
+                    ->leftJoin('users as usr_sort', 'usr_sort.id', '=', 'siswa_data.user_id')
+                    ->orderByRaw('COALESCE(siswa_data.nama_lengkap, sdp_sort.Nama_Lengkap, usr_sort.name) ASC')
                     ->select('siswa_data.*');
             })
             ->headerActions([
@@ -461,7 +462,8 @@ class SiswaDataTable
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
                     ->exports([
                         \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
-                            ->fromModel(),
+                            ->fromTable()
+                            ->withFilename(fn () => 'Data_Mahasiswa_' . date('Y-m-d_H-i-s')),
                     ]),
             ])
             ->paginationPageOptions([25, 50, 100, 'all']);

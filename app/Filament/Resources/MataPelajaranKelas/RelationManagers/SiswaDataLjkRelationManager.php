@@ -185,19 +185,22 @@ class SiswaDataLjkRelationManager extends RelationManager
                     ->visible(fn($livewire) => ! auth()->user()?->isMurid() && $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas)
                     ->action(function () {
                         $record = $this->getOwnerRecord();
-                        $krsList = AkademikKRS::where('id_kelas', $record->id_kelas)->get();
+                        $krsList = \App\Models\AkademikKrs::where('id_kelas', $record->id_kelas)->get();
 
                         foreach ($krsList as $krs) {
-                            SiswaDataLJK::firstOrCreate([
+                            $ljk = \App\Models\SiswaDataLJK::firstOrCreate([
                                 'id_mata_pelajaran_kelas' => $record->id,
                                 'id_akademik_krs'         => $krs->id,
                             ], [
                                 'nilai' => 0,
                             ]);
+
+                            // Trigger save to force recalculation (booted event will run)
+                            $ljk->save();
                         }
 
-                        Notification::make()
-                            ->title('Data berhasil disinkronisasi')
+                        \Filament\Notifications\Notification::make()
+                            ->title('Data berhasil disinkronisasi & direfresh')
                             ->success()
                             ->send();
                     }),

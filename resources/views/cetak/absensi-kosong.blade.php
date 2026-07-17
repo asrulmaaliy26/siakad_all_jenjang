@@ -122,6 +122,9 @@
 </head>
 
 <body onload="window.print()">
+    <div class="kop-header" style="width: 100%; margin-bottom: 15px; text-align: center;">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
+    </div>
     <!-- Tombol Print (Sembunyi saat diprint) -->
     <div class="no-print" style="margin-bottom: 20px; text-align: right;">
         <button onclick="window.print()" style="padding: 8px 15px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">📄 Cetak PDF / Print</button>

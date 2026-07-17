@@ -255,6 +255,9 @@
 </head>
 
 <body>
+    <div class="kop-header" style="width: 100%; margin-bottom: 15px; text-align: center;">
+        <img src="{{ public_path('assets/kopstaiman.jpeg') }}" alt="Kop STAI Al Mannan" style="width: 100%; max-height: 140px; object-fit: contain;">
+    </div>
     <div class="no-print">
         <button class="btn" onclick="window.print()">CETAK KARTU</button>
     </div>
