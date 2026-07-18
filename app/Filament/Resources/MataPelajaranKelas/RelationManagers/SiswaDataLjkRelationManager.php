@@ -233,6 +233,25 @@ class SiswaDataLjkRelationManager extends RelationManager
                         ]),
                     ImportSiswaDataLjkAction::make()
                         ->visible(fn($livewire) => ! auth()->user()?->isMurid() && $livewire->getOwnerRecord() instanceof \App\Models\MataPelajaranKelas),
+                    Action::make('sync_semua_nilai')
+                        ->label('Sync Seluruh Nilai')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Sinkronisasi Ulang Seluruh Nilai')
+                        ->modalDescription('Apakah Anda yakin ingin menghitung ulang nilai untuk SELURUH mahasiswa pada kelas ini? Ini akan memperbarui Grade dan Status kelulusan sesuai dengan rumus terbaru.')
+                        ->visible(fn($livewire) => ! auth()->user()?->isMurid())
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            foreach ($records as $record) {
+                                $record->Status_Nilai = null;
+                                $record->save();
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil menghitung ulang nilai untuk seluruh mahasiswa di kelas ini.')
+                                ->success()
+                                ->send();
+                        }),
                     Action::make('cetak_pdf')
                         ->label('Cetak PDF Resmi')
                         ->icon('heroicon-o-printer')
@@ -299,6 +318,23 @@ class SiswaDataLjkRelationManager extends RelationManager
                                 }),
                         ]),
                     DeleteBulkAction::make()
+                        ->visible(fn() => ! auth()->user()?->isMurid()),
+                    \Filament\Actions\BulkAction::make('hitung_ulang')
+                        ->label('Hitung Ulang Nilai')
+                        ->icon('heroicon-o-calculator')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            foreach ($records as $record) {
+                                // Kosongkan Status_Nilai agar sistem mengkalkulasi ulang di model event
+                                $record->Status_Nilai = null;
+                                $record->save();
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title('Nilai berhasil dihitung ulang sesuai rumus terbaru')
+                                ->success()
+                                ->send();
+                        })
                         ->visible(fn() => ! auth()->user()?->isMurid()),
                 ]),
             ]);

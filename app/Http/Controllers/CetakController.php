@@ -281,7 +281,8 @@ class CetakController extends Controller
 
         $nimSiswa = $krs->riwayatPendidikan?->nomor_induk;
         $namaSiswa = Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'khs');
-        $semester = $krs->semester ?? 'x';
+        $riwayat = $krs->riwayatPendidikan;
+        $semester = $riwayat ? $riwayat->getSemester(null, $krs->id_tahun_akademik) : 'x';
 
         $prefix = $nimSiswa ? "{$nimSiswa}_" : "";
         $filename = "{$prefix}{$namaSiswa}_KHS-smt{$semester}.pdf";

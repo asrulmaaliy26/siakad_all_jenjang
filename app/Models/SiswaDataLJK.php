@@ -51,8 +51,8 @@ class SiswaDataLJK extends Model
             $countTugas = 0;
             foreach ($tugasFields as $field) {
                 $val = $record->{$field};
-                // Jika tidak diisi / 0.00 / null maka tidak ikut dirata-rata
-                if (!is_null($val) && (float)$val > 0) {
+                // Jika tidak diisi (null) maka tidak ikut dirata-rata, tapi 0 (Nol) tetap dihitung
+                if (!is_null($val)) {
                     $totalTugas += (float) $val;
                     $countTugas++;
                 }
@@ -66,35 +66,24 @@ class SiswaDataLJK extends Model
 
             // Hitung rata-rata komponen (hanya komponen yang memiliki nilai > 0 yang dihitung, atau jika didefinisikan semuanya dibagi 4)
             // Standar: Asumsi input dosen adalah 0-100.
-            if ($uts > 0 || $uas > 0 || $perf > 0 || $rataRataTugas > 0) {
-                // Jika ingin menggunakan pembagi dinamis (hanya komponen yang ada):
-                $komponen = [];
-                if ($uts > 0) $komponen[] = $uts;
-                if ($uas > 0) $komponen[] = $uas;
-                if ($perf > 0) $komponen[] = $perf;
-                if ($rataRataTugas > 0) $komponen[] = $rataRataTugas;
+            // Selalu bagi 4 komponen (UTS, UAS, Performance, Tugas) agar yang kosong/nol tetap menjatuhkan nilai akhir
+            $totalSkor = $uts + $uas + $perf + $rataRataTugas;
+            
+            // Kita anggap selalu ada 4 komponen wajib
+            $average100 = $totalSkor / 4;
+            
+            $record->Nilai_Akhir = round($average100, 2); // Simpan skala 100 di Nilai_Akhir
 
-                // Rata-rata skala 100
-                $average100 = array_sum($komponen) / count($komponen);
-                
-                $record->Nilai_Akhir = round($average100, 2); // Simpan skala 100 di Nilai_Akhir
+            // Map to Nilai_Huruf (Standar A, B, C +/-)
+            $record->Nilai_Huruf = self::calculateGradeLetter($average100);
 
-                // Map to Nilai_Huruf (Standar A, B, C +/-)
-                $record->Nilai_Huruf = self::calculateGradeLetter($average100);
-
-                // Otomatis set Status Nilai berdasarkan ambang batas (>= C Lulus)
-                if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance', 'Nilai_TGS_1')) {
-                    if ($average100 > 0 && $average100 <= 4.00) {
-                        $record->Status_Nilai = ($average100 >= 2.00) ? 'LULUS' : 'TL';
-                    } else {
-                        $record->Status_Nilai = ($average100 >= 55.00) ? 'LULUS' : 'TL';
-                    }
+            // Otomatis set Status Nilai berdasarkan ambang batas (>= C Lulus)
+            if (empty($record->Status_Nilai) || $record->isDirty('Nilai_UTS', 'Nilai_UAS', 'Nilai_Performance', 'Nilai_TGS_1')) {
+                if ($average100 > 0 && $average100 <= 4.00) {
+                    $record->Status_Nilai = ($average100 >= 2.00) ? 'LULUS' : 'TL';
+                } else {
+                    $record->Status_Nilai = ($average100 >= 55.00) ? 'LULUS' : 'TL';
                 }
-            } else {
-                // Jika tidak ada nilai sama sekali
-                $record->Nilai_Akhir = 0;
-                $record->Nilai_Huruf = 'E'; 
-                $record->Status_Nilai = 'TL';
             }
         });
     }

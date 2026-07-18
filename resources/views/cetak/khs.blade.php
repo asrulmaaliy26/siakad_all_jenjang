@@ -158,7 +158,7 @@
             <td>{{ $riwayat?->jurusan?->nama }}</td>
             <td>Semester</td>
             <td>:</td>
-            <td>{{ $krs->semester }}</td>
+            <td>{{ $riwayat ? $riwayat->getSemester(null, $krs->id_tahun_akademik) : '-' }}</td>
         </tr>
     </table>
 
