@@ -289,7 +289,7 @@
         </div>
         <div class="ttd-col">
             <div class="ttd-label">
-                {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>
+                {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('d F Y') }}<br>
                 Mahasiswa,
                 <br><br><br><br>
                 <span class="ttd-garis">{{ $mhs?->nama }}</span><br>

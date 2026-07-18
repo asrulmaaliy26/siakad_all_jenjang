@@ -608,6 +608,30 @@ class AkademikKrsTable
                     ->dropdownPlacement('bottom-start')
             ], position: \Filament\Tables\Enums\RecordActionsPosition::BeforeCells)
             ->bulkActions([
+                BulkAction::make('cetak_khs_bulk')
+                    ->label('Download KHS (ZIP)')
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->color('info')
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        $zipFileName = 'KHS_Bulk_' . time() . '.zip';
+                        $tempDir = storage_path('app/temp');
+                        if (!file_exists($tempDir)) {
+                            mkdir($tempDir, 0755, true);
+                        }
+                        $zipPath = $tempDir . '/' . $zipFileName;
+                        
+                        $zip = new \ZipArchive;
+                        if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+                            $controller = new \App\Http\Controllers\CetakController();
+                            foreach ($records as $record) {
+                                $data = $controller->getKhsPdfData($record->id);
+                                $zip->addFromString($data['filename'], $data['pdf']->output());
+                            }
+                            $zip->close();
+                        }
+                        return response()->download($zipPath)->deleteFileAfterSend(true);
+                    })
+                    ->deselectRecordsAfterCompletion(),
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make(),
                 BulkAction::make('update_status')
                     ->label('Update Status Terpilih')

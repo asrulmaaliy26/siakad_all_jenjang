@@ -208,7 +208,7 @@ class CetakController extends Controller
         return $pdf->stream("Kartu-Bimbingan-Skripsi-{$namaSiswa}.pdf");
     }
 
-    public function khs($id)
+    public function getKhsPdfData($id)
     {
         $krs = AkademikKrs::with([
             'riwayatPendidikan.siswa',
@@ -259,14 +259,14 @@ class CetakController extends Controller
 
         $totalSksKumulatif = 0;
         $totalBobotKumulatif = 0;
-        
+
         foreach ($allKrs as $krsItem) {
             foreach ($krsItem->siswaDataLjk as $ljk) {
                 $idTahun = $ljk->mataPelajaranKelas?->kelas?->id_tahun_akademik;
                 if ($idTahun == $krsItem->id_tahun_akademik) {
                     $sks = $ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0;
                     $bobot = $ljk->bobot;
-                    
+
                     if ($bobot > 0) {
                         $totalSksKumulatif += $sks;
                         $totalBobotKumulatif += ($bobot * $sks);
@@ -279,10 +279,23 @@ class CetakController extends Controller
 
         $pdf = Pdf::loadView('cetak.khs', compact('krs', 'totalSks', 'totalBobot', 'ips', 'ipk', 'totalSksKumulatif', 'kaprodi'))->setPaper('a4', 'portrait');
 
+        $nimSiswa = $krs->riwayatPendidikan?->nomor_induk;
         $namaSiswa = Str::slug($krs->riwayatPendidikan?->siswa?->nama ?? 'khs');
         $semester = $krs->semester ?? 'x';
 
-        return $pdf->stream("KHS-{$namaSiswa}-smt{$semester}.pdf");
+        $prefix = $nimSiswa ? "{$nimSiswa}_" : "";
+        $filename = "{$prefix}{$namaSiswa}_KHS-smt{$semester}.pdf";
+
+        return [
+            'pdf' => $pdf,
+            'filename' => $filename
+        ];
+    }
+
+    public function khs($id)
+    {
+        $data = $this->getKhsPdfData($id);
+        return $data['pdf']->stream($data['filename']);
     }
 
     public function transkrip($id)
@@ -306,7 +319,7 @@ class CetakController extends Controller
 
         $tahunRequest = request('tahun');
         $allLjk = collect();
-        
+
         foreach ($riwayat->akademikKrs as $krs) {
             if ($tahunRequest && $krs->id_tahun_akademik != $tahunRequest) {
                 continue;
