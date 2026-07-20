@@ -32,6 +32,7 @@ class AkmsTable
                     ->sortable(),
                 \Filament\Tables\Columns\TextColumn::make('riwayatPendidikan.tahunAkademik.nama')
                     ->label('Angkatan')
+                    ->formatStateUsing(fn($record) => $record->riwayatPendidikan?->angkatan)
                     ->searchable()
                     ->sortable(),
                 \Filament\Tables\Columns\TextColumn::make('semester')
