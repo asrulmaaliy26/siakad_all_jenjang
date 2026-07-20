@@ -22,15 +22,18 @@ jobs:
           coverage: none
 
       - name: 📦 Install Composer Dependencies
-        run: composer install --optimize-autoloader --no-dev --no-interaction --prefer-dist
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: "--optimize-autoloader --no-dev --no-interaction --prefer-dist"
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: 'npm'
 
       - name: 📦 Install NPM Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: 🏗️ Build Assets (Vite)
         run: npm run build
@@ -38,15 +41,16 @@ jobs:
       - name: 🗜️ Create Archive
         run: tar -czf ../release.tar.gz --exclude=.git --exclude=node_modules . && mv ../release.tar.gz .
 
-      - name: 📤 Upload Archive ke VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          source: "release.tar.gz"
-          target: "/home/staialmannan/siakad.staialmannan.ac.id"
+      - name: 📤 Upload Archive ke VPS (Fast via Native SCP)
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p 22 -H "$HOST" >> ~/.ssh/known_hosts
+          scp -i ~/.ssh/deploy_key release.tar.gz root@$HOST:/home/staialmannan/siakad.staialmannan.ac.id/
 
       - name: ♻️ Extract & Setup di VPS
         uses: appleboy/ssh-action@v1.0.3
