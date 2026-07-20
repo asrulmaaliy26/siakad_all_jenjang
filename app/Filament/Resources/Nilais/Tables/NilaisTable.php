@@ -46,6 +46,45 @@ class NilaisTable
                     ->badge()
                     ->color('primary')
                     ->getStateUsing(fn($record) => $record->siswaDataLjk()->count() . ' Siswa'),
+                \Filament\Tables\Columns\TextColumn::make('nilai_akhir_student')
+                    ->label('Nilai Akhir')
+                    ->getStateUsing(function ($record) {
+                        $user = auth()->user();
+                        if ($user && $user->isMurid()) {
+                            $ljk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
+                                ->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
+                                    $q->where('user_id', $user->id);
+                                })
+                                ->first();
+                            return $ljk ? ($ljk->Nilai_Akhir ?? '-') : '-';
+                        }
+                        return null;
+                    })
+                    ->visible(fn() => auth()->user() && auth()->user()->isMurid())
+                    ->weight('bold'),
+                \Filament\Tables\Columns\TextColumn::make('grade_student')
+                    ->label('Grade')
+                    ->getStateUsing(function ($record) {
+                        $user = auth()->user();
+                        if ($user && $user->isMurid()) {
+                            $ljk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
+                                ->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
+                                    $q->where('user_id', $user->id);
+                                })
+                                ->first();
+                            return $ljk ? ($ljk->Nilai_Huruf ?? '-') : '-';
+                        }
+                        return null;
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'A', 'A-' => 'success',
+                        'B+', 'B', 'B-' => 'info',
+                        'C+', 'C', 'C-' => 'warning',
+                        '-' => 'gray',
+                        default => 'danger',
+                    })
+                    ->visible(fn() => auth()->user() && auth()->user()->isMurid()),
             ])
             ->filters([
                 \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
@@ -57,7 +96,7 @@ class NilaisTable
                             $q->where('id_tahun_akademik', $data['value']);
                         });
                     })
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    ->default(fn() => \App\Models\TahunAkademik::orderByDesc('id')->first()?->id)
                     ->searchable()
                     ->native(false),
             ])

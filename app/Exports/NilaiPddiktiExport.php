@@ -52,11 +52,11 @@ class NilaiPddiktiExport implements FromCollection, WithHeadings
 
             foreach ($mkKelas->siswaDataLjk as $ljk) {
                 // Ensure relations exist
-                if (!$ljk->akademikKrs || !$ljk->akademikKrs->riwayatPendidikan || !$ljk->akademikKrs->riwayatPendidikan->siswa) {
+                if (!$ljk->akademikKrs || !$ljk->akademikKrs->riwayatPendidikan) {
                     continue;
                 }
 
-                $nim = $ljk->akademikKrs->riwayatPendidikan->siswa->nomor_induk ?? '';
+                $nim = $ljk->akademikKrs->riwayatPendidikan->nomor_induk ?? '';
                 $nilaiAngka = $ljk->Nilai_Akhir ?? 0;
                 $nilaiHuruf = $ljk->Nilai_Huruf ?? 'E';
 

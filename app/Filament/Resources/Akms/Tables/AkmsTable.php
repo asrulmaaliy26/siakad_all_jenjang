@@ -60,13 +60,43 @@ class AkmsTable
                     ->weight('bold'),
             ])
             ->filters([
-                //
+                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
+                    ->label('Tahun Akademik')
+                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
+                    ->default(fn() => \App\Models\TahunAkademik::orderByDesc('id')->first()?->id)
+                    ->searchable()
+                    ->native(false),
             ])
             ->recordActions([
                 ViewAction::make()->label('Detail AKM'),
             ])
             ->toolbarActions([
                 //
+            ])
+            ->bulkActions([
+                \Filament\Actions\BulkActionGroup::make([
+                    \pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction::make()
+                        ->label('Export Excel')
+                        ->color('success')
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->withColumns([
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('riwayatPendidikan.nomor_induk')->heading('NIM'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('riwayatPendidikan.siswaData.nama')->heading('Nama Mahasiswa'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('riwayatPendidikan.jurusan.nama')->heading('Program Studi'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('tahunAkademik.nama')->heading('Tahun Akademik (KRS)'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('semester')->heading('Semester')
+                                        ->getStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at)),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('sks_diambil')->heading('SKS SMT'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('sks_total')->heading('SKS Total'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('ips')->heading('IPS'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('ipk')->heading('IPK'),
+                                    \pxlrbt\FilamentExcel\Columns\Column::make('status_aktif')->heading('Status')
+                                        ->getStateUsing(fn($record) => $record->status_aktif == 'Y' ? 'Aktif' : 'Tidak Aktif'),
+                                ])
+                                ->withFilename(fn() => 'Export_AKM_' . now()->format('YmdHis')),
+                        ]),
+                ]),
             ])
             ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
                 // If the user is a student, only show their own AKM

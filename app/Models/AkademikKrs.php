@@ -160,14 +160,25 @@ class AkademikKrs extends Model
 
     public function getSksDiambilAttribute()
     {
-        return $this->siswaDataLjk->sum(function ($ljk) {
-            return (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
-        });
+        return $this->siswaDataLjk()
+            ->whereHas('mataPelajaranKelas.kelas', function ($q) {
+                $q->where('id_tahun_akademik', $this->id_tahun_akademik);
+            })
+            ->get()
+            ->sum(function ($ljk) {
+                return (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
+            });
     }
 
     public function getIpsAttribute()
     {
-        $ljks = $this->siswaDataLjk()->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')->get();
+        $ljks = $this->siswaDataLjk()
+            ->whereHas('mataPelajaranKelas.kelas', function ($q) {
+                $q->where('id_tahun_akademik', $this->id_tahun_akademik);
+            })
+            ->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')
+            ->get();
+            
         $totalBobotSks = 0;
         $totalSks = 0;
 
