@@ -36,7 +36,7 @@ class AkmsTable
                     ->sortable(),
                 \Filament\Tables\Columns\TextColumn::make('semester')
                     ->label('Semester')
-                    ->getStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at))
+                    ->getStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at, $record->id_tahun_akademik))
                     ->badge()
                     ->color('info'),
                 \Filament\Tables\Columns\TextColumn::make('status_aktif')
@@ -86,7 +86,7 @@ class AkmsTable
                                     \pxlrbt\FilamentExcel\Columns\Column::make('riwayatPendidikan.jurusan.nama')->heading('Program Studi'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('tahunAkademik.nama')->heading('Tahun Akademik (KRS)'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('semester')->heading('Semester')
-                                        ->getStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at)),
+                                        ->getStateUsing(fn($record) => $record->riwayatPendidikan?->getSemester($record->tgl_krs ?? $record->created_at, $record->id_tahun_akademik)),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('sks_diambil')->heading('SKS SMT'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('sks_total')->heading('SKS Total'),
                                     \pxlrbt\FilamentExcel\Columns\Column::make('ips')->heading('IPS'),
@@ -99,6 +99,14 @@ class AkmsTable
                 ]),
             ])
             ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                $query->with([
+                    'riwayatPendidikan.siswaData',
+                    'riwayatPendidikan.jurusan',
+                    'tahunAkademik',
+                    'siswaDataLjk.mataPelajaranKelas.kelas',
+                    'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster'
+                ]);
+                
                 // If the user is a student, only show their own AKM
                 $user = auth()->user();
                 if ($user && $user->isMurid()) {

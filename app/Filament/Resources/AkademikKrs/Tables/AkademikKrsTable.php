@@ -764,6 +764,13 @@ class AkademikKrsTable
                     ->modalCancelActionLabel('Batal')
                     ->visible(fn() => ! auth()->user()?->isMurid()),
             ])
+            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                $query->with([
+                    'riwayatPendidikan.siswaData',
+                    'riwayatPendidikan.waliDosen',
+                    'tahunAkademik',
+                ]);
+            })
             ->striped()
             ->defaultSort('created_at', 'desc')
             ->poll('60s')

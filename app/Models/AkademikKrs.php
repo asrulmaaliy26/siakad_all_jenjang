@@ -160,11 +160,10 @@ class AkademikKrs extends Model
 
     public function getSksDiambilAttribute()
     {
-        return $this->siswaDataLjk()
-            ->whereHas('mataPelajaranKelas.kelas', function ($q) {
-                $q->where('id_tahun_akademik', $this->id_tahun_akademik);
+        return $this->siswaDataLjk
+            ->filter(function ($ljk) {
+                return $ljk->mataPelajaranKelas && $ljk->mataPelajaranKelas->kelas && $ljk->mataPelajaranKelas->kelas->id_tahun_akademik == $this->id_tahun_akademik;
             })
-            ->get()
             ->sum(function ($ljk) {
                 return (float) ($ljk->mataPelajaranKelas?->mataPelajaranKurikulum?->mataPelajaranMaster?->bobot ?? 0);
             });
@@ -172,12 +171,9 @@ class AkademikKrs extends Model
 
     public function getIpsAttribute()
     {
-        $ljks = $this->siswaDataLjk()
-            ->whereHas('mataPelajaranKelas.kelas', function ($q) {
-                $q->where('id_tahun_akademik', $this->id_tahun_akademik);
-            })
-            ->with('mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster')
-            ->get();
+        $ljks = $this->siswaDataLjk->filter(function ($ljk) {
+            return $ljk->mataPelajaranKelas && $ljk->mataPelajaranKelas->kelas && $ljk->mataPelajaranKelas->kelas->id_tahun_akademik == $this->id_tahun_akademik;
+        });
             
         $totalBobotSks = 0;
         $totalSks = 0;
@@ -197,6 +193,9 @@ class AkademikKrs extends Model
     {
         if (!$this->id_riwayat_pendidikan) return 0;
 
+        // Optimized to eager load safely if all LJKs of the history are loaded, 
+        // but for safety we will let it query if not eager loaded, or we could leave it as is if it's too complex. 
+        // Actually, since it's querying all KRS of the riwayat pendidikan, let's keep it as query builder but optimized:
         return \App\Models\SiswaDataLJK::whereHas('akademikKrs', function ($q) {
             $q->where('id_riwayat_pendidikan', $this->id_riwayat_pendidikan)
               ->where('created_at', '<=', $this->created_at);

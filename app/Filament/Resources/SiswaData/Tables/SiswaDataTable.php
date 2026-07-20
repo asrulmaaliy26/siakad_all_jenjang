@@ -423,6 +423,16 @@ class SiswaDataTable
                 ]),
             ])
             ->modifyQueryUsing(function ($query) {
+                // Eager load relations for N+1 optimization
+                $query->with([
+                    'riwayatPendidikanAktif.programSekolah',
+                    'riwayatPendidikanAktif.jurusan',
+                    'riwayatPendidikanAktif.statusSiswa',
+                    'riwayatPendidikanTerbaru.tahunAkademik',
+                    'pendaftar',
+                    'user'
+                ]);
+
                 // Join pendaftar and users to sort by the same fallback name logic
                 $query->leftJoin('siswa_data_pendaftar as sdp_sort', 'sdp_sort.id_siswa_data', '=', 'siswa_data.id')
                     ->leftJoin('users as usr_sort', 'usr_sort.id', '=', 'siswa_data.user_id')

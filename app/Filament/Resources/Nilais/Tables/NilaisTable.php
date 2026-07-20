@@ -51,11 +51,7 @@ class NilaisTable
                     ->getStateUsing(function ($record) {
                         $user = auth()->user();
                         if ($user && $user->isMurid()) {
-                            $ljk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
-                                ->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
-                                    $q->where('user_id', $user->id);
-                                })
-                                ->first();
+                            $ljk = $record->siswaDataLjk->first();
                             return $ljk ? ($ljk->Nilai_Akhir ?? '-') : '-';
                         }
                         return null;
@@ -67,11 +63,7 @@ class NilaisTable
                     ->getStateUsing(function ($record) {
                         $user = auth()->user();
                         if ($user && $user->isMurid()) {
-                            $ljk = \App\Models\SiswaDataLJK::where('id_mata_pelajaran_kelas', $record->id)
-                                ->whereHas('akademikKrs.riwayatPendidikan.siswaData', function ($q) use ($user) {
-                                    $q->where('user_id', $user->id);
-                                })
-                                ->first();
+                            $ljk = $record->siswaDataLjk->first();
                             return $ljk ? ($ljk->Nilai_Huruf ?? '-') : '-';
                         }
                         return null;
@@ -165,6 +157,22 @@ class NilaisTable
             ])
             ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
                 $user = auth()->user();
+                
+                $eagerLoads = [
+                    'mataPelajaranKurikulum.mataPelajaranMaster',
+                    'dosenData',
+                    'kelas.programKelas',
+                    'kelas.tahunAkademik'
+                ];
+
+                if ($user && $user->isMurid()) {
+                    $eagerLoads['siswaDataLjk'] = function ($q) use ($user) {
+                        $q->whereHas('akademikKrs.riwayatPendidikan.siswaData', fn($sq) => $sq->where('user_id', $user->id));
+                    };
+                }
+
+                $query->with($eagerLoads);
+
                 if ($user && $user->isPengajar()) {
                     $query->where('id_dosen_data', $user->getDosenId());
                 }
