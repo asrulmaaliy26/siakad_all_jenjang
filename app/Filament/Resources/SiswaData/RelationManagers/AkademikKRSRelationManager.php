@@ -48,7 +48,7 @@ class AkademikKRSRelationManager extends RelationManager
                         ->get()
                         ->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])
                 )
-                ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                
                 ->searchable()
                 ->required()
                 ->disabled(fn() => auth()->user()?->isMurid()),
@@ -217,11 +217,11 @@ class AkademikKRSRelationManager extends RelationManager
                     })
                     ->searchable()
                     ->preload(),
-                Tables\Filters\SelectFilter::make('id_tahun_akademik')
+                Tables\Filters\SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->attribute('akademik_krs.id_tahun_akademik')
                     ->label('Tahun Akademik')
                     ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
-                    ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('status_bayar')
                     ->options([

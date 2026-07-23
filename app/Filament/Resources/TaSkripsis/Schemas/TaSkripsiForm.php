@@ -248,22 +248,25 @@ class TaSkripsiForm
                                     ->schema([
                                         Select::make('id_dosen_pembimbing_1')
                                             ->label('Pembimbing 1')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing1', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
                                             ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
 
                                         Select::make('id_dosen_pembimbing_2')
                                             ->label('Pembimbing 2')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing2', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
 
                                         Select::make('id_dosen_pembimbing_3')
                                             ->label('Pembimbing 3')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing3', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
                                     ]),

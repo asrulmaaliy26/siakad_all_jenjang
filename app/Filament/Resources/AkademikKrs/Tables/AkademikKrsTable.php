@@ -443,12 +443,7 @@ class AkademikKrsTable
                     ->preload()
                     ->native(false),
 
-                SelectFilter::make('id_tahun_akademik')
-                    ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
-                    ->default(\App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
-                    ->searchable()
-                    ->native(false),
+                \App\Traits\HasGlobalTahunAkademikFilter::getGlobalTahunAkademikFilter(),
 
                 SelectFilter::make('status_bayar')
                     ->label('Status Bayar')
@@ -770,6 +765,9 @@ class AkademikKrsTable
                     'riwayatPendidikan.waliDosen',
                     'tahunAkademik',
                 ]);
+                
+                // Apply global role-based security scope
+                \App\Traits\HasRoleBasedTableScope::applyRoleBasedTableScope($query);
             })
             ->striped()
             ->defaultSort('created_at', 'desc')

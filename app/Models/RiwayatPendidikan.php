@@ -212,8 +212,18 @@ class RiwayatPendidikan extends Model
     {
         // 1. Jika ada targetTahunAkademikId, kita hitung selisih dari tahun akademik awal
         if ($targetTahunAkademikId && $this->id_tahun_akademik) {
-            $startTa = \App\Models\TahunAkademik::find($this->id_tahun_akademik);
-            $targetTa = \App\Models\TahunAkademik::find($targetTahunAkademikId);
+            // Optimasi N+1 Query: Gunakan static cache untuk menyimpan model TahunAkademik di memory
+            static $taCache = [];
+            
+            if (!array_key_exists($this->id_tahun_akademik, $taCache)) {
+                $taCache[$this->id_tahun_akademik] = $this->relationLoaded('tahunAkademik') ? $this->tahunAkademik : \App\Models\TahunAkademik::find($this->id_tahun_akademik);
+            }
+            $startTa = $taCache[$this->id_tahun_akademik];
+
+            if (!array_key_exists($targetTahunAkademikId, $taCache)) {
+                $taCache[$targetTahunAkademikId] = \App\Models\TahunAkademik::find($targetTahunAkademikId);
+            }
+            $targetTa = $taCache[$targetTahunAkademikId];
 
             if ($startTa && $targetTa && $startTa->kode_pddikti && $targetTa->kode_pddikti) {
                 $startYear = (int) substr($startTa->kode_pddikti, 0, 4);

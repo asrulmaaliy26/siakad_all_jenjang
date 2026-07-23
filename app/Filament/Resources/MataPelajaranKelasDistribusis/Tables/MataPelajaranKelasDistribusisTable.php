@@ -158,7 +158,7 @@ class MataPelajaranKelasDistribusisTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('id_tahun_akademik')
+                SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
@@ -167,7 +167,7 @@ class MataPelajaranKelasDistribusisTable
                             $q->where('id_tahun_akademik', $data['value']);
                         });
                     })
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable()
                     ->native(false),
 
@@ -301,7 +301,18 @@ class MataPelajaranKelasDistribusisTable
 
                 // Import / Update data — langsung diproses tanpa queue
                 ImportMataPelajaranKelasAction::make(),
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->with([
+                    'mataPelajaranKurikulum.mataPelajaranMaster',
+                    'kelas.programKelas',
+                    'dosenData',
+                    'ruangKelas'
+                ]);
+            })
+            ->deferLoading()
+            ->paginated([10, 25, 50, 100, 250, 'all'])
+            ->defaultPaginationPageOption(25);
     }
 
     /**

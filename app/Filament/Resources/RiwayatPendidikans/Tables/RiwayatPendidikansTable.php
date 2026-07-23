@@ -142,11 +142,12 @@ class RiwayatPendidikansTable
                         ->label('Set Wali Dosen')
                         ->icon('heroicon-o-user-group')
                         ->form([
-                            Select::make('id_wali_dosen')
-                                ->label('Pilih Wali Dosen')
-                                ->options(DosenData::pluck('nama', 'id'))
-                                ->placeholder('Pilih Dosen...')
-                                ->searchable()
+                                Select::make('id_wali_dosen')
+                                    ->label('Pilih Wali Dosen')
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn (string $search): array => \App\Models\DosenData::where('nama', 'like', "%{$search}%")->limit(50)->pluck('nama', 'id')->toArray())
+                                    ->getOptionLabelUsing(fn ($value): ?string => \App\Models\DosenData::find($value)?->nama)
+                                    ->placeholder('Ketik nama dosen...')
                                 ->required(),
                         ])
                         ->action(function (Collection $records, array $data) {
@@ -315,6 +316,19 @@ class RiwayatPendidikansTable
                                     ->getStateUsing(fn($record) => $record->programKelas?->nilai),
                             ]),
                     ])
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->with([
+                    'siswa',
+                    'jurusan',
+                    'tahunAkademik',
+                    'waliDosen',
+                    'statusSiswa',
+                    'programKelas'
+                ]);
+            })
+            ->deferLoading()
+            ->paginated([10, 25, 50, 100, 250, 'all'])
+            ->defaultPaginationPageOption(25);
     }
 }

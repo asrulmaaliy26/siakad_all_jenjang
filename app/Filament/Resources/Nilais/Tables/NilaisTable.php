@@ -79,18 +79,12 @@ class NilaisTable
                     ->visible(fn() => auth()->user() && auth()->user()->isMurid()),
             ])
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
-                    ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
-                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
-                        if (empty($data['value'])) return;
-                        $query->whereHas('kelas', function ($q) use ($data) {
-                            $q->where('id_tahun_akademik', $data['value']);
-                        });
-                    })
-                    ->default(fn() => \App\Models\TahunAkademik::orderByDesc('id')->first()?->id)
-                    ->searchable()
-                    ->native(false),
+                \App\Traits\HasGlobalTahunAkademikFilter::getGlobalTahunAkademikFilter('id_tahun_akademik', false, function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                    if (empty($data['value'])) return;
+                    $query->whereHas('kelas', function ($q) use ($data) {
+                        $q->where('id_tahun_akademik', $data['value']);
+                    });
+                }),
             ])
             ->recordActions([
                 ViewAction::make()->label('Input Nilai')->icon('heroicon-o-pencil-square')->color('success'),

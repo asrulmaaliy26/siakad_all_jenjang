@@ -51,12 +51,12 @@ class KurikulumsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('id_tahun_akademik')
+                SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(
                         TahunAkademik::orderByDesc('id')->get()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
                     )
-                    ->default(TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    ->default(fn () => session('global_tahun_akademik_id') ?? TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable(),
             ])
             ->recordActions([

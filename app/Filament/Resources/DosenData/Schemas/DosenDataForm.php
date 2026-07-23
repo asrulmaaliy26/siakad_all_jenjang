@@ -90,8 +90,9 @@ class DosenDataForm
                                             ]),
                                         Select::make('ro_agama')
                                             ->label('Agama')
-                                            ->options(Agama::pluck('nilai', 'id'))
-                                            ->searchable(),
+                                            ->relationship('agama', 'nilai')
+                                            ->searchable()
+                                            ->preload(),
                                         Textarea::make('Alamat')
                                             ->label('Alamat')
                                             ->rows(3)
@@ -110,21 +111,25 @@ class DosenDataForm
                                             ->maxLength(255),
                                         Select::make('id_jurusan')
                                             ->label('Jurusan')
-                                            ->options(Jurusan::pluck('nama', 'id'))
+                                            ->relationship('jurusan', 'nama')
                                             ->required()
-                                            ->searchable(),
+                                            ->searchable()
+                                            ->preload(),
                                         Select::make('ro_pangkat_gol')
                                             ->label('Pangkat Golongan')
-                                            ->options(PangkatGolongan::pluck('nilai', 'id'))
-                                            ->searchable(),
+                                            ->relationship('pangkat', 'nilai')
+                                            ->searchable()
+                                            ->preload(),
                                         Select::make('ro_jabatan')
                                             ->label('Jabatan Fungsional')
-                                            ->options(JabatanFungsional::pluck('nilai', 'id'))
-                                            ->searchable(),
+                                            ->relationship('jabatanFungsional', 'nilai')
+                                            ->searchable()
+                                            ->preload(),
                                         Select::make('ro_status_dosen')
                                             ->label('Status Dosen')
-                                            ->options(StatusDosen::pluck('nilai', 'id'))
-                                            ->searchable(),
+                                            ->relationship('statusDosen', 'nilai')
+                                            ->searchable()
+                                            ->preload(),
                                     ]),
                             ]),
 

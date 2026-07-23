@@ -220,9 +220,6 @@ class MataPelajaranKelasRelationManager extends RelationManager
             ])
             ->actions([
                 DeleteAction::make(),
-                // DeleteAction::make()
-                //     ->disabled(fn($record) => $record->pertemuanKelas()->exists())
-                //     ->tooltip('Masih memiliki data pertemuan')
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

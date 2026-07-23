@@ -207,15 +207,10 @@ class SiswaDataLJKSTable
             ->filters([
                 SelectFilter::make('id_akademik_krs')
                     ->label('Mahasiswa')
-                    ->options(
-                        \App\Models\AkademikKrs::with('riwayatPendidikan.siswa')
-                            ->where('status_aktif', 'Y')
-                            ->get()
-                            ->mapWithKeys(fn($record) => [
-                                $record->id => ($record->riwayatPendidikan?->siswa?->nama ?? '-') . ' (' . ($record->riwayatPendidikan?->nomor_induk ?? '-') . ')'
-                            ])
-                    )
-                    ->searchable(),
+                    ->relationship('akademikKrs', 'id', fn($query) => $query->where('status_aktif', 'Y'))
+                    ->getOptionLabelFromRecordUsing(fn($record) => ($record->riwayatPendidikan?->siswa?->nama ?? '-') . ' (' . ($record->riwayatPendidikan?->nomor_induk ?? '-') . ')')
+                    ->searchable()
+                    ->preload(false),
 
                 SelectFilter::make('id_mata_pelajaran_kelas')
                     ->label('Mata Pelajaran Kelas')
@@ -227,13 +222,13 @@ class SiswaDataLJKSTable
                         return "$matkul - $kelas ($dosen)";
                     })
                     ->searchable()
-                    ->preload(),
+                    ->preload(false),
 
                 SelectFilter::make('dosen')
                     ->label('Dosen Pengajar')
                     ->relationship('mataPelajaranKelas.dosenData', 'nama')
                     ->searchable()
-                    ->preload(),
+                    ->preload(false),
 
                 SelectFilter::make('tahun_akademik')
                     ->label('Tahun Akademik')
@@ -389,6 +384,14 @@ class SiswaDataLJKSTable
             ->defaultGroup('akademikKrs.riwayatPendidikan.siswa.nama')
             ->paginated([10, 25, 50, 100, 250, 'all'])
             ->defaultPaginationPageOption(25)
+            ->modifyQueryUsing(function ($query) {
+                $query->with([
+                    'akademikKrs.riwayatPendidikan.siswa',
+                    'akademikKrs.riwayatPendidikan.programKelas',
+                    'mataPelajaranKelas.kelas.tahunAkademik',
+                    'mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster'
+                ]);
+            })
             ->deferLoading();
     }
 }

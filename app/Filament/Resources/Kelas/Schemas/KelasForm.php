@@ -16,9 +16,10 @@ class KelasForm
             ->components([
                 Select::make('ro_program_kelas')
                     ->label('Program Kelas')
-                    ->options(\App\Models\RefOption\ProgramKelas::pluck('nilai', 'id'))
+                    ->relationship('programKelas', 'nilai')
                     ->multiple(fn($livewire) => $livewire instanceof \App\Filament\Resources\Kelas\Pages\CreateKelas)
                     ->searchable()
+                    ->preload()
                     ->required(),
                 Select::make('semester')
                     ->options(array_combine(range(1, 8), range(1, 8)))
@@ -26,12 +27,15 @@ class KelasForm
                     ->required(),
                 Select::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"]))
-                    ->searchable(),
+                    ->relationship('tahunAkademik', 'nama')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->nama} - {$record->periode}")
+                    ->searchable()
+                    ->preload(),
                 Select::make('id_jurusan')
                     ->label('Jurusan')
-                    ->options(\App\Models\Jurusan::pluck('nama', 'id'))
+                    ->relationship('jurusan', 'nama')
                     ->searchable()
+                    ->preload()
                     ->required(),
                 Select::make('status_aktif')
                     ->options(['Y' => 'Y', 'N' => 'N']),

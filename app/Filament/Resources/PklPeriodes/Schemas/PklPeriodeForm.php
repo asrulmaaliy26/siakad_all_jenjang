@@ -28,7 +28,7 @@ class PklPeriodeForm
                         
                         Select::make('id_tahun_akademik')
                             ->label('Tahun Akademik')
-                            ->options(TahunAkademik::all()->mapWithKeys(fn($t) => [$t->id => $t->nama]))
+                            ->relationship('tahunAkademik', 'nama')
                             ->searchable()
                             ->required(),
                         

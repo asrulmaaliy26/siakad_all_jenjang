@@ -87,28 +87,33 @@ class DosenDataTable
             ->filters([
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
-                    ->options(Jurusan::pluck('nama', 'id'))
-                    ->searchable(),
+                    ->relationship('jurusan', 'nama')
+                    ->searchable()
+                    ->preload(),
 
                 SelectFilter::make('ro_pangkat_gol')
                     ->label('Pangkat Golongan')
-                    ->options(PangkatGolongan::pluck('nilai', 'id'))
-                    ->searchable(),
+                    ->relationship('pangkat', 'nilai')
+                    ->searchable()
+                    ->preload(),
 
                 SelectFilter::make('ro_jabatan')
                     ->label('Jabatan Fungsional')
-                    ->options(JabatanFungsional::pluck('nilai', 'id'))
-                    ->searchable(),
+                    ->relationship('jabatanFungsional', 'nilai')
+                    ->searchable()
+                    ->preload(),
 
                 SelectFilter::make('ro_status_dosen')
                     ->label('Status Dosen')
-                    ->options(StatusDosen::pluck('nilai', 'id'))
-                    ->searchable(),
+                    ->relationship('statusDosen', 'nilai')
+                    ->searchable()
+                    ->preload(),
 
                 SelectFilter::make('ro_agama')
                     ->label('Agama')
-                    ->options(Agama::pluck('nilai', 'id'))
-                    ->searchable(),
+                    ->relationship('agama', 'nilai')
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),

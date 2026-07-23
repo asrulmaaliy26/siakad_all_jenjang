@@ -63,7 +63,7 @@ class MonitoringAbsensiTable
                     ->description(fn($record) => number_format($record->progress, 1) . '% dari 16'),
             ])
             ->filters([
-                SelectFilter::make('id_tahun_akademik')
+                SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
@@ -72,7 +72,7 @@ class MonitoringAbsensiTable
                             $q->where('id_tahun_akademik', $data['value']);
                         });
                     })
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable(),
                 SelectFilter::make('id_dosen_data')
                     ->label('Dosen')

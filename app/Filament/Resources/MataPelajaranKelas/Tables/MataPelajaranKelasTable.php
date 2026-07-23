@@ -97,13 +97,13 @@ class MataPelajaranKelasTable
                     ->label('Jurusan')
                     ->relationship('kelas.jurusan', 'nama')
                     ->searchable()
-                    ->preload(),
+                    ->preload(false),
 
                 SelectFilter::make('ro_program_kelas')
                     ->label('Program Kelas')
                     ->relationship('kelas.programKelas', 'nilai')
                     ->searchable()
-                    ->preload(),
+                    ->preload(false),
 
                 SelectFilter::make('hari')
                     ->label('Hari')
@@ -117,7 +117,7 @@ class MataPelajaranKelasTable
                         'Minggu' => 'Minggu',
                     ]),
 
-                SelectFilter::make('id_tahun_akademik')
+                SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
@@ -126,7 +126,7 @@ class MataPelajaranKelasTable
                             $q->where('id_tahun_akademik', $data['value']);
                         });
                     })
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable()
                     ->native(false),
 
@@ -135,7 +135,7 @@ class MataPelajaranKelasTable
                     ->relationship('dosenData', 'nama')
                     ->default(fn() => auth()->user()?->getDosenId())
                     ->searchable()
-                    ->preload(),
+                    ->preload(false),
             ])
             ->actions([
                 ViewAction::make()
@@ -172,7 +172,20 @@ class MataPelajaranKelasTable
             ])
             ->headerActions([
                 \pxlrbt\FilamentExcel\Actions\Tables\ExportAction::make()
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->with([
+                    'mataPelajaranKurikulum.mataPelajaranMaster',
+                    'kelas.jurusan',
+                    'kelas.programKelas',
+                    'dosenData',
+                    'ruangKelas',
+                    'pelaksanaanKelas'
+                ]);
+            })
+            ->deferLoading()
+            ->paginated([10, 25, 50, 100, 250, 'all'])
+            ->defaultPaginationPageOption(25);
     }
 
     // ================================================================

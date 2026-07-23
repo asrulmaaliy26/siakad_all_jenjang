@@ -51,8 +51,9 @@ class PklPendaftaranForm
 
                         Select::make('id_siswa_data')
                             ->label('Mahasiswa')
-                            ->options(SiswaData::pluck('nama', 'id'))
+                            ->relationship('siswaData', 'nama')
                             ->searchable()
+                            ->preload(false)
                             ->required()
                             ->default(function () {
                                 $user = Auth::user();

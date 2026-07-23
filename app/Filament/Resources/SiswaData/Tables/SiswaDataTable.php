@@ -472,6 +472,8 @@ class SiswaDataTable
                             ->withFilename(fn () => 'Data_Mahasiswa_' . date('Y-m-d_H-i-s')),
                     ]),
             ])
-            ->paginationPageOptions([25, 50, 100, 'all']);
+            ->paginationPageOptions([10, 25, 50, 100, 250, 'all'])
+            ->defaultPaginationPageOption(25)
+            ->deferLoading();
     }
 }

@@ -194,24 +194,27 @@ class TaSeminarProposalForm
                                         // Pembimbing 1 — admin: select bebas | dosen: tampil jika dia ada di slot ini
                                         Select::make('id_dosen_pembimbing_1')
                                             ->label('Pembimbing 1')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing1', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 1))
                                             ->disabled(fn($record) => ($user = Auth::user()) instanceof User && ($user->isPengajar() || ($user->isMurid() && $record !== null))),
 
                                         // Pembimbing 2
                                         Select::make('id_dosen_pembimbing_2')
                                             ->label('Pembimbing 2')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing2', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 2))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
 
                                         // Pembimbing 3
                                         Select::make('id_dosen_pembimbing_3')
                                             ->label('Pembimbing 3')
-                                            ->options(DosenData::pluck('nama', 'id'))
+                                            ->relationship('dosenPembimbing3', 'nama')
                                             ->searchable()
+                                            ->preload(false)
                                             ->visible(fn($record) => self::isVisibleForSlot($record, 3))
                                             ->disabled(fn() => ($user = Auth::user()) instanceof User && ($user->isPengajar() || $user->isMurid())),
                                     ]),

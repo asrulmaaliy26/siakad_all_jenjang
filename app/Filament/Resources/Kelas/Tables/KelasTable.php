@@ -55,13 +55,7 @@ class KelasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('id_tahun_akademik')
-                    ->label('Tahun Akademik')
-                    ->options(
-                        TahunAkademik::orderByDesc('id')->get()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"])
-                    )
-                    ->default(TahunAkademik::where('status', 'Y')->latest()->first()?->id)
-                    ->searchable(),
+                \App\Traits\HasGlobalTahunAkademikFilter::getGlobalTahunAkademikFilter(),
 
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')

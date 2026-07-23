@@ -118,10 +118,10 @@ class TaSkripsisTable
                         'selesai'   => 'Selesai',
                     ]),
 
-                SelectFilter::make('id_tahun_akademik')
+                SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(\App\Models\TahunAkademik::orderByDesc('id')->get()->mapWithKeys(fn($t) => [$t->id => $t->nama . ' - ' . $t->periode]))
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable()
                     ->preload(),
             ])

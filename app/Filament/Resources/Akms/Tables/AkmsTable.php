@@ -61,12 +61,7 @@ class AkmsTable
                     ->weight('bold'),
             ])
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
-                    ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
-                    ->default(fn() => \App\Models\TahunAkademik::orderByDesc('id')->first()?->id)
-                    ->searchable()
-                    ->native(false),
+                \App\Traits\HasGlobalTahunAkademikFilter::getGlobalTahunAkademikFilter(),
             ])
             ->recordActions([
                 ViewAction::make()->label('Detail AKM'),
@@ -108,13 +103,8 @@ class AkmsTable
                     'siswaDataLjk.mataPelajaranKelas.mataPelajaranKurikulum.mataPelajaranMaster'
                 ]);
                 
-                // If the user is a student, only show their own AKM
-                $user = auth()->user();
-                if ($user && $user->isMurid()) {
-                    $query->whereHas('riwayatPendidikan.siswaData', function ($q) use ($user) {
-                        $q->where('user_id', $user->id);
-                    });
-                }
+                // Apply global role-based security scope
+                \App\Traits\HasRoleBasedTableScope::applyRoleBasedTableScope($query);
             });
     }
 }

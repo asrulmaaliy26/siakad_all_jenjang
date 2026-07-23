@@ -85,11 +85,6 @@ class MataPelajaranKelas extends Model
         return $this->hasMany(SiswaDataLJK::class, 'id_mata_pelajaran_kelas');
     }
 
-    public function pertemuanKelas()
-    {
-        return $this->hasMany(PertemuanKelas::class, 'id_mata_pelajaran_kelas');
-    }
-
     public function absensiSiswa()
     {
         return $this->hasMany(AbsensiSiswa::class, 'id_mata_pelajaran_kelas');

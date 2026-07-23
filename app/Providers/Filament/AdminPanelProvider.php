@@ -22,6 +22,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -107,6 +108,13 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Temp')
                     ->icon('heroicon-o-folder'),
             ])
+            ->navigationItems([
+                NavigationItem::make('Aspirasi')
+                    ->url('https://docs.google.com/spreadsheets/d/1re7k3YTDS2tOGXPr83RJCLmrB5GDGb1D0Kqwi1EFgPI/edit?resourcekey=&gid=1935078033#gid=1935078033', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-link')
+                    ->group('Master Data')
+                    ->sort(100),
+            ])
             ->authMiddleware([
                 Authenticate::class,
             ])
@@ -141,6 +149,10 @@ class AdminPanelProvider extends PanelProvider
                         @endauth
                     </script>
                 ')
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn(): string => \Illuminate\Support\Facades\Blade::render('@livewire("global-tahun-akademik-switcher")')
             )
             ->renderHook(
                 \Filament\View\PanelsRenderHook::USER_MENU_BEFORE,

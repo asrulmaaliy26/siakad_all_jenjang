@@ -21,31 +21,33 @@ class RiwayatPendidikanForm
             ->components([
                 Select::make('id_siswa_data')
                     ->label('Data Siswa')
-                    ->options(SiswaData::pluck('nama', 'id'))
-                    ->searchable(),
+                    ->relationship('siswaData', 'nama')
+                    ->searchable()
+                    ->preload(false),
                 Select::make('id_jurusan')
                     ->label('Jurusan')
-                    ->options(Jurusan::pluck('nama', 'id'))
+                    ->relationship('jurusan', 'nama')
                     ->reactive()
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 Select::make('ro_status_siswa')
                     ->label('Status Siswa')
-                    ->options(StatusSiswa::pluck('nilai', 'id'))
-                    ->searchable(),
+                    ->relationship('statusSiswa', 'nilai')
+                    ->searchable()
+                    ->preload(),
                 Select::make('ro_program_kelas')
                     ->label('Program Kelas')
-                    ->options(ProgramKelas::aktif()->pluck('nilai', 'id'))
+                    ->relationship('programKelas', 'nilai', fn ($query) => $query->aktif())
                     ->placeholder('Pilih Program Kelas...')
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 Select::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(
-                        \App\Models\TahunAkademik::orderByDesc('id')
-                            ->get()
-                            ->pluck('nama', 'id') // 'nama' sudah include periode via accessor
-                    )
+                    ->relationship('tahunAkademik', 'nama')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->nama} - {$record->periode}")
                     ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->searchable()
+                    ->preload()
                     ->required(),
                 TextInput::make('nomor_induk'),
                 DatePicker::make('tanggal_mulai'),

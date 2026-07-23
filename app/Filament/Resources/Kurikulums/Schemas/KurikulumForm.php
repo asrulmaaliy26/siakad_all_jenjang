@@ -18,12 +18,15 @@ class KurikulumForm
                 TextInput::make('nama'),
                 Select::make('id_jurusan')
                     ->label('Jurusan')
-                    ->options(Jurusan::pluck('nama', 'id'))
-                    ->searchable(),
+                    ->relationship('jurusan', 'nama')
+                    ->searchable()
+                    ->preload(),
                 Select::make('id_tahun_akademik')
                     ->label('Tahun Akademik')
-                    ->options(TahunAkademik::all()->mapWithKeys(fn($item) => [$item->id => "{$item->nama} - {$item->periode}"]))
-                    ->searchable(),
+                    ->relationship('tahunAkademik', 'nama')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->nama} - {$record->periode}")
+                    ->searchable()
+                    ->preload(),
                 Select::make('status_aktif')
 
                     ->options(['Y' => 'Y', 'N' => 'N']),

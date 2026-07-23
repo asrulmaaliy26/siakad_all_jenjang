@@ -37,7 +37,7 @@ class MataPelajaranKurikulumsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')
+                \Filament\Tables\Filters\SelectFilter::make('id_tahun_akademik')->default(fn () => session('global_tahun_akademik_id') ?? \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
                     ->label('Tahun Akademik')
                     ->options(\App\Models\TahunAkademik::orderByDesc('id')->get()->pluck('nama', 'id')->toArray())
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
@@ -46,7 +46,7 @@ class MataPelajaranKurikulumsTable
                             $q->where('id_tahun_akademik', $data['value']);
                         });
                     })
-                    ->default(fn() => \App\Models\TahunAkademik::where('status', 'Y')->latest()->first()?->id)
+                    
                     ->searchable()
                     ->native(false),
             ])

@@ -215,10 +215,7 @@ class SiswaDataPendaftarsTable
                     ->preload()
                     ->multiple(),
 
-                SelectFilter::make('id_tahun_akademik')
-                    ->label('Tahun Akademik')
-                    ->options(fn() => \App\Models\TahunAkademik::all()->mapWithKeys(fn($ta) => [$ta->id => "{$ta->nama} - {$ta->periode}"])->toArray())
-                    ->multiple(),
+                \App\Traits\HasGlobalTahunAkademikFilter::getGlobalTahunAkademikFilter('id_tahun_akademik', true),
 
                 SelectFilter::make('id_jurusan')
                     ->label('Jurusan')
