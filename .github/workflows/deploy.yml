@@ -1,4 +1,4 @@
-name: 🚀 Auto Deploy - siakad.staialmannan.ac.id
+name: 🚀 Auto Deploy - admin-siakad.staialmannan.ac.id
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p 22 -H "$HOST" >> ~/.ssh/known_hosts
-          scp -i ~/.ssh/deploy_key release.tar.gz root@$HOST:/home/staialmannan/siakad.staialmannan.ac.id/
+          scp -i ~/.ssh/deploy_key release.tar.gz root@$HOST:/home/staialmannan/admin-siakad.staialmannan.ac.id/
 
       - name: ♻️ Extract & Setup di VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -60,7 +60,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            cd /home/staialmannan/siakad.staialmannan.ac.id
+            cd /home/staialmannan/admin-siakad.staialmannan.ac.id
 
             # Ekstrak file
             tar -xzf release.tar.gz
@@ -89,7 +89,7 @@ jobs:
             php artisan optimize:clear
 
             # Setup Ownership dan Permission Laravel di akhir agar file cache/log yang terbuat ber-owner benar
-            chown -R staialmannan:staialmannan /home/staialmannan/siakad.staialmannan.ac.id
+            chown -R staialmannan:staialmannan /home/staialmannan/admin-siakad.staialmannan.ac.id
             chmod -R 775 storage bootstrap/cache
 
             # Restart Apache dengan aman
